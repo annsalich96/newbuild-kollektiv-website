@@ -1,0 +1,64 @@
+/*
+  Design Tokens — NewBuild Kollektiv
+  Einzige Quelle der Wahrheit für Grid, Spacing, Typografie, Farbe.
+  Platzhalterwerte — werden ersetzt, sobald das Moodboard ausgewertet ist.
+*/
+
+:root {
+  /* ---------- Grid ---------- */
+  --grid-columns: 12;
+  --grid-gutter: 24px;
+  --grid-margin: 24px;
+  --grid-max-width: 1440px;
+
+  /* ---------- Breakpoints (als Referenz, in CSS nur über @media nutzbar) ---------- */
+  --bp-mobile: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+  --bp-wide: 1440px;
+
+  /* ---------- Spacing-Skala (4px-Basis) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  /* ---------- Typografie-Skala ---------- */
+  --font-family-base: "Inter", system-ui, sans-serif;
+  --font-family-display: "Inter", system-ui, sans-serif;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 2.75rem;
+  --font-size-4xl: 3.5rem;
+
+  --line-height-tight: 1.1;
+  --line-height-base: 1.5;
+
+  /* ---------- Farben (Platzhalter) ---------- */
+  --color-bg: #ffffff;
+  --color-text: #111111;
+  --color-muted: #666666;
+  --color-accent: #0055ff;
+  --color-border: #e5e5e5;
+}
+
+/* Grid-Container — 12 Spalten, responsive Gutter/Margin */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), 1fr);
+  gap: var(--grid-gutter);
+  max-width: var(--grid-max-width);
+  margin-inline: auto;
+  padding-inline: var(--grid-margin);
+}
