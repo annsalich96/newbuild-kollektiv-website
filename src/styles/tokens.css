@@ -1,21 +1,23 @@
 /*
   Design Tokens — NewBuild Kollektiv
   Einzige Quelle der Wahrheit für Grid, Spacing, Typografie, Farbe.
-  Platzhalterwerte — werden ersetzt, sobald das Moodboard ausgewertet ist.
+  Werte extrahiert aus den Referenz-PDFs (Downloads: Website_Homepage*.pdf,
+  Desktop-Referenz 1920px breit). Bei abweichenden Werten aus dem Original-
+  Figma-File dort nachziehen statt hier zu raten.
 */
 
 :root {
-  /* ---------- Grid ---------- */
+  /* ---------- Grid (Referenz: 1920px Desktop-Layout) ---------- */
   --grid-columns: 12;
-  --grid-gutter: 24px;
-  --grid-margin: 24px;
-  --grid-max-width: 1440px;
+  --grid-gutter: 4px; /* Spalten liegen fast randlos aneinander, dünne Trennlinie statt echtem Gutter */
+  --grid-margin: 130px; /* Außenrand links/rechts bei 1920px Referenzbreite */
+  --grid-max-width: 1920px;
 
-  /* ---------- Breakpoints (als Referenz, in CSS nur über @media nutzbar) ---------- */
+  /* ---------- Breakpoints ---------- */
   --bp-mobile: 480px;
   --bp-tablet: 768px;
   --bp-desktop: 1024px;
-  --bp-wide: 1440px;
+  --bp-wide: 1920px;
 
   /* ---------- Spacing-Skala (4px-Basis) ---------- */
   --space-1: 4px;
@@ -30,8 +32,13 @@
   --space-10: 128px;
 
   /* ---------- Typografie-Skala ---------- */
-  --font-family-base: "Inter", system-ui, sans-serif;
-  --font-family-display: "Inter", system-ui, sans-serif;
+  /* Referenz-PDF nutzt Helvetica (Light/Regular/Bold). Web-Fallback-Stack,
+     da Helvetica Neue nicht frei lizenzierbar ist. */
+  --font-family-base: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-family-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -41,19 +48,39 @@
   --font-size-2xl: 2rem;
   --font-size-3xl: 2.75rem;
   --font-size-4xl: 3.5rem;
+  --font-size-hero: 6rem; /* Headline "NEWBUILD KOLLEKTIV" — fast volle Breite, extra-bold, Großbuchstaben */
+
+  --letter-spacing-label: 0.08em; /* Nav-Items, Eyebrow-Labels wie "MISSION" — Großbuchstaben, leicht gesperrt */
 
   --line-height-tight: 1.1;
   --line-height-base: 1.5;
 
-  /* ---------- Farben (Platzhalter) ---------- */
-  --color-bg: #ffffff;
-  --color-text: #111111;
-  --color-muted: #666666;
-  --color-accent: #0055ff;
-  --color-border: #e5e5e5;
+  /* ---------- Farben ---------- */
+  /* Duotone-Verlauf über die gesamte Scroll-Höhe: Orange (Hero) -> Schwarz -> Violett (Sponsoren) -> Schwarz (Footer) */
+  --color-bg: #000000;
+  --color-text: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.7);
+  --color-border: rgba(255, 255, 255, 0.35); /* Pill-Nav-Rahmen */
+
+  --color-accent-orange: #d03d0f; /* Hero-Gradient Startfarbe */
+  --color-accent-orange-dark: #2a0000; /* Hero-Gradient Endfarbe, Richtung Schwarz */
+  --color-accent-violet: #8347c2; /* Sponsoren-Sektion */
+
+  --gradient-hero: linear-gradient(
+    90deg,
+    var(--color-accent-orange) 0%,
+    var(--color-accent-orange-dark) 100%
+  );
+  --gradient-sponsoren: linear-gradient(
+    90deg,
+    #1a1030 0%,
+    var(--color-accent-violet) 100%
+  );
+
+  /* Bildsprache: Fotografie durchgehend schwarz-weiß (entsättigt), Duotone-Overlay in Akzentfarbe */
 }
 
-/* Grid-Container — 12 Spalten, responsive Gutter/Margin */
+/* Grid-Container — 12 Spalten, Trennlinie statt Gutter */
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
@@ -61,4 +88,16 @@
   max-width: var(--grid-max-width);
   margin-inline: auto;
   padding-inline: var(--grid-margin);
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    padding-inline: var(--space-6);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    padding-inline: var(--space-4);
+  }
 }
