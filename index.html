@@ -5,9 +5,139 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NewBuild Kollektiv</title>
+    <meta
+      name="description"
+      content="NewBuild Kollektiv — Netzwerk für Architekten und Bauleute in Berlin."
+    />
   </head>
   <body>
-    <div id="app"></div>
+    <header class="site-nav">
+      <div class="site-nav__pill">
+        <a href="#top" class="site-nav__logo" aria-label="NewBuild Kollektiv Startseite">NBK</a>
+        <nav aria-label="Hauptnavigation">
+          <a href="#mission">Mission</a>
+          <a href="#events">Events</a>
+          <a href="#sponsoring">Sponsoring</a>
+          <a href="#about">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section id="top" class="hero">
+        <div class="hero__photo-placeholder" aria-hidden="true">
+          <span>Foto folgt</span>
+        </div>
+        <div class="grid hero__content">
+          <h1 class="hero__title">NEWBUILD<br />KOLLEKTIV</h1>
+        </div>
+      </section>
+
+      <section id="mission" class="section section--mission">
+        <div class="grid">
+          <p class="section__eyebrow">Mission</p>
+          <p class="section__statement">
+            We are a new generation of architects, construction people who
+            believe that networking will make us resilient.
+          </p>
+        </div>
+        <ul class="grid team-row" aria-label="Team">
+          <li class="team-row__member">
+            <div class="team-row__photo" aria-hidden="true"></div>
+            <span class="team-row__name">Team-Mitglied (Name folgt)</span>
+          </li>
+          <li class="team-row__member">
+            <div class="team-row__photo" aria-hidden="true"></div>
+            <span class="team-row__name">Maria Stasevich</span>
+          </li>
+          <li class="team-row__member">
+            <div class="team-row__photo" aria-hidden="true"></div>
+            <span class="team-row__name">Markus Kolb</span>
+          </li>
+          <li class="team-row__member">
+            <div class="team-row__photo" aria-hidden="true"></div>
+            <span class="team-row__name">Ann-Kathrin Salich</span>
+          </li>
+        </ul>
+      </section>
+
+      <section id="events" class="section section--events">
+        <div class="grid">
+          <p class="section__eyebrow">Events</p>
+
+          <article class="event-card event-card--next">
+            <p class="event-card__label">Next Event</p>
+            <h2 class="event-card__title">Session 01 — Automate your practice with N8N</h2>
+            <dl class="event-card__meta">
+              <div>
+                <dt>Referentin</dt>
+                <dd>Maria Stasevich — OBLIK</dd>
+              </div>
+              <div>
+                <dt>Zeit</dt>
+                <dd>Di., 04.03.2026, 18:30–20:00</dd>
+              </div>
+              <div>
+                <dt>Ort</dt>
+                <dd>NowyStyl &amp; Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin</dd>
+              </div>
+            </dl>
+            <a class="button" href="#">Anmeldung</a>
+          </article>
+
+          <ul class="event-list" aria-label="Weitere Sessions">
+            <li class="event-card event-card--placeholder">
+              <p class="event-card__title">Session 02</p>
+              <p class="event-card__placeholder-note">Termin folgt</p>
+            </li>
+            <li class="event-card event-card--placeholder">
+              <p class="event-card__title">Session 03</p>
+              <p class="event-card__placeholder-note">Termin folgt</p>
+            </li>
+            <li class="event-card event-card--placeholder">
+              <p class="event-card__title">Session 04</p>
+              <p class="event-card__placeholder-note">Termin folgt</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="sponsoring" class="section section--sponsoring">
+        <div class="grid">
+          <p class="section__eyebrow">Sponsoring</p>
+          <ul class="sponsor-row" aria-label="Sponsoren">
+            <li class="sponsor-row__slot">Sponsor folgt</li>
+            <li class="sponsor-row__slot">Sponsor folgt</li>
+            <li class="sponsor-row__slot">Sponsor folgt</li>
+            <li class="sponsor-row__slot">Sponsor folgt</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="about" class="section section--about">
+        <div class="grid">
+          <p class="section__eyebrow">About</p>
+          <p class="section__statement">
+            We are a new generation of architects, construction people who
+            believe that networking will make us resilient.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="grid site-footer__legal">
+        <a href="#">Impressum</a>
+        <a href="#">Datenschutzerklärung</a>
+        <a href="#">Widerrufsrecht</a>
+      </div>
+      <div class="grid site-footer__contact">
+        <a href="mailto:info@newbuildkollektiv.com">info@newbuildkollektiv.com</a>
+        <a href="tel:+491702828889">+49 170 2828889</a>
+        <span>Wilmersdorfer Str. 108–111, 10627 Berlin</span>
+      </div>
+    </footer>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
