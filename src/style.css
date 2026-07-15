@@ -250,16 +250,17 @@ ul {
   }
 }
 
+/* display: contents löst den <ul>-Wrapper als eigenen Grid-Container auf —
+   die <li>s werden direkte Kinder des umgebenden 12-Spalten-.grid und
+   richten sich exakt an dessen Spaltenlinien und -gutter aus, statt in
+   einem eigenen, unabhängigen 3-Spalten-Grid mit größerem Abstand zu leben. */
 .event-list {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-5);
-  margin-block-start: var(--space-6);
+  display: contents;
 }
 
 .event-card--placeholder {
-  margin-block-start: 0;
+  grid-column: span 4;
+  margin-block-start: var(--space-6);
   border-style: dashed;
   opacity: 0.6;
 }
@@ -271,8 +272,8 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .event-list {
-    grid-template-columns: 1fr;
+  .event-card--placeholder {
+    grid-column: 1 / -1;
   }
 }
 
@@ -291,14 +292,12 @@ ul {
 /* ---------- Sponsoring ---------- */
 
 .sponsor-row {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-5);
-  margin-block-start: var(--space-6);
+  display: contents;
 }
 
 .sponsor-row__slot {
+  grid-column: span 3;
+  margin-block-start: var(--space-6);
   border: 1px dashed var(--color-border);
   border-radius: 12px;
   padding: var(--space-7) var(--space-4);
@@ -311,9 +310,16 @@ ul {
   backdrop-filter: var(--scrim-blur);
 }
 
+/* Erzwingt eine neue Grid-Zeile: ohne expliziten Start würde der erste
+   Slot in Zeile 1 neben das kurze Eyebrow-Label ("Sponsoring", Spalte 1/3)
+   rutschen, statt darunter zu beginnen. */
+.sponsor-row__slot:first-child {
+  grid-column: 1 / span 3;
+}
+
 @media (max-width: 768px) {
-  .sponsor-row {
-    grid-template-columns: repeat(2, 1fr);
+  .sponsor-row__slot {
+    grid-column: span 6;
   }
 }
 
