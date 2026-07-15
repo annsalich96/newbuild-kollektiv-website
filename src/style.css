@@ -49,19 +49,14 @@ ul {
 
 /* ---------- Nav ---------- */
 
-/* Referenz (Website_Homepage.pdf, S.1): Nav-Pill steht im Fluss UNTER dem
-   Logo, nicht als fixer Overlay ganz oben. position: sticky statt fixed,
-   damit sie erst nach dem Scrollen über den Content am Viewport-Top
-   einrastet, aber initial an ihrer echten Position (unter dem Logo)
-   erscheint. */
 .site-nav {
-  position: sticky;
+  position: fixed;
+  inset-inline: 0;
   top: var(--space-5);
   z-index: 10;
   display: flex;
   justify-content: center;
   padding-inline: var(--grid-margin);
-  margin-block-start: 142px; /* Referenz: Abstand Logo-Unterkante -> Pill-Oberkante */
 }
 
 .site-nav__pill {
