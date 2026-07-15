@@ -120,14 +120,16 @@ ul {
   padding-block-end: var(--space-9);
 }
 
+/* Logo beginnt bündig mit dem linken Grid-Margin (Spalte 1) und endet
+   bündig mit dem Trennbalken nach Spalte 3 (grid line 4). */
 .hero__title {
-  grid-column: 1 / -1;
+  grid-column: 1 / 4;
   margin: 0;
 }
 
 .hero__title img {
   display: block;
-  width: min(100%, 700px);
+  width: 100%;
   height: auto;
 }
 
