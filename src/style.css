@@ -49,14 +49,19 @@ ul {
 
 /* ---------- Nav ---------- */
 
+/* Referenz (Website_Homepage.pdf, S.1): Nav-Pill steht im Fluss UNTER dem
+   Logo, nicht als fixer Overlay ganz oben. position: sticky statt fixed,
+   damit sie erst nach dem Scrollen über den Content am Viewport-Top
+   einrastet, aber initial an ihrer echten Position (unter dem Logo)
+   erscheint. */
 .site-nav {
-  position: fixed;
-  inset-inline: 0;
+  position: sticky;
   top: var(--space-5);
   z-index: 10;
   display: flex;
   justify-content: center;
   padding-inline: var(--grid-margin);
+  margin-block-start: 142px; /* Referenz: Abstand Logo-Unterkante -> Pill-Oberkante */
 }
 
 .site-nav__pill {
@@ -97,15 +102,27 @@ ul {
 
 .hero {
   position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
 }
 
+/* Referenz: Logo-Bbox x 0.13–814 / y 171.8–366 auf 1920pt-Seitenbreite —
+   das Logo bleedet bis zur Papierkante (kein Grid-Margin, kein .grid-Wrapper
+   hier) und beginnt 172px unter der Seitenoberkante. */
+.hero__logo {
+  margin: 0;
+  padding-block-start: 172px;
+}
+
+.hero__logo img {
+  display: block;
+  width: min(100%, 815px);
+  height: auto;
+}
+
+/* Referenz: Foto-Bbox x 0–1920 / y 732–1708 — randlos volle Breite,
+   140px unter der Nav-Pill-Unterkante, festes Referenz-Seitenverhältnis. */
 .hero__photo-placeholder {
-  position: absolute;
-  inset: 0;
+  margin-block-start: 140px;
+  aspect-ratio: 1920 / 976;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,24 +130,6 @@ ul {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-sm);
-}
-
-.hero__content {
-  position: relative;
-  padding-block-end: var(--space-9);
-}
-
-/* Logo beginnt bündig mit dem linken Grid-Margin (Spalte 1) und endet
-   bündig mit dem Trennbalken nach Spalte 3 (grid line 4). */
-.hero__title {
-  grid-column: 1 / 4;
-  margin: 0;
-}
-
-.hero__title img {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 /* ---------- Sections (shared) ---------- */
