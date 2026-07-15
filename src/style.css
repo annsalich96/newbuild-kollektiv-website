@@ -55,9 +55,14 @@ ul {
 }
 
 .site-nav__logo {
-  font-weight: var(--font-weight-bold);
-  text-decoration: none;
-  letter-spacing: var(--letter-spacing-label);
+  display: flex;
+  align-items: center;
+}
+
+.site-nav__logo img {
+  display: block;
+  width: 20px;
+  height: auto;
 }
 
 .site-nav nav {
@@ -109,10 +114,13 @@ ul {
 
 .hero__title {
   grid-column: 1 / -1;
-  font-size: clamp(2.5rem, 8vw, var(--font-size-hero));
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.hero__title img {
+  display: block;
+  width: min(100%, 700px);
+  height: auto;
 }
 
 /* ---------- Sections (shared) ---------- */
