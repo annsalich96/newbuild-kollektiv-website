@@ -7,17 +7,21 @@
 */
 
 :root {
-  /* ---------- Grid (Referenz: 1920px Desktop-Layout) ---------- */
+  /* ---------- Grid (Referenz: 1920px Desktop-Layout) ----------
+     Strenges Spaltensystem laut Vorgabe: M1(140) + 12×Spalte(122) + 11×Gutter(16) + M2(140) = 1920.
+     --px skaliert jeden Referenz-Pixelwert proportional zur Viewport-Breite, damit
+     Margin/Spalte/Gutter/Balken exakt im Verhältnis zu 1920px bleiben (fluid, nicht fixed),
+     bis zum Mobile-Breakpoint unten. */
+  --px: calc(100vw / 1920);
   --grid-columns: 12;
-  --grid-gutter: 4px; /* Spalten liegen fast randlos aneinander, dünne Trennlinie statt echtem Gutter */
-  --grid-margin: 130px; /* Außenrand links/rechts bei 1920px Referenzbreite */
+  --grid-gutter: calc(16 * var(--px));
+  --grid-margin: calc(140 * var(--px));
   --grid-max-width: 1920px;
+  --balken: calc(122 * var(--px)); /* Balkensystem: 1 Balken = 1 Spaltenbreite = 122px bei 1920px */
 
-  /* ---------- Breakpoints ---------- */
-  --bp-mobile: 480px;
-  --bp-tablet: 768px;
-  --bp-desktop: 1024px;
-  --bp-wide: 1920px;
+  /* ---------- Breakpoint ----------
+     Ab hier springt das Grid von 12 auf 4 Spalten (siehe .grid media query unten). */
+  --bp-mobile: 768px;
 
   /* ---------- Spacing-Skala (4px-Basis) ---------- */
   --space-1: 4px;
@@ -48,7 +52,18 @@
   --font-size-2xl: 2rem;
   --font-size-3xl: 2.75rem;
   --font-size-4xl: 3.5rem;
-  --font-size-hero: 6rem; /* Headline "NEWBUILD KOLLEKTIV" — fast volle Breite, extra-bold, Großbuchstaben */
+
+  /* ---------- Textarten (grid-tabelle.md "Typografie") ----------
+     Quelle: 24pt / 36pt / 48pt bei 1920px-Referenz (1pt = 1.3333px @96dpi),
+     fluid über --px skaliert wie das Grid. Am Mobile-Breakpoint eingefroren
+     auf feste, lesbare Werte (siehe Media Query unten), sonst würden die
+     Texte auf schmalen Viewports gegen Null schrumpfen. */
+  --font-size-capital: calc(32 * var(--px)); /* 24pt */
+  --font-size-regular-text: calc(48 * var(--px)); /* 36pt */
+  --font-size-bold: calc(64 * var(--px)); /* 48pt */
+  --line-height-regular-text: calc(65.333 * var(--px)); /* 49pt */
+  --line-height-bold: calc(94.667 * var(--px)); /* 71pt */
+  --line-thickness: 1pt; /* Liniendicke Kästen/Trennlinien — absolute Einheit, skaliert bewusst nicht mit */
 
   --letter-spacing-label: 0.08em; /* Nav-Items, Eyebrow-Labels wie "MISSION" — Großbuchstaben, leicht gesperrt */
 
@@ -84,14 +99,22 @@
   padding-inline: var(--grid-margin);
 }
 
-@media (max-width: 1024px) {
-  .grid {
-    padding-inline: var(--space-6);
+/* Mobile: springt von 12 auf 4 Spalten mit fixen (nicht mehr proportionalen) Werten.
+   --balken wird eingefroren, sonst schrumpft der vertikale Rhythmus (Logo/Nav-Abstand)
+   auf sehr kleinen Viewports gegen Null und Elemente überlappen. */
+@media (max-width: 768px) {
+  :root {
+    --balken: 32px;
+    --font-size-capital: 12px;
+    --font-size-regular-text: 16px;
+    --font-size-bold: 26px;
+    --line-height-regular-text: 22px;
+    --line-height-bold: 32px;
   }
-}
 
-@media (max-width: 480px) {
   .grid {
-    padding-inline: var(--space-4);
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2); /* 8px */
+    padding-inline: var(--space-5); /* 24px */
   }
 }

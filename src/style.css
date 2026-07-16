@@ -51,17 +51,20 @@ ul {
 
 .site-nav {
   display: flex;
-  justify-content: center;
   padding-inline: var(--grid-margin);
-  margin-block-start: var(--space-8);
+  /* Balken 5: 1 Balken Abstand zur Logo-Unterkante (Balken 3), siehe grid-tabelle.md */
+  margin-block-start: var(--balken);
 }
 
+/* Nr. 2b grid-tabelle.md: eigener Kasten (Liniendicke 1pt) um die Nav-Leiste,
+   spannt volle Spalte A–L statt einer schmalen zentrierten Pill. */
 .site-nav__pill {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  justify-content: space-between;
+  width: 100%;
   padding: var(--space-3) var(--space-6);
-  border: 1px solid var(--color-border);
+  border: var(--line-thickness) solid var(--color-border);
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(8px);
@@ -80,14 +83,36 @@ ul {
 
 .site-nav nav {
   display: flex;
-  gap: var(--space-6);
+  justify-content: space-between;
+  flex: 1;
+  margin-inline-start: var(--space-8);
 }
 
 .site-nav nav a {
   text-decoration: none;
   text-transform: uppercase;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
+  white-space: nowrap;
+}
+
+/* Auf schmalen Viewports reicht die Breite nicht für Logo + 4 Links in
+   einer Zeile mit space-between + festem Abstand — Links brechen sonst
+   ohne Zwischenraum aneinander. Bricht stattdessen sauber in eine eigene,
+   umbrechende Zeile um. */
+@media (max-width: 768px) {
+  .site-nav__pill {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  .site-nav nav {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-inline-start: 0;
+  }
 }
 
 /* ---------- Hero ---------- */
@@ -96,24 +121,24 @@ ul {
   position: relative;
 }
 
-/* Referenz: Logo-Bbox x 0.13–814 / y 171.8–366 auf 1920pt-Seitenbreite —
+/* Referenz: Logo-Bbox M1(inkl. Bleed)–Spalte E / Balken 1,4–3 (grid-tabelle.md) —
    das Logo bleedet bis zur Papierkante (kein Grid-Margin, kein .grid-Wrapper
-   hier) und beginnt 172px unter der Seitenoberkante. */
+   hier) und beginnt bei 1,4 Balken unter der Seitenoberkante. */
 .hero__logo {
   margin: 0;
-  padding-block-start: 172px;
+  padding-block-start: calc(1.4 * var(--balken));
 }
 
 .hero__logo img {
   display: block;
-  width: min(100%, 815px);
+  width: min(100%, calc(814 * var(--px)));
   height: auto;
 }
 
-/* Referenz: Foto-Bbox x 0–1920 / y 732–1708 — randlos volle Breite,
-   140px unter der Nav-Pill-Unterkante, festes Referenz-Seitenverhältnis. */
+/* Referenz: Foto-Bbox randlos volle Breite, direkt im Anschluss an die Nav (Balken 5),
+   festes Referenz-Seitenverhältnis. */
 .hero__photo-placeholder {
-  margin-block-start: 140px;
+  margin-block-start: var(--balken);
   aspect-ratio: 1920 / 976;
   display: flex;
   align-items: center;
@@ -131,18 +156,22 @@ ul {
 }
 
 .section__eyebrow {
-  grid-column: 1 / 3;
+  /* Spalte B (grid-tabelle.md Nr. 4/21) — Text Capital */
+  grid-column: 2 / 3;
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-capital);
   color: var(--color-muted);
   margin: 0;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
 
 .section__statement {
-  grid-column: 4 / 10;
-  font-size: var(--font-size-2xl);
+  /* Spalte E–K (grid-tabelle.md Nr. 5/22), Linien 5–12 im 12er-Grid — Text Bold */
+  grid-column: 5 / 12;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-bold);
+  line-height: var(--line-height-bold);
   font-weight: var(--font-weight-bold);
   margin: 0;
   padding: var(--space-5) var(--space-6);
@@ -151,7 +180,7 @@ ul {
   border-radius: 16px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .section__eyebrow,
   .section__statement {
     grid-column: 1 / -1;
@@ -162,14 +191,26 @@ ul {
   }
 }
 
-/* ---------- Team row ---------- */
+/* ---------- Team-Fotogalerie (grid-tabelle.md Nr. 7) ----------
+   Jedes Bild 4 Spalten breit, 1 Gutter Abstand, Margins nicht beachtet
+   (randloser Scroll-Container) — horizontal scrollbar und für beliebig
+   viele Bilder ausgelegt (kein hartkodiertes Limit auf 4). */
+.team-row-wrap {
+  margin-block-start: var(--space-9);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
 
 .team-row {
-  margin-block-start: var(--space-9);
+  display: flex;
+  gap: var(--grid-gutter);
+  width: max-content;
+  min-width: 100%;
+  padding-inline: var(--grid-margin);
 }
 
 .team-row__member {
-  grid-column: span 3;
+  flex: 0 0 calc((4 * 122 + 3 * 16) * var(--px)); /* 4 Spalten inkl. 3 interner Gutter = 536px @1920 */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -182,23 +223,24 @@ ul {
 }
 
 .team-row__name {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
 
-@media (max-width: 768px) {
-  .team-row__member {
-    grid-column: span 6;
-  }
-}
-
-/* ---------- Events ---------- */
-
+/* ---------- Events: Next-Event-Kasten (grid-tabelle.md Nr. 8–12) ----------
+   Eigenes 12-Spalten-Innenraster (gleiche Proportion wie .grid, aber ohne
+   Margin-Padding, da der Kasten selbst schon bei A beginnt/bei L endet) —
+   so lassen sich Label/Überschrift (Spalte B) und Text (E–I) und Button
+   (J–K) exakt wie im Grid-System platzieren. */
 .event-card {
   grid-column: 1 / -1;
-  border: 1px solid var(--color-border);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--grid-gutter);
+  align-items: start;
+  border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
   padding: var(--space-7);
   margin-block-start: var(--space-6);
@@ -207,65 +249,141 @@ ul {
 }
 
 .event-card__label {
+  grid-column: 2 / -1; /* Spalte B, siehe Nr. 9 */
   text-transform: uppercase;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
   color: var(--color-muted);
-  margin: 0 0 var(--space-4);
+  margin: 0;
 }
 
 .event-card__title {
-  font-size: var(--font-size-xl);
-  margin: 0 0 var(--space-5);
+  grid-column: 2 / -1; /* Spalte B, siehe Nr. 10 */
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-bold);
+  line-height: var(--line-height-bold);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
 }
 
 .event-card__meta {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-5);
-  margin: 0 0 var(--space-6);
+  grid-column: 5 / 10; /* Spalte E–I, siehe Nr. 11 */
+  /* Untereinander statt 3 nebeneinander: bei 36pt (Text Regular) sprengen
+     einzelne Wörter (z.B. "Pfuelstraße") eine schmale 1/3-Spalte. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.event-card__meta > div {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
 }
 
 .event-card__meta dt {
-  font-size: var(--font-size-xs);
+  flex: 0 0 auto;
+  min-width: calc(120 * var(--px));
+}
+
+.event-card__meta dt {
+  font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   color: var(--color-muted);
 }
 
 .event-card__meta dd {
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
   margin: var(--space-1) 0 0;
 }
 
+/* Nr. 12: eigene Zeile, Spalte J–K. Ohne explizite grid-column würde die
+   Auto-Platzierung den Button in dieselbe Zeile wie .event-card__meta
+   zwängen und ihn mit dem Ort-Text überlappen lassen. */
+.event-card__cta {
+  grid-column: 10 / 12;
+  /* start statt center: der Button ist oft breiter als die 2-Spalten-Zelle,
+     bei center würde er dann symmetrisch nach links in den Ort-Text
+     hineinlaufen. Mit start bleibt er links an Spalte J verankert und
+     wächst nur nach rechts über. */
+  justify-self: start;
+  align-self: start;
+  margin-block-start: var(--space-4);
+}
+
 @media (max-width: 768px) {
-  .event-card__meta {
-    grid-template-columns: 1fr;
+  .event-card {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .event-card__label,
+  .event-card__title,
+  .event-card__meta,
+  .event-card__cta {
+    grid-column: 1 / -1;
+  }
+
+  .event-card__cta {
+    justify-self: start;
   }
 }
 
-/* display: contents löst den <ul>-Wrapper als eigenen Grid-Container auf —
-   die <li>s werden direkte Kinder des umgebenden 12-Spalten-.grid und
-   richten sich exakt an dessen Spaltenlinien und -gutter aus, statt in
-   einem eigenen, unabhängigen 3-Spalten-Grid mit größerem Abstand zu leben. */
-.event-list {
+/* ---------- Session-Kästen (grid-tabelle.md Nr. 14–17) ----------
+   3 Kästen je 4 Spalten (A–D / E–H / I–L). Jeder Kasten hat sein eigenes
+   4-spaltiges Innenraster; Nummer/Text/Button sitzen zentriert in dessen
+   mittleren 2 Spalten — das entspricht exakt B–C / F–G / J–K im äußeren Grid. */
+.session-row {
   display: contents;
 }
 
-.event-card--placeholder {
+.session-card {
   grid-column: span 4;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--grid-gutter);
   margin-block-start: var(--space-6);
-  border-style: dashed;
-  opacity: 0.6;
+  border: var(--line-thickness) solid var(--color-border);
+  border-radius: 24px;
+  padding: var(--space-7) 0;
+  background: var(--scrim-bg);
+  backdrop-filter: var(--scrim-blur);
+  text-align: center;
 }
 
-.event-card__placeholder-note {
-  font-size: var(--font-size-sm);
+.session-card__number,
+.session-card__text,
+.session-card__button {
+  grid-column: 2 / 4; /* mittlere 2 Spalten des eigenen 4er-Rasters */
+}
+
+.session-card__number {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-bold);
+  line-height: var(--line-height-bold);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--space-4);
+}
+
+.session-card__text {
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
   color: var(--color-muted);
-  margin: 0;
+  margin: 0 0 var(--space-5);
+}
+
+.session-card__text p {
+  margin: 0 0 var(--space-2);
+}
+
+.session-card__button {
+  justify-self: center;
 }
 
 @media (max-width: 768px) {
-  .event-card--placeholder {
+  .session-card {
     grid-column: 1 / -1;
   }
 }
@@ -274,63 +392,126 @@ ul {
   display: inline-block;
   text-decoration: none;
   text-transform: uppercase;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
   font-weight: var(--font-weight-bold);
   padding: var(--space-3) var(--space-6);
-  border: 1px solid var(--color-text);
+  border: var(--line-thickness) solid var(--color-text);
   border-radius: 999px;
 }
 
-/* ---------- Sponsoring ---------- */
-
-.sponsor-row {
-  display: contents;
+/* ---------- Sponsoren-Leiste (grid-tabelle.md Nr. 24) ----------
+   Soll sich wie ein Werbe-Laufband von links nach rechts bewegen — zwei
+   identische Tracks hintereinander, die als Ganzes um 50% verschoben
+   animiert werden, für einen nahtlosen Loop. */
+.marquee {
+  overflow: hidden;
+  width: 100%;
+  margin-block-start: var(--space-6);
 }
 
-.sponsor-row__slot {
-  grid-column: span 3;
-  margin-block-start: var(--space-6);
+.marquee__inner {
+  display: flex;
+  width: max-content;
+  animation: marquee-rtl 24s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee__inner {
+    animation: none;
+  }
+}
+
+.marquee__track {
+  display: flex;
+  gap: var(--grid-gutter);
+  flex-shrink: 0;
+  padding-inline: var(--grid-margin);
+}
+
+.marquee__track li {
+  flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
   border: 1px dashed var(--color-border);
   border-radius: 12px;
   padding: var(--space-7) var(--space-4);
   text-align: center;
   text-transform: uppercase;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
   color: var(--color-muted);
   background: var(--scrim-bg);
   backdrop-filter: var(--scrim-blur);
+  white-space: nowrap;
 }
 
-/* Erzwingt eine neue Grid-Zeile: ohne expliziten Start würde der erste
-   Slot in Zeile 1 neben das kurze Eyebrow-Label ("Sponsoring", Spalte 1/3)
-   rutschen, statt darunter zu beginnen. */
-.sponsor-row__slot:first-child {
-  grid-column: 1 / span 3;
-}
-
-@media (max-width: 768px) {
-  .sponsor-row__slot {
-    grid-column: span 6;
+@keyframes marquee-rtl {
+  from {
+    transform: translateX(-50%);
   }
+  to {
+    transform: translateX(0%);
+  }
+}
+
+/* ---------- Fotogalerie 2 (grid-tabelle.md Nr. 19) ----------
+   Je Foto 6 Spalten breit, 1 Gutter Abstand, Margins nicht beachtet,
+   horizontal scrollbar — analog zur Team-Fotogalerie, nur breiter. */
+.photo-gallery-2-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.photo-gallery-2 {
+  display: flex;
+  gap: var(--grid-gutter);
+  width: max-content;
+  min-width: 100%;
+  padding-inline: var(--grid-margin);
+}
+
+.photo-gallery-2__slide {
+  flex: 0 0 calc((6 * 122 + 5 * 16) * var(--px)); /* 6 Spalten inkl. 5 interner Gutter = 812px @1920 */
+  aspect-ratio: 812 / 500;
+  background: #1a1a1a;
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+}
+
+/* ---------- Trennlinien (grid-tabelle.md Nr. 6/13/18/20/23) ---------- */
+
+.divider {
+  grid-column: 1 / -1;
+  border: none;
+  border-top: var(--line-thickness) solid var(--color-border);
+  margin-block: var(--space-7);
 }
 
 /* ---------- Footer ---------- */
 
 .site-footer {
   padding-block: var(--space-7);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--line-thickness) solid var(--color-border);
   background: var(--scrim-bg);
   backdrop-filter: var(--scrim-blur);
 }
 
+/* Laut grid-tabelle.md gestapelt (Balken 59/60/61), nicht nebeneinander —
+   überschreibt das display:grid von .grid, .grid-Padding bleibt für die
+   Spalte-A-Ausrichtung erhalten. */
 .site-footer__legal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   margin-block-end: var(--space-5);
 }
 
 .site-footer__legal a {
-  grid-column: span 3;
   text-decoration: none;
   font-size: var(--font-size-sm);
 }
@@ -350,7 +531,6 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .site-footer__legal a,
   .site-footer__contact a,
   .site-footer__contact span {
     grid-column: 1 / -1;
