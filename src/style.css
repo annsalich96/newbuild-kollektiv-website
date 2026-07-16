@@ -173,7 +173,7 @@ ul {
   /* Spalte E–K (grid-tabelle.md Nr. 5/22), Linien 5–12 im 12er-Grid — Text Bold.
      Kein Kasten/Hintergrund — Text liegt direkt auf dem Farbverlauf, nur
      Text-Shadow für Lesbarkeit (wie .section__eyebrow). */
-  grid-column: 5 / 12;
+  grid-column: 5 / 13; /* E bis L — nutzt die volle Restbreite statt bei K aufzuhören */
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
   line-height: var(--line-height-bold);
@@ -264,7 +264,7 @@ ul {
 }
 
 .event-card__meta {
-  grid-column: 5 / 10; /* Spalte E–I, siehe Nr. 11 */
+  grid-column: 5 / 13; /* E bis L — volle Restbreite statt nur bis I */
   /* Untereinander statt 3 nebeneinander: bei 36pt (Text Regular) sprengen
      einzelne Wörter (z.B. "Pfuelstraße") eine schmale 1/3-Spalte. */
   display: flex;
@@ -344,15 +344,19 @@ ul {
   margin-block-start: var(--space-6);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
-  padding: var(--space-7) 0;
+  padding: var(--space-6) 0;
   background: transparent;
   text-align: center;
 }
 
+/* Volle Kastenbreite statt nur der mittleren 2 Spalten — weniger Zeilenumbrüche,
+   dadurch werden die Kästen insgesamt niedriger (Verhältnis wichtiger als
+   die exakte Spalten-Zentrierung, siehe Absprache). */
 .session-card__number,
 .session-card__text,
 .session-card__button {
-  grid-column: 2 / 4; /* mittlere 2 Spalten des eigenen 4er-Rasters */
+  grid-column: 1 / 5;
+  padding-inline: var(--space-4);
 }
 
 .session-card__number {
@@ -443,7 +447,9 @@ ul {
   display: flex;
   gap: 0; /* Sponsoren ohne Lücke dazwischen */
   flex-shrink: 0;
-  padding-inline: var(--grid-margin);
+  /* Kein padding-inline mehr — das erzeugte an der Nahtstelle der beiden
+     wiederholten Tracks eine doppelt so große Lücke (Padding von Track 1
+     + Padding von Track 2) statt eines gleichmäßigen Abstands. */
 }
 
 .marquee__track li {
