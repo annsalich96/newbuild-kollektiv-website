@@ -58,12 +58,14 @@
      fluid über --px skaliert wie das Grid. Am Mobile-Breakpoint eingefroren
      auf feste, lesbare Werte (siehe Media Query unten), sonst würden die
      Texte auf schmalen Viewports gegen Null schrumpfen. */
-  --font-size-capital: calc(32 * var(--px)); /* 24pt */
-  --font-size-regular-text: calc(48 * var(--px)); /* 36pt */
-  --font-size-bold: calc(64 * var(--px)); /* 48pt */
-  --line-height-regular-text: calc(65.333 * var(--px)); /* 49pt */
-  --line-height-bold: calc(94.667 * var(--px)); /* 71pt */
-  --line-thickness: 1pt; /* Liniendicke Kästen/Trennlinien — absolute Einheit, skaliert bewusst nicht mit */
+  /* 1pt = 1px bei 1920px-Referenz (72dpi-Kunstbrett), nicht CSS-Standard-pt
+     (1,333px) — per PDF-Messung (Cap-Height "MISSION") bestätigt. */
+  --font-size-capital: calc(24 * var(--px)); /* 24pt */
+  --font-size-regular-text: calc(36 * var(--px)); /* 36pt */
+  --font-size-bold: calc(48 * var(--px)); /* 48pt */
+  --line-height-regular-text: calc(49 * var(--px)); /* 49pt */
+  --line-height-bold: calc(71 * var(--px)); /* 71pt */
+  --line-thickness: 2px; /* Kästen/Trennlinien — 1px war auf dem Screen zu duenn, jetzt 2px fix */
 
   --letter-spacing-label: 0.08em; /* Nav-Items, Eyebrow-Labels wie "MISSION" — Großbuchstaben, leicht gesperrt */
 

@@ -412,6 +412,14 @@ ul {
   animation: marquee-rtl 24s linear infinite;
 }
 
+/* Gutter auch an der Nahtstelle zwischen den zwei wiederholten Tracks —
+   sonst berühren sich letztes und erstes Bild beim Loop-Übergang direkt.
+   Bei den Sponsoren bewusst ausgenommen (dort explizit ohne Lücke). */
+.team-marquee .marquee__inner,
+.gallery-marquee .marquee__inner {
+  gap: var(--grid-gutter);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .marquee__inner {
     animation: none;
@@ -537,4 +545,55 @@ ul {
   .site-footer__contact span {
     grid-column: 1 / -1;
   }
+}
+
+/* ---------- Rechts-Seiten (Impressum/Datenschutz/Widerruf) ----------
+   Einfache eigenständige Seiten, kein Grid-/Balken-System noetig — reiner
+   Lesetext auf demselben Hintergrund/Look wie die Startseite. */
+.legal-header {
+  padding: var(--space-6) var(--grid-margin);
+}
+
+.legal-header a {
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: var(--font-size-capital);
+  letter-spacing: var(--letter-spacing-label);
+}
+
+.legal-content {
+  max-width: 800px;
+  margin-inline: auto;
+  padding: var(--space-8) var(--grid-margin) var(--space-9);
+}
+
+.legal-content h1 {
+  font-size: var(--font-size-bold);
+  line-height: var(--line-height-bold);
+  margin-block-end: var(--space-7);
+}
+
+.legal-content h2 {
+  font-size: var(--font-size-regular-text);
+  margin-block: var(--space-7) var(--space-3);
+}
+
+.legal-content p,
+.legal-content li {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--color-muted);
+}
+
+.legal-content ul {
+  list-style: disc;
+  padding-inline-start: var(--space-6);
+}
+
+.legal-content .legal-todo {
+  border: var(--line-thickness) dashed var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-5);
+  margin-block: var(--space-5);
+  color: var(--color-text);
 }
