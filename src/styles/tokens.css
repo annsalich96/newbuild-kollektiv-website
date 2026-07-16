@@ -78,7 +78,7 @@
   --color-bg: #000000;
   --color-text: #ffffff;
   --color-muted: rgba(255, 255, 255, 0.7);
-  --color-border: rgba(255, 255, 255, 0.35); /* Pill-Nav-Rahmen */
+  --color-border: #ffffff; /* Kästen/Trennlinien — muss deckend weiß sein, kein Transparenz-Farbstich vom Hintergrund */
 
   --color-accent-orange: #d03d0f; /* Referenzwert Hero-Bereich, für Akzente/Buttons */
   --color-accent-violet: #8347c2; /* Referenzwert Sponsoren-Bereich, für Akzente */

@@ -137,9 +137,12 @@ ul {
 
 /* Referenz: Foto-Bbox randlos volle Breite, direkt im Anschluss an die Nav (Balken 5),
    festes Referenz-Seitenverhältnis. */
+/* Solider schwarzer Kasten statt nur Text — zeigt die exakte Foto-Größe,
+   damit sie vor dem echten Foto-Upload geprüft werden kann. */
 .hero__photo-placeholder {
   margin-block-start: var(--balken);
   aspect-ratio: 1920 / 976;
+  background: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -191,36 +194,17 @@ ul {
 }
 
 /* ---------- Team-Fotogalerie (grid-tabelle.md Nr. 7) ----------
-   Jedes Bild 4 Spalten breit, 1 Gutter Abstand, Margins nicht beachtet
-   (randloser Scroll-Container) — horizontal scrollbar und für beliebig
-   viele Bilder ausgelegt (kein hartkodiertes Limit auf 4). */
-.team-row-wrap {
+   Läuft wie die Sponsoren-Leiste als Laufband (Marquee) von links nach
+   rechts, kein manuelles Scrollen mehr. Zwei identische Tracks für einen
+   nahtlosen Loop, siehe .marquee__inner-Animation weiter unten. */
+.team-marquee {
   margin-block-start: var(--space-9);
-  overflow-x: auto;
-  overflow-y: hidden;
-  cursor: grab;
-  /* Scrollleiste unsichtbar — Scrollen per Drag mit der linken Maustaste
-     (siehe scrollDrag in main.ts) oder Trackpad/Wheel. */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* alte Edge/IE */
-}
-
-.team-row-wrap::-webkit-scrollbar {
-  display: none; /* Chrome/Edge/Safari */
-}
-
-.team-row-wrap.is-dragging {
-  cursor: grabbing;
-  user-select: none;
 }
 
 .team-row {
   display: flex;
   gap: var(--grid-gutter);
-  width: max-content;
-  min-width: 100%;
-  /* Kein Padding — Margins werden für die Fotogalerie nicht beachtet
-     (grid-tabelle.md Nr. 7), Bilder bleeden auf beiden Seiten randlos. */
+  flex-shrink: 0;
 }
 
 .team-row__member {
@@ -233,7 +217,7 @@ ul {
 .team-row__photo {
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
-  border: 1px solid var(--color-border);
+  border: var(--line-thickness) solid var(--color-border);
 }
 
 .team-row__name {
@@ -412,14 +396,14 @@ ul {
   border-radius: 999px;
 }
 
-/* ---------- Sponsoren-Leiste (grid-tabelle.md Nr. 24) ----------
-   Soll sich wie ein Werbe-Laufband von links nach rechts bewegen — zwei
-   identische Tracks hintereinander, die als Ganzes um 50% verschoben
+/* ---------- Marquee (gemeinsame Basis) ----------
+   Wird für Team-Fotogalerie, Fotogalerie 2 und Sponsoren-Leiste verwendet:
+   alle drei laufen im selben Tempo als Laufband von links nach rechts.
+   Zwei identische Tracks hintereinander, die als Ganzes um 50% verschoben
    animiert werden, für einen nahtlosen Loop. */
 .marquee {
   overflow: hidden;
   width: 100%;
-  margin-block-start: var(--space-6);
 }
 
 .marquee__inner {
@@ -434,27 +418,6 @@ ul {
   }
 }
 
-.marquee__track {
-  display: flex;
-  gap: var(--grid-gutter);
-  flex-shrink: 0;
-  padding-inline: var(--grid-margin);
-}
-
-.marquee__track li {
-  flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
-  border: var(--line-thickness) dashed var(--color-border);
-  border-radius: 12px;
-  padding: var(--space-7) var(--space-4);
-  text-align: center;
-  text-transform: uppercase;
-  font-size: var(--font-size-capital);
-  letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
-  background: transparent;
-  white-space: nowrap;
-}
-
 @keyframes marquee-rtl {
   from {
     transform: translateX(-50%);
@@ -464,39 +427,47 @@ ul {
   }
 }
 
+.sponsor-marquee {
+  margin-block-start: var(--space-6);
+}
+
+.marquee__track {
+  display: flex;
+  gap: 0; /* Sponsoren ohne Lücke dazwischen */
+  flex-shrink: 0;
+  padding-inline: var(--grid-margin);
+}
+
+.marquee__track li {
+  flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
+  border: none; /* kein Kasten mehr um die Sponsoren-Slots */
+  padding: var(--space-4);
+  text-align: center;
+  text-transform: uppercase;
+  font-size: var(--font-size-capital);
+  letter-spacing: var(--letter-spacing-label);
+  color: var(--color-muted);
+  background: transparent;
+  white-space: nowrap;
+}
+
 /* ---------- Fotogalerie 2 (grid-tabelle.md Nr. 19) ----------
-   Je Foto 6 Spalten breit, 1 Gutter Abstand, Margins nicht beachtet,
-   horizontal scrollbar — analog zur Team-Fotogalerie, nur breiter. */
-.photo-gallery-2-wrap {
-  overflow-x: auto;
-  overflow-y: hidden;
-  cursor: grab;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* alte Edge/IE */
-}
-
-.photo-gallery-2-wrap::-webkit-scrollbar {
-  display: none; /* Chrome/Edge/Safari */
-}
-
-.photo-gallery-2-wrap.is-dragging {
-  cursor: grabbing;
-  user-select: none;
+   Läuft wie die Sponsoren-Leiste als Laufband, kein manuelles Scrollen mehr. */
+.gallery-marquee {
+  margin-block-start: 0;
 }
 
 .photo-gallery-2 {
   display: flex;
   gap: var(--grid-gutter);
-  width: max-content;
-  min-width: 100%;
-  /* Kein Padding — Margins nicht beachtet (grid-tabelle.md Nr. 19), randloser Bleed */
+  flex-shrink: 0;
 }
 
 .photo-gallery-2__slide {
   flex: 0 0 calc((6 * 122 + 5 * 16) * var(--px)); /* 6 Spalten inkl. 5 interner Gutter = 812px @1920 */
   aspect-ratio: 812 / 500;
   background: #1a1a1a;
-  border: 1px solid var(--color-border);
+  border: var(--line-thickness) solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -514,12 +485,12 @@ ul {
      automatisch (computed width blieb 0px) — deshalb explizit erzwungen. */
   width: 100%;
   border: none;
-  /* Volles Weiß + mix-blend-mode:difference statt der gedämpften --color-border-
-     Deckkraft: auf den helleren Verlaufsabschnitten (blass-grau/weiß in der Mitte)
-     war eine 35%-weiße Linie praktisch unsichtbar. difference kehrt die Linie
-     gegenüber jeder Hintergrundfarbe um und bleibt so immer sichtbar. */
-  border-top: var(--line-thickness) solid #ffffff;
-  mix-blend-mode: difference;
+  /* Deckend weiß (kein mix-blend-mode mehr — das kehrte Farben um und
+     erzeugte die grün/blau wirkende Linie). Ein dezenter dunkler Schatten
+     hält die Linie zusätzlich auf hellen Verlaufsabschnitten sichtbar,
+     ohne die Farbe selbst zu verändern. */
+  border-top: var(--line-thickness) solid var(--color-border);
+  box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.5);
   margin-block: var(--space-7);
 }
 
