@@ -439,6 +439,20 @@ ul {
   }
 }
 
+/* Fotogalerie 2 läuft gegenläufig — von rechts nach links statt links nach rechts. */
+@keyframes marquee-ltr {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.gallery-marquee .marquee__inner {
+  animation-name: marquee-ltr;
+}
+
 .sponsor-marquee {
   margin-block-start: var(--space-6);
 }
@@ -569,8 +583,10 @@ ul {
 
 .legal-content {
   max-width: 800px;
-  margin-inline: auto;
+  /* Linksbündig statt zentriert — startet am linken Seitenrand wie der Rest der Website */
+  margin-inline: 0;
   padding: var(--space-8) var(--grid-margin) var(--space-9);
+  text-align: left;
 }
 
 .legal-content h1 {
