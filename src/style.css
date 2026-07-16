@@ -66,8 +66,8 @@ ul {
   padding: var(--space-3) var(--space-6);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
+  /* Alle Kästen sind durchsichtig — nur die 1pt-Linie, Hintergrund scheint durch */
+  background: transparent;
 }
 
 .site-nav__logo {
@@ -167,17 +167,16 @@ ul {
 }
 
 .section__statement {
-  /* Spalte E–K (grid-tabelle.md Nr. 5/22), Linien 5–12 im 12er-Grid — Text Bold */
+  /* Spalte E–K (grid-tabelle.md Nr. 5/22), Linien 5–12 im 12er-Grid — Text Bold.
+     Kein Kasten/Hintergrund — Text liegt direkt auf dem Farbverlauf, nur
+     Text-Shadow für Lesbarkeit (wie .section__eyebrow). */
   grid-column: 5 / 12;
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
   line-height: var(--line-height-bold);
   font-weight: var(--font-weight-bold);
   margin: 0;
-  padding: var(--space-5) var(--space-6);
-  background: var(--scrim-bg);
-  backdrop-filter: var(--scrim-blur);
-  border-radius: 16px;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.8);
 }
 
 @media (max-width: 768px) {
@@ -199,6 +198,20 @@ ul {
   margin-block-start: var(--space-9);
   overflow-x: auto;
   overflow-y: hidden;
+  cursor: grab;
+  /* Scrollleiste unsichtbar — Scrollen per Drag mit der linken Maustaste
+     (siehe scrollDrag in main.ts) oder Trackpad/Wheel. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* alte Edge/IE */
+}
+
+.team-row-wrap::-webkit-scrollbar {
+  display: none; /* Chrome/Edge/Safari */
+}
+
+.team-row-wrap.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .team-row {
@@ -206,7 +219,8 @@ ul {
   gap: var(--grid-gutter);
   width: max-content;
   min-width: 100%;
-  padding-inline: var(--grid-margin);
+  /* Kein Padding — Margins werden für die Fotogalerie nicht beachtet
+     (grid-tabelle.md Nr. 7), Bilder bleeden auf beiden Seiten randlos. */
 }
 
 .team-row__member {
@@ -244,8 +258,7 @@ ul {
   border-radius: 24px;
   padding: var(--space-7);
   margin-block-start: var(--space-6);
-  background: var(--scrim-bg);
-  backdrop-filter: var(--scrim-blur);
+  background: transparent;
 }
 
 .event-card__label {
@@ -348,8 +361,7 @@ ul {
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
   padding: var(--space-7) 0;
-  background: var(--scrim-bg);
-  backdrop-filter: var(--scrim-blur);
+  background: transparent;
   text-align: center;
 }
 
@@ -431,7 +443,7 @@ ul {
 
 .marquee__track li {
   flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
-  border: 1px dashed var(--color-border);
+  border: var(--line-thickness) dashed var(--color-border);
   border-radius: 12px;
   padding: var(--space-7) var(--space-4);
   text-align: center;
@@ -439,8 +451,7 @@ ul {
   font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
   color: var(--color-muted);
-  background: var(--scrim-bg);
-  backdrop-filter: var(--scrim-blur);
+  background: transparent;
   white-space: nowrap;
 }
 
@@ -459,6 +470,18 @@ ul {
 .photo-gallery-2-wrap {
   overflow-x: auto;
   overflow-y: hidden;
+  cursor: grab;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* alte Edge/IE */
+}
+
+.photo-gallery-2-wrap::-webkit-scrollbar {
+  display: none; /* Chrome/Edge/Safari */
+}
+
+.photo-gallery-2-wrap.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .photo-gallery-2 {
@@ -466,7 +489,7 @@ ul {
   gap: var(--grid-gutter);
   width: max-content;
   min-width: 100%;
-  padding-inline: var(--grid-margin);
+  /* Kein Padding — Margins nicht beachtet (grid-tabelle.md Nr. 19), randloser Bleed */
 }
 
 .photo-gallery-2__slide {
@@ -487,8 +510,16 @@ ul {
 
 .divider {
   grid-column: 1 / -1;
+  /* <hr> streckt sich in manchen Browsern trotz grid-column:1/-1 nicht
+     automatisch (computed width blieb 0px) — deshalb explizit erzwungen. */
+  width: 100%;
   border: none;
-  border-top: var(--line-thickness) solid var(--color-border);
+  /* Volles Weiß + mix-blend-mode:difference statt der gedämpften --color-border-
+     Deckkraft: auf den helleren Verlaufsabschnitten (blass-grau/weiß in der Mitte)
+     war eine 35%-weiße Linie praktisch unsichtbar. difference kehrt die Linie
+     gegenüber jeder Hintergrundfarbe um und bleibt so immer sichtbar. */
+  border-top: var(--line-thickness) solid #ffffff;
+  mix-blend-mode: difference;
   margin-block: var(--space-7);
 }
 
