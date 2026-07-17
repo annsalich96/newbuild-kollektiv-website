@@ -42,7 +42,7 @@
   --font-family-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-weight-light: 300;
   --font-weight-regular: 400;
-  --font-weight-bold: 700;
+  --font-weight-bold: 500; /* Medium statt Bold (700) — Name des Tokens bewusst beibehalten */
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;

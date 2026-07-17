@@ -47,6 +47,70 @@ ul {
   padding: 0;
 }
 
+.nowrap {
+  white-space: nowrap;
+}
+
+/* ---------- Sektionssystem ----------
+   8 Sektionen mit exakter Balken-Höhe (Absprache), ersetzt die vorherigen
+   Ad-hoc-Abstände (--space-N Tokens), die sich nicht exakt zur Balken-Zahl
+   aufsummierten und so zu Abstandsfehlern zwischen den Sektionen führten.
+   min-height statt height, damit variabler Text (z.B. lange Adressen)
+   nie abgeschnitten wird, auch wenn die Sektion dadurch minimal höher wird
+   als die nominale Balken-Zahl. */
+.page-section {
+  position: relative;
+}
+
+.page-section--centered {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+/* Eyebrow-Label und Statement landen im selben Grid-Row, sollen oben bündig
+   sein statt sich über die Zeilenhöhe zu strecken (Grid-Default). */
+.page-section .grid {
+  align-items: start;
+}
+
+.page-section--1 {
+  min-height: calc(6 * var(--balken));
+}
+
+.page-section--2 {
+  min-height: calc(8 * var(--balken));
+}
+
+.page-section--3 {
+  min-height: calc(7 * var(--balken));
+}
+
+.page-section--4 {
+  min-height: calc(6 * var(--balken));
+}
+
+.page-section--5 {
+  min-height: calc(8 * var(--balken));
+}
+
+.page-section--6 {
+  min-height: calc(7 * var(--balken));
+}
+
+.page-section--7 {
+  min-height: calc(7 * var(--balken));
+}
+
+.page-section--8 {
+  min-height: calc(8 * var(--balken));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
 /* ---------- Nav ---------- */
 
 .site-nav {
@@ -135,12 +199,11 @@ ul {
   height: auto;
 }
 
-/* Referenz: Foto-Bbox randlos volle Breite, direkt im Anschluss an die Nav (Balken 5),
-   festes Referenz-Seitenverhältnis. */
+/* Referenz: Foto-Bbox randlos volle Breite, füllt Sektion 2 (Balken 7-14) exakt —
+   kein margin-block mehr noetig, das übernimmt jetzt die Sektionshöhe. */
 /* Solider schwarzer Kasten statt nur Text — zeigt die exakte Foto-Größe,
    damit sie vor dem echten Foto-Upload geprüft werden kann. */
 .hero__photo-placeholder {
-  margin-block-start: var(--balken);
   aspect-ratio: 1920 / 976;
   background: #000000;
   display: flex;
@@ -153,10 +216,6 @@ ul {
 }
 
 /* ---------- Sections (shared) ---------- */
-
-.section {
-  padding-block: var(--space-10);
-}
 
 .section__eyebrow {
   /* Spalte B (grid-tabelle.md Nr. 4/21) — Text Capital */
@@ -197,14 +256,15 @@ ul {
    Läuft wie die Sponsoren-Leiste als Laufband (Marquee) von links nach
    rechts, kein manuelles Scrollen mehr. Zwei identische Tracks für einen
    nahtlosen Loop, siehe .marquee__inner-Animation weiter unten. */
-.team-marquee {
-  margin-block-start: var(--space-9);
-}
-
 .team-row {
   display: flex;
-  gap: var(--grid-gutter);
   flex-shrink: 0;
+}
+
+/* margin statt gap: Safari unterstützt gap in Flexbox erst ab 14.1 (2021),
+   auf älteren Versionen rückten die Bilder sonst ohne Abstand aneinander. */
+.team-row__member:not(:last-child) {
+  margin-inline-end: var(--grid-gutter);
 }
 
 .team-row__member {
@@ -241,25 +301,27 @@ ul {
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
   padding: var(--space-7);
-  margin-block-start: var(--space-6);
   background: transparent;
 }
 
+/* Formatierung getauscht: "Next Event" ist jetzt die große Überschrift,
+   "Session 01 — …" steht klein direkt über der Referentin-Zeile, wie im
+   Meta-Text formatiert (Absprache). Inhalte/HTML bleiben unverändert,
+   nur die visuelle Rolle der beiden Elemente. */
 .event-card__label {
   grid-column: 2 / -1; /* Spalte B, siehe Nr. 9 */
-  text-transform: uppercase;
-  font-size: var(--font-size-capital);
-  letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-bold);
+  line-height: var(--line-height-bold);
+  font-weight: var(--font-weight-bold);
   margin: 0;
 }
 
 .event-card__title {
   grid-column: 2 / -1; /* Spalte B, siehe Nr. 10 */
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-bold);
-  line-height: var(--line-height-bold);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  color: var(--color-muted);
   margin: 0;
 }
 
@@ -341,7 +403,6 @@ ul {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--grid-gutter);
-  margin-block-start: var(--space-6);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
   padding: var(--space-6) 0;
@@ -418,10 +479,11 @@ ul {
 
 /* Gutter auch an der Nahtstelle zwischen den zwei wiederholten Tracks —
    sonst berühren sich letztes und erstes Bild beim Loop-Übergang direkt.
-   Bei den Sponsoren bewusst ausgenommen (dort explizit ohne Lücke). */
-.team-marquee .marquee__inner,
-.gallery-marquee .marquee__inner {
-  gap: var(--grid-gutter);
+   Bei den Sponsoren bewusst ausgenommen (dort explizit ohne Lücke).
+   margin statt gap: siehe Begründung bei .team-row__member weiter oben. */
+.team-marquee .marquee__inner > *:not(:last-child),
+.gallery-marquee .marquee__inner > *:not(:last-child) {
+  margin-inline-end: var(--grid-gutter);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -451,10 +513,6 @@ ul {
 
 .gallery-marquee .marquee__inner {
   animation-name: marquee-ltr;
-}
-
-.sponsor-marquee {
-  margin-block-start: var(--space-6);
 }
 
 .marquee__track {
@@ -487,8 +545,11 @@ ul {
 
 .photo-gallery-2 {
   display: flex;
-  gap: var(--grid-gutter);
   flex-shrink: 0;
+}
+
+.photo-gallery-2__slide:not(:last-child) {
+  margin-inline-end: var(--grid-gutter);
 }
 
 .photo-gallery-2__slide {
