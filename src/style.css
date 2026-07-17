@@ -268,7 +268,10 @@ ul {
 }
 
 .team-row__member {
-  flex: 0 0 calc((4 * 122 + 3 * 16) * var(--px)); /* 4 Spalten inkl. 3 interner Gutter = 536px @1920 */
+  /* 3 statt 4 Spalten (398px @1920) — bei 4 Spalten + 3:4-Verhältnis war das
+     Foto allein schon 715px hoch und sprengte die 6-Balken-Sektion (732px)
+     zusammen mit Trennlinien-Abstand und Namenszeile. */
+  flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
