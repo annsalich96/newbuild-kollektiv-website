@@ -225,6 +225,10 @@ ul {
   font-size: var(--font-size-capital);
   color: var(--color-muted);
   margin: 0;
+  /* Kompensiert das Leading der eigenen Zeilenhöhe (1.5× Body-Zeilenhöhe),
+     damit der sichtbare Textanfang exakt mit .section__statement fluchtet
+     statt durch den halben Zeilenabstand tiefer zu sitzen. */
+  margin-block-start: calc(-6 * var(--px));
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
 
@@ -238,6 +242,9 @@ ul {
   line-height: var(--line-height-bold);
   font-weight: var(--font-weight-bold);
   margin: 0;
+  /* Kompensiert das Leading von line-height-bold (71px bei 48px Schrift =
+     11.5px halbe Zeilendurchschuss oben), analog zu .section__eyebrow. */
+  margin-block-start: calc(-11.5 * var(--px));
   text-shadow: 0 1px 16px rgba(0, 0, 0, 0.8);
 }
 
@@ -307,16 +314,15 @@ ul {
   background: transparent;
 }
 
-/* Formatierung getauscht: "Next Event" ist jetzt die große Überschrift,
-   "Session 01 — …" steht klein direkt über der Referentin-Zeile, wie im
-   Meta-Text formatiert (Absprache). Inhalte/HTML bleiben unverändert,
-   nur die visuelle Rolle der beiden Elemente. */
+/* "Next Event" (Label) in Text Capital wie die anderen Eyebrow-Labels
+   (Mission/About), "Session 01 — …" (Überschrift) in Text Regular —
+   Korrektur, vorherige Zuordnung war vertauscht (Absprache). */
 .event-card__label {
   grid-column: 2 / -1; /* Spalte B, siehe Nr. 9 */
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-bold);
-  line-height: var(--line-height-bold);
-  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+  color: var(--color-muted);
   margin: 0;
 }
 
@@ -324,7 +330,6 @@ ul {
   grid-column: 2 / -1; /* Spalte B, siehe Nr. 10 */
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  color: var(--color-muted);
   margin: 0;
 }
 

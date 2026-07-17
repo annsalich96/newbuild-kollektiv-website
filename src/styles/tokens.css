@@ -96,6 +96,12 @@
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
   gap: var(--grid-gutter);
+  /* explizit statt nur max-width: als Flex-Kind (Sektionen mit
+     page-section--centered) stretcht Chromium ein Grid mit sehr wenig
+     Eigeninhalt (z.B. nur der Trennstrich-<hr>) nicht zuverlässig auf volle
+     Breite, sondern schrumpft es content-basiert — Trennstriche wurden dann
+     nur ~176px statt fast volle Breite. */
+  width: 100%;
   max-width: var(--grid-max-width);
   margin-inline: auto;
   padding-inline: var(--grid-margin);
