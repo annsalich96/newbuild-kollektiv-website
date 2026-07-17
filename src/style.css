@@ -92,7 +92,11 @@ ul {
 }
 
 .page-section--5 {
-  min-height: calc(8 * var(--balken));
+  /* 6 statt 8 Balken — bei 8 Balken blieben durch die Zentrierung 423px
+     ungenutzt (Next-Event-Kasten braucht nur ~553px/4,5 Balken), spürbar
+     mehr Leerraum als z.B. Sektion 6 (dort bleiben bei 7 Balken nur ~1
+     Balken Luft). 6 Balken bringt den Puffer auf ein vergleichbares Maß. */
+  min-height: calc(6 * var(--balken));
 }
 
 .page-section--6 {
@@ -471,27 +475,25 @@ ul {
 
 /* ---------- Marquee (gemeinsame Basis) ----------
    Wird für Team-Fotogalerie, Fotogalerie 2 und Sponsoren-Leiste verwendet:
-   alle drei laufen im selben Tempo als Laufband von links nach rechts.
-   Zwei identische Tracks hintereinander, die als Ganzes um 50% verschoben
-   animiert werden, für einen nahtlosen Loop. */
+   alle drei laufen im selben Tempo als Laufband von links nach rechts. Jede
+   Liste enthält den echten Inhalt gefolgt von einer identischen Kopie
+   (aria-hidden) als EINE flache Liste — als Ganzes um 50% verschoben
+   animiert, für einen nahtlosen Loop.
+   Bewusst NUR eine Verschachtelungsebene Flex (die <ul> selbst ist der
+   Flex-Container, .marquee__inner nicht): mit zwei separaten <ul>-Tracks
+   als Flex-Kinder in einem äußeren Flex-Container mit width:max-content
+   berechnete WebKit/Safari die intrinsische Breite des ersten Tracks falsch
+   zu klein, wodurch der zweite Track massiv zu früh startete und alle
+   Bilder sich überlappten (reproduziert mit echter WebKit-Engine). Mit nur
+   einer flachen Liste tritt der Bug nicht auf. */
 .marquee {
   overflow: hidden;
   width: 100%;
 }
 
 .marquee__inner {
-  display: flex;
   width: max-content;
   animation: marquee-rtl 24s linear infinite;
-}
-
-/* Gutter auch an der Nahtstelle zwischen den zwei wiederholten Tracks —
-   sonst berühren sich letztes und erstes Bild beim Loop-Übergang direkt.
-   Bei den Sponsoren bewusst ausgenommen (dort explizit ohne Lücke).
-   margin statt gap: siehe Begründung bei .team-row__member weiter oben. */
-.team-marquee .marquee__inner > *:not(:last-child),
-.gallery-marquee .marquee__inner > *:not(:last-child) {
-  margin-inline-end: var(--grid-gutter);
 }
 
 @media (prefers-reduced-motion: reduce) {
