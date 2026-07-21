@@ -259,12 +259,19 @@ ul {
 
 /* Nr. 2b grid-tabelle.md: eigener Kasten (Liniendicke 1pt) um die Nav-Leiste,
    spannt volle Spalte A–L statt einer schmalen zentrierten Pill. */
+/* Grid statt flex+padding: die Pille bekommt jetzt exakt dasselbe
+   12-Spalten-Raster wie .grid (kein eigenes Innenpolster mehr, das die
+   Spalten gegenueber dem restlichen Seiteninhalt verschoben hat). Da
+   .site-nav bereits padding-inline:grid-margin traegt, beginnt die Pille
+   an derselben X-Position wie .grid — Spalte 2/5/8/11 landen dadurch
+   pixelgenau auf denselben Stellen wie ueberall sonst auf der Seite. */
 .site-nav__pill {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--grid-gutter);
   align-items: center;
-  justify-content: space-between;
   width: 100%;
-  padding: var(--space-3) var(--space-6);
+  padding-block: var(--space-3);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 999px;
   /* Alle Kästen sind durchsichtig — nur die 1pt-Linie, Hintergrund scheint durch */
@@ -272,15 +279,20 @@ ul {
 }
 
 /* Schwebend (fixiert) bekommt die Leiste einen deckend schwarzen
-   Hintergrund, damit sie sich klar vom durchscheinenden Seiteninhalt
-   abhebt statt sich mit ihm zu ueberlagern (Absprache). */
+   Hintergrund statt der duennen weissen Umrandung, damit sie sich klar
+   vom durchscheinenden Seiteninhalt abhebt (Absprache). */
 .site-nav.is-stuck .site-nav__pill {
   background: var(--color-bg);
+  border: none;
 }
 
 .site-nav__logo {
+  grid-column: 1;
   display: flex;
   align-items: center;
+  /* Sitzt sonst zu dicht an der stark abgerundeten linken Kante der
+     Pille, da kein Innenpolster mehr vorhanden ist. */
+  margin-inline-start: var(--space-4);
 }
 
 .site-nav__logo img {
@@ -293,13 +305,11 @@ ul {
    Links vom verfuegbaren Platz ab (verschob sich je nach Bildschirmbreite/
    Kastengroesse gegenueber den Spalten des restlichen Seiteninhalts,
    sichtbar z.B. wenn "MISSION" im Nav nicht mit "MISSION" im Content
-   fluchtet). Jetzt im selben 12-Spalten-Raster wie der Rest der Seite,
-   jeder Link an einer fixen Spalte verankert (Absprache). */
+   fluchtet). display:contents macht die <a>-Links zu direkten Grid-Kindern
+   der Pille, damit ihre grid-column-Werte sich auf dasselbe Raster wie
+   .grid beziehen (Absprache: feste Spalten 2/5/8/11). */
 .site-nav nav {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  flex: 1;
-  margin-inline-start: var(--space-8);
+  display: contents;
 }
 
 .site-nav nav a:nth-child(1) {
@@ -324,6 +334,12 @@ ul {
   font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
   white-space: nowrap;
+  /* Ohne min-width:0 wuchs die Spalte von "Sponsoring" (laengstes Wort)
+     ueber ihren nominalen 1fr-Anteil hinaus (Grid-Items schrumpfen sonst
+     nicht unter ihre Inhaltsbreite), wodurch alle Spalten danach
+     verschoben wurden. So bleibt jede Spalte exakt gleich breit, der
+     Text darf noetigenfalls sichtbar in die Nachbarspalte ueberlaufen. */
+  min-width: 0;
 }
 
 /* Auf schmalen Viewports reicht die Breite nicht für Logo + 4 Links in
