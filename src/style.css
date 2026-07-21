@@ -129,8 +129,10 @@ ul {
 /* About-Text -> Trennstrich vor Sponsoring: 2 Balken (Absprache). */
 .divider-row--before-sponsoring .divider {
   margin-block-start: calc(2 * var(--balken));
-  /* Trennstrich -> Sponsoren-Leiste: kein Wert genannt, 1 Balken Default. */
-  margin-block-end: var(--balken);
+  /* Kein Abstand mehr zur Sponsoren-Leiste: die Sponsoren-Leiste selbst
+     ist der 1-Balken-Block zwischen Trennlinie und Fusszeile, keine
+     zusaetzliche Luecke davor (Absprache: "Sponsoren sind die Grenze"). */
+  margin-block-end: 0;
 }
 
 /* ---------- Nav ---------- */
@@ -337,12 +339,21 @@ ul {
    (Mission/About), "Session 01 — …" (Überschrift) in Text Regular —
    Korrektur, vorherige Zuordnung war vertauscht (Absprache). */
 .event-card__label {
-  grid-column: 2 / -1; /* Spalte B, siehe Nr. 9 */
+  /* Schmal (nur Spalte B, wie .section__eyebrow) statt voller Breite —
+     sonst ueberschneidet sich die Spalte mit .event-card__title (5/13)
+     und Grid-Auto-Placement schiebt den Titel in eine neue Zeile. Schmal
+     bleiben beide in derselben Zeile, oben buendig (Absprache: Label und
+     Titel auf gleicher Hoehe, wie Mission/About). */
+  grid-column: 2 / 3;
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
   color: var(--color-muted);
   margin: 0;
+  /* Spalte B ist schmaler als "NEXT EVENT" — ohne nowrap brach es auf
+     "NEXT"/"EVENT" um. Ueberlaeuft jetzt sichtbar in die Gutter statt
+     umzubrechen (wie im PDF, dort auch einzeilig). */
+  white-space: nowrap;
 }
 
 .event-card__title {
@@ -456,10 +467,11 @@ ul {
 }
 
 .session-card__number {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-bold);
-  line-height: var(--line-height-bold);
-  font-weight: var(--font-weight-bold);
+  /* Text Regular statt Bold (Absprache) — jetzt gleiche Schriftart/-groesse
+     wie "Session 01 — ..." im Next-Event-Kasten. */
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  font-weight: var(--font-weight-regular);
   margin: 0 0 var(--space-4);
 }
 
@@ -472,29 +484,6 @@ ul {
 
 .session-card__text p {
   margin: 0 0 var(--space-2);
-}
-
-/* Datum/Wochentag bleiben mit "Maria Stasevich" in einer Zeile, die
-   Uhrzeit oeffnet eine eigene Spalte am rechten Rand statt einfach
-   dranzuhaengen (Absprache). */
-.session-card__datetime {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  /* "Maria Stasevich - di., 14.04.2026" braucht bei 36pt (Text Regular)
-     allein schon mehr Breite als der Kasten hergibt (550px vs. 500px
-     verfuegbar) — mit Uhrzeit daneben erst recht. Verkleinert auf Text
-     Capital, damit Name+Datum auf einer Zeile bleiben UND die Uhrzeit
-     daneben passt (Absprache). */
-  font-size: var(--font-size-capital);
-}
-
-.session-card__datetime > span:first-child {
-  /* Ohne nowrap/shrink:0 durfte Flexbox diesen Span schmaler als seinen
-     natuerlichen Inhalt machen, wodurch "di., 14.04.2026" in eine zweite
-     Zeile umbrach statt mit "Maria Stasevich" zusammenzubleiben. */
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .session-card__button {
@@ -573,6 +562,7 @@ ul {
 
 .marquee__track {
   display: flex;
+  align-items: center;
   gap: 0; /* Sponsoren ohne Lücke dazwischen */
   flex-shrink: 0;
   /* Kein padding-inline mehr — das erzeugte an der Nahtstelle der beiden
@@ -583,7 +573,7 @@ ul {
 .marquee__track li {
   flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
   border: none; /* kein Kasten mehr um die Sponsoren-Slots */
-  padding: var(--space-4);
+  padding-inline: var(--space-4);
   text-align: center;
   text-transform: uppercase;
   font-size: var(--font-size-capital);
@@ -591,6 +581,14 @@ ul {
   color: var(--color-muted);
   background: transparent;
   white-space: nowrap;
+}
+
+/* Sponsoren-Leiste selbst ist genau 1 Balken hoch — sie ist der Block
+   zwischen Trennlinie und Fusszeile, kein Leerraum drumherum. */
+.sponsor-marquee,
+.sponsor-marquee .marquee__inner,
+.sponsor-marquee .marquee__track {
+  height: var(--balken);
 }
 
 /* ---------- Fotogalerie 2 (grid-tabelle.md Nr. 19) ----------
@@ -650,42 +648,49 @@ ul {
   backdrop-filter: var(--scrim-blur);
 }
 
-/* Laut grid-tabelle.md gestapelt (Balken 59/60/61), nicht nebeneinander —
-   überschreibt das display:grid von .grid, .grid-Padding bleibt für die
-   Spalte-A-Ausrichtung erhalten. */
-.site-footer__legal {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-block-end: var(--space-5);
+/* Zwei klar getrennte Gruppen (Kontakt / Rechtliches), je eine Zeile nach
+   dem gleichen Label+Inhalt-Muster wie Mission/About: Label schmal in
+   Spalte B, Inhalt ab Spalte E. Einheitliche Schriftgroesse fuer Label
+   und Inhalt statt der vorherigen uneinheitlichen Groessen
+   (font-size-sm/font-size-xs, beide fix und zu klein). */
+.site-footer__row {
+  align-items: baseline;
 }
 
-.site-footer__legal a {
-  text-decoration: none;
-  /* War font-size-sm (14px, fix, nicht Teil des fluiden Balken-Systems) —
-     zu klein. Jetzt Text Capital wie die Hauptnavigation, gleiche Groesse
-     und skaliert mit. */
+.site-footer__row:not(:last-child) {
+  margin-block-end: var(--space-4);
+}
+
+.site-footer__label {
+  grid-column: 2 / 3;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
-}
-
-.site-footer__contact {
-  font-size: var(--font-size-xs);
   color: var(--color-muted);
+  margin: 0;
 }
 
-.site-footer__contact a {
-  grid-column: span 4;
+.site-footer__links {
+  grid-column: 5 / 13;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+.site-footer__links a,
+.site-footer__links span {
+  font-size: var(--font-size-capital);
   text-decoration: none;
-}
-
-.site-footer__contact span {
-  grid-column: span 4;
 }
 
 @media (max-width: 768px) {
-  .site-footer__contact a,
-  .site-footer__contact span {
+  .site-footer__label,
+  .site-footer__links {
     grid-column: 1 / -1;
+  }
+
+  .site-footer__label {
+    margin-block-end: var(--space-2);
   }
 }
 
