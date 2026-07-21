@@ -14,9 +14,28 @@
     <main>
       <!-- Sektion 1 — Balken 1-6: Logo + Nav -->
       <section id="top" class="page-section page-section--1 hero">
-        <h1 class="hero__logo">
-          <img src="/logo-wordmark.png" alt="NewBuild Kollektiv" width="815" height="195" />
-        </h1>
+        <!-- Nur mobil sichtbar/aktiv: display:contents auf Desktop, damit
+             .hero__logo dort layouttechnisch unveraendert bleibt. -->
+        <div class="mobile-nav-bar">
+          <h1 class="hero__logo">
+            <img src="/logo-wordmark.png" alt="NewBuild Kollektiv" width="815" height="195" />
+          </h1>
+          <button
+            type="button"
+            class="mobile-nav-toggle"
+            aria-label="Menü öffnen"
+            aria-expanded="false"
+            aria-controls="mobile-nav-panel"
+          >
+            <span aria-hidden="true">+</span>
+          </button>
+          <nav id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Hauptnavigation" hidden>
+            <a href="#mission">Mission</a>
+            <a href="#events">Events</a>
+            <a href="#sponsoring">Sponsoring</a>
+            <a href="#about">About</a>
+          </nav>
+        </div>
 
         <header class="site-nav">
           <div class="site-nav__pill">
@@ -91,6 +110,8 @@
               </li>
             </ul>
           </div>
+          <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorheriges Bild">‹</button>
+          <button type="button" class="marquee__arrow marquee__arrow--next" aria-label="Nächstes Bild">›</button>
         </div>
       </section>
 
@@ -127,7 +148,10 @@
             <li class="session-card">
               <p class="session-card__number">Session 01</p>
               <div class="session-card__text">
-                <p>Automate your practice with N8N</p>
+                <p>Automate your</p>
+                <p>practice with N8N</p>
+              </div>
+              <div class="session-card__meta-block">
                 <p>Maria Stasevich</p>
                 <p>di., 14.04.2026</p>
                 <p>18:00</p>
@@ -137,7 +161,10 @@
             <li class="session-card">
               <p class="session-card__number">Session 02</p>
               <div class="session-card__text">
-                <p>Automate your practice with N8N</p>
+                <p>Automate your</p>
+                <p>practice with N8N</p>
+              </div>
+              <div class="session-card__meta-block">
                 <p>Maria Stasevich</p>
                 <p>di., 14.04.2026</p>
                 <p>18:00</p>
@@ -147,7 +174,10 @@
             <li class="session-card">
               <p class="session-card__number">Session 03</p>
               <div class="session-card__text">
-                <p>Automate your practice with N8N</p>
+                <p>Automate your</p>
+                <p>practice with N8N</p>
+              </div>
+              <div class="session-card__meta-block">
                 <p>Maria Stasevich</p>
                 <p>di., 14.04.2026</p>
                 <p>18:00</p>
@@ -172,6 +202,8 @@
               <li class="photo-gallery-2__slide" aria-hidden="true">Foto folgt</li>
             </ul>
           </div>
+          <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorheriges Bild">‹</button>
+          <button type="button" class="marquee__arrow marquee__arrow--next" aria-label="Nächstes Bild">›</button>
         </div>
       </section>
 
@@ -204,17 +236,13 @@
     </main>
 
     <footer class="site-footer">
-      <div class="grid site-footer__row">
-        <p class="site-footer__label">Kontakt</p>
-        <div class="site-footer__links">
+      <div class="grid">
+        <div class="site-footer__col">
           <span>Wilmersdorfer Str. 108–111, 10627 Berlin</span>
           <a href="tel:+491702828889">+49 170 2828889</a>
           <a href="mailto:info@newbuildkollektiv.com">info@newbuildkollektiv.com</a>
         </div>
-      </div>
-      <div class="grid site-footer__row">
-        <p class="site-footer__label">Rechtliches</p>
-        <div class="site-footer__links">
+        <div class="site-footer__col">
           <a href="/impressum.html">Impressum</a>
           <a href="/datenschutzerklaerung.html">Datenschutzerklärung</a>
           <a href="/widerrufsrecht.html">Widerrufsrecht</a>

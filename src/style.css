@@ -135,13 +135,110 @@ ul {
   margin-block-end: 0;
 }
 
+/* ---------- Mobile-Nav (nur <768px aktiv) ----------
+   display:contents auf Desktop macht den Wrapper layouttechnisch
+   unsichtbar — .hero__logo bleibt dort exakt wie vorher direktes Kind von
+   .hero. Toggle-Button und Panel sind auf Desktop komplett ausgeblendet. */
+.mobile-nav-bar {
+  display: contents;
+}
+
+.mobile-nav-toggle,
+.mobile-nav-panel {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Alte Pill-Nav existiert auf Handy nicht mehr (display:none-Override
+     steht bewusst weiter unten bei der zweiten .site-nav-Media-Query,
+     NACH der Basis-Regel — sonst gewinnt per Quellreihenfolge die Basis-
+     Regel trotz gleicher Spezifitaet). Inhalt darunter rueckt nach oben
+     nach, kein display:contents mehr noetig, der Wrapper wird selbst zur
+     schwebenden Leiste. */
+  .mobile-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    /* Max. 4 Balken (Logo-Bbox + Puffer oben/unten, Balken 1-4), damit die
+       schwebende Leiste nicht hoeher wird als das urspruengliche
+       Logo+Puffer-Areal (Absprache). */
+    max-height: calc(4 * var(--balken));
+    padding-inline: var(--space-5);
+    padding-block: var(--space-3);
+    background: var(--color-bg);
+  }
+
+  .mobile-nav-bar .hero__logo {
+    padding-block-start: 0;
+  }
+
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: calc(1.2 * var(--balken));
+    height: calc(1.2 * var(--balken));
+    border: var(--line-thickness) solid var(--color-border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text);
+    font-size: var(--font-size-capital);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .mobile-nav-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: var(--space-5);
+    background: var(--color-bg);
+    border-bottom: var(--line-thickness) solid var(--color-border);
+    z-index: 19;
+  }
+
+  .mobile-nav-panel[hidden] {
+    display: none;
+  }
+
+  .mobile-nav-panel a {
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: var(--font-size-capital);
+    letter-spacing: var(--letter-spacing-label);
+  }
+}
+
 /* ---------- Nav ---------- */
 
 .site-nav {
   display: flex;
   padding-inline: var(--grid-margin);
-  /* Balken 5: 1 Balken Abstand zur Logo-Unterkante (Balken 3), siehe grid-tabelle.md */
-  margin-block-start: var(--balken);
+  /* Floating: bleibt beim Runterscrollen sichtbar statt mit der Seite
+     wegzuscrollen (Absprache). position:fixed statt sticky: .site-nav
+     sitzt im DOM innerhalb von .hero (nur 6 Balken/732px hoch) — sticky
+     loest sich vom Viewport, sobald sein Eltern-Element durchgescrollt
+     ist, und war daher schon nach ~250px Scroll wieder weg. Fixed bleibt
+     unabhaengig von der Elterngroesse zuverlaessig oben. max-height
+     begrenzt sie auf maximal 1 Balken, auch wenn Inhalt umbrechen sollte. */
+  position: fixed;
+  /* 4 Balken statt nur 1 — sonst ueberlappt die fixierte Leiste anfangs
+     das grosse Logo-Wortzeichen (das reicht bis ca. Balken 3). 4 Balken
+     entspricht in etwa der urspruenglichen Position unterhalb des Logos. */
+  top: calc(4 * var(--balken));
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: var(--balken);
 }
 
 /* Nr. 2b grid-tabelle.md: eigener Kasten (Liniendicke 1pt) um die Nav-Leiste,
@@ -189,6 +286,12 @@ ul {
    ohne Zwischenraum aneinander. Bricht stattdessen sauber in eine eigene,
    umbrechende Zeile um. */
 @media (max-width: 768px) {
+  /* Alte Pill-Nav existiert auf Handy nicht mehr, ersetzt durch
+     .mobile-nav-bar mit Plus-Toggle (Absprache). */
+  .site-nav {
+    display: none;
+  }
+
   .site-nav__pill {
     flex-wrap: wrap;
     row-gap: var(--space-2);
@@ -309,7 +412,6 @@ ul {
 .team-row__photo {
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
-  border: var(--line-thickness) solid var(--color-border);
 }
 
 .team-row__name {
@@ -332,6 +434,9 @@ ul {
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
   padding: var(--space-7);
+  /* Ueber "Next Event"/"Session 01 - ..." soll 1 Balken frei sein statt
+     der generischen space-7-Polsterung (Absprache). */
+  padding-block-start: var(--balken);
   background: transparent;
 }
 
@@ -461,6 +566,7 @@ ul {
    die exakte Spalten-Zentrierung, siehe Absprache). */
 .session-card__number,
 .session-card__text,
+.session-card__meta-block,
 .session-card__button {
   grid-column: 1 / 5;
   padding-inline: var(--space-4);
@@ -472,22 +578,39 @@ ul {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   font-weight: var(--font-weight-regular);
-  margin: 0 0 var(--space-4);
+  margin: 0;
 }
 
+/* Exaktes Zeilenformat (Absprache): Zeile 1 Session-Nummer, Zeile 2 leer,
+   Zeile 3-4 Beschreibung (fester Umbruch nach "your"), Zeile 5 leer,
+   Zeile 6-8 Referentin/Datum/Uhrzeit, Zeile 9 leer, Zeile 10 Button. Die
+   "leeren Zeilen" sind exakt eine Zeilenhoehe (line-height-regular-text)
+   als margin-block-start auf dem jeweils folgenden Block. */
 .session-card__text {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   color: var(--color-muted);
-  margin: 0 0 var(--space-5);
+  margin-block: var(--line-height-regular-text) 0;
 }
 
 .session-card__text p {
-  margin: 0 0 var(--space-2);
+  margin: 0;
+}
+
+.session-card__meta-block {
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  color: var(--color-muted);
+  margin-block: var(--line-height-regular-text) 0;
+}
+
+.session-card__meta-block p {
+  margin: 0;
 }
 
 .session-card__button {
   justify-self: center;
+  margin-block-start: var(--line-height-regular-text);
 }
 
 @media (max-width: 768px) {
@@ -522,8 +645,15 @@ ul {
    Bilder sich überlappten (reproduziert mit echter WebKit-Engine). Mit nur
    einer flachen Liste tritt der Bug nicht auf. */
 .marquee {
+  position: relative;
   overflow: hidden;
   width: 100%;
+}
+
+/* Pfeile: nur fuer Team-Galerie/Fotogalerie 2 im Markup vorhanden, auf
+   Desktop generell ausgeblendet (dort laeuft die Auto-Scroll-Marquee). */
+.marquee__arrow {
+  display: none;
 }
 
 .marquee__inner {
@@ -558,6 +688,66 @@ ul {
 
 .gallery-marquee .marquee__inner {
   animation-name: marquee-ltr;
+}
+
+/* Mobil (nur Team-Galerie/Fotogalerie 2, Sponsoren bleiben Marquee):
+   statt Auto-Scroll-Laufband ein statisches Bild auf voller Breite, per
+   Pfeil-Buttons oder Wischen (scroll-snap uebernimmt das nativ) navigierbar
+   (Absprache). Die aria-hidden Duplikate fuer den Marquee-Loop werden hier
+   nicht gebraucht und ausgeblendet. */
+@media (max-width: 768px) {
+  .team-marquee,
+  .gallery-marquee {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .team-marquee .marquee__inner,
+  .gallery-marquee .marquee__inner {
+    animation: none !important;
+    transform: none !important;
+    width: auto;
+  }
+
+  .team-marquee .team-row__member:nth-child(n + 5),
+  .gallery-marquee .photo-gallery-2__slide:nth-child(n + 4) {
+    display: none;
+  }
+
+  .team-marquee .team-row__member,
+  .gallery-marquee .photo-gallery-2__slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    margin-inline-end: 0 !important;
+  }
+
+  .team-marquee .marquee__arrow,
+  .gallery-marquee .marquee__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: calc(1.2 * var(--balken));
+    height: calc(1.2 * var(--balken));
+    border: var(--line-thickness) solid var(--color-border);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--color-text);
+    font-size: var(--font-size-capital);
+    cursor: pointer;
+    z-index: 5;
+  }
+
+  .marquee__arrow--prev {
+    left: var(--space-3);
+  }
+
+  .marquee__arrow--next {
+    right: var(--space-3);
+  }
 }
 
 .marquee__track {
@@ -610,7 +800,6 @@ ul {
   flex: 0 0 calc((6 * 122 + 5 * 16) * var(--px)); /* 6 Spalten inkl. 5 interner Gutter = 812px @1920 */
   aspect-ratio: 812 / 500;
   background: #1a1a1a;
-  border: var(--line-thickness) solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -643,54 +832,44 @@ ul {
 
 .site-footer {
   padding-block: var(--space-7);
-  border-top: var(--line-thickness) solid var(--color-border);
-  background: var(--scrim-bg);
-  backdrop-filter: var(--scrim-blur);
+  /* Einfarbig schwarz statt Verlauf/Scrim, keine obere Trennlinie mehr
+     (Absprache). */
+  background: var(--color-bg);
 }
 
-/* Zwei klar getrennte Gruppen (Kontakt / Rechtliches), je eine Zeile nach
-   dem gleichen Label+Inhalt-Muster wie Mission/About: Label schmal in
-   Spalte B, Inhalt ab Spalte E. Einheitliche Schriftgroesse fuer Label
-   und Inhalt statt der vorherigen uneinheitlichen Groessen
-   (font-size-sm/font-size-xs, beide fix und zu klein). */
-.site-footer__row {
-  align-items: baseline;
+/* Zwei Spalten statt Zeilen (Absprache): links Kontakt (Adresse/Telefon/
+   Email), rechts Rechtliches (Impressum/Datenschutz/Widerruf), ohne
+   Ueberschriften. Alle Texte einheitlich Text Capital. */
+.site-footer .grid {
+  row-gap: var(--space-6);
 }
 
-.site-footer__row:not(:last-child) {
-  margin-block-end: var(--space-4);
+.site-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.site-footer__label {
-  grid-column: 2 / 3;
+.site-footer__col:first-child {
+  grid-column: 2 / 6;
+}
+
+.site-footer__col:last-child {
+  grid-column: 8 / 12;
+}
+
+.site-footer__col a,
+.site-footer__col span {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  font-size: var(--font-size-capital);
-  color: var(--color-muted);
-  margin: 0;
-}
-
-.site-footer__links {
-  grid-column: 5 / 13;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
-}
-
-.site-footer__links a,
-.site-footer__links span {
   font-size: var(--font-size-capital);
   text-decoration: none;
 }
 
 @media (max-width: 768px) {
-  .site-footer__label,
-  .site-footer__links {
+  .site-footer__col:first-child,
+  .site-footer__col:last-child {
     grid-column: 1 / -1;
-  }
-
-  .site-footer__label {
-    margin-block-end: var(--space-2);
   }
 }
 
