@@ -10,20 +10,16 @@
   /* ---------- Grid (Referenz: 1920px Desktop-Layout) ----------
      Strenges Spaltensystem laut Vorgabe: M1(140) + 12×Spalte(122) + 11×Gutter(16) + M2(140) = 1920.
      --px skaliert jeden Referenz-Pixelwert proportional zur Viewport-Breite, damit
-     Margin/Spalte/Gutter/Balken exakt im Verhältnis zu 1920px bleiben (fluid, nicht fixed),
-     bis zum Mobile-Breakpoint unten.
-     min(100vw, 1920px) statt nur 100vw: die .grid selbst ist bei max-width:1920px
-     gedeckelt, aber --px skalierte ohne dieses min() auf Viewports >1920px trotzdem
-     ungebremst weiter (100vw wächst unbegrenzt) — dadurch wuchsen Margin/Gutter/Balken
-     über ihren 1920px-Referenzwert hinaus, obwohl die Grid-Box selbst nicht breiter
-     wurde. Ergebnis: Der Innenabstand (Margin) wurde auf jedem Bildschirm >1920px
-     (also den meisten Desktop-Monitoren) sichtbar zu breit, zusätzlich zum normalen
-     Letterboxing durch margin-inline:auto. Ab 1920px bleibt --px jetzt bei genau 1. */
-  --px: calc(min(100vw, 1920px) / 1920);
+     Margin/Spalte/Gutter/Balken exakt im Verhältnis zu 1920px bleiben — bewusst
+     ohne Deckelung nach oben (Absprache: alles soll auf groesseren Bildschirmen
+     im gleichen Verhaeltnis weiterwachsen), bis zum Mobile-Breakpoint unten. Die
+     Grid-Box selbst hat deshalb auch kein max-width mehr (siehe .grid unten) —
+     sonst waechst --px weiter, waehrend die Box selbst gedeckelt bleibt, was
+     Margin/Gutter/Balken aus dem Verhaeltnis zur Box-Breite bringt. */
+  --px: calc(100vw / 1920);
   --grid-columns: 12;
   --grid-gutter: calc(16 * var(--px));
   --grid-margin: calc(140 * var(--px));
-  --grid-max-width: 1920px;
   --balken: calc(122 * var(--px)); /* Balkensystem: 1 Balken = 1 Spaltenbreite = 122px bei 1920px */
 
   /* ---------- Breakpoint ----------
@@ -103,13 +99,11 @@
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
   gap: var(--grid-gutter);
-  /* explizit statt nur max-width: als Flex-Kind (Sektionen mit
-     page-section--centered) stretcht Chromium ein Grid mit sehr wenig
-     Eigeninhalt (z.B. nur der Trennstrich-<hr>) nicht zuverlässig auf volle
-     Breite, sondern schrumpft es content-basiert — Trennstriche wurden dann
-     nur ~176px statt fast volle Breite. */
+  /* Kein max-width mehr (Absprache: Margin/Gutter/Balken sollen auf
+     groesseren Bildschirmen unbegrenzt im gleichen Verhaeltnis mitwachsen,
+     nicht ab 1920px einfrieren). width:100% reicht, damit Trennstriche &
+     Co. auch mit wenig Eigeninhalt zuverlaessig die volle Breite annehmen. */
   width: 100%;
-  max-width: var(--grid-max-width);
   margin-inline: auto;
   padding-inline: var(--grid-margin);
 }

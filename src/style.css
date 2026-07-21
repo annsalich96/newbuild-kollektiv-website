@@ -251,7 +251,6 @@ ul {
      damit der sichtbare Textanfang exakt mit .section__statement fluchtet
      statt durch den halben Zeilenabstand tiefer zu sitzen. */
   margin-block-start: calc(-6 * var(--px));
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
 
 .section__statement {
@@ -267,7 +266,6 @@ ul {
   /* Kompensiert das Leading von line-height-bold (71px bei 48px Schrift =
      11.5px halbe Zeilendurchschuss oben), analog zu .section__eyebrow. */
   margin-block-start: calc(-11.5 * var(--px));
-  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.8);
 }
 
 @media (max-width: 768px) {
@@ -316,7 +314,6 @@ ul {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
 
 /* ---------- Events: Next-Event-Kasten (grid-tabelle.md Nr. 8–12) ----------
@@ -349,9 +346,17 @@ ul {
 }
 
 .event-card__title {
-  grid-column: 2 / -1; /* Spalte B, siehe Nr. 10 */
+  /* Bündig mit den Meta-Zeilen (Referentin/Zeit/Ort) statt mit dem "Next
+     Event"-Label darüber — Label bleibt links (Spalte B), Titel beginnt
+     weiter rechts bei Spalte E (Absprache). */
+  grid-column: 5 / 13;
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
+  /* <h2> ist im Browser standardmaessig bold — ohne Reset sah der Text
+     trotz Text-Regular-Groesse fett aus (Ursache fuer den gemeldeten
+     Unterschied zur Session-01-Zahl in Sektion 6, die bewusst Text Bold
+     ist). Jetzt echtes Text Regular. */
+  font-weight: var(--font-weight-regular);
   margin: 0;
 }
 
@@ -467,6 +472,29 @@ ul {
 
 .session-card__text p {
   margin: 0 0 var(--space-2);
+}
+
+/* Datum/Wochentag bleiben mit "Maria Stasevich" in einer Zeile, die
+   Uhrzeit oeffnet eine eigene Spalte am rechten Rand statt einfach
+   dranzuhaengen (Absprache). */
+.session-card__datetime {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  /* "Maria Stasevich - di., 14.04.2026" braucht bei 36pt (Text Regular)
+     allein schon mehr Breite als der Kasten hergibt (550px vs. 500px
+     verfuegbar) — mit Uhrzeit daneben erst recht. Verkleinert auf Text
+     Capital, damit Name+Datum auf einer Zeile bleiben UND die Uhrzeit
+     daneben passt (Absprache). */
+  font-size: var(--font-size-capital);
+}
+
+.session-card__datetime > span:first-child {
+  /* Ohne nowrap/shrink:0 durfte Flexbox diesen Span schmaler als seinen
+     natuerlichen Inhalt machen, wodurch "di., 14.04.2026" in eine zweite
+     Zeile umbrach statt mit "Maria Stasevich" zusammenzubleiben. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .session-card__button {
@@ -634,7 +662,10 @@ ul {
 
 .site-footer__legal a {
   text-decoration: none;
-  font-size: var(--font-size-sm);
+  /* War font-size-sm (14px, fix, nicht Teil des fluiden Balken-Systems) —
+     zu klein. Jetzt Text Capital wie die Hauptnavigation, gleiche Groesse
+     und skaliert mit. */
+  font-size: var(--font-size-capital);
 }
 
 .site-footer__contact {
