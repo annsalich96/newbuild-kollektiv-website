@@ -160,8 +160,6 @@ ul {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    position: sticky;
-    top: 0;
     z-index: 20;
     /* Max. 4 Balken (Logo-Bbox + Puffer oben/unten, Balken 1-4), damit die
        schwebende Leiste nicht hoeher wird als das urspruengliche
@@ -170,6 +168,16 @@ ul {
     padding-inline: var(--space-5);
     padding-block: var(--space-3);
     background: var(--color-bg);
+  }
+
+  /* position:sticky allein reichte nicht (Eltern-Element .hero ist auf
+     Mobile nur 6 Balken hoch, sticky loest sich danach) — Umschaltung per
+     JS auf fixed, siehe main.ts und Kommentar bei .site-nav.is-stuck. */
+  .mobile-nav-bar.is-stuck {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
   }
 
   .mobile-nav-bar .hero__logo {
@@ -223,22 +231,30 @@ ul {
 .site-nav {
   display: flex;
   padding-inline: var(--grid-margin);
-  /* Floating: bleibt beim Runterscrollen sichtbar statt mit der Seite
-     wegzuscrollen (Absprache). position:fixed statt sticky: .site-nav
-     sitzt im DOM innerhalb von .hero (nur 6 Balken/732px hoch) — sticky
-     loest sich vom Viewport, sobald sein Eltern-Element durchgescrollt
-     ist, und war daher schon nach ~250px Scroll wieder weg. Fixed bleibt
-     unabhaengig von der Elterngroesse zuverlaessig oben. max-height
-     begrenzt sie auf maximal 1 Balken, auch wenn Inhalt umbrechen sollte. */
+  /* Balken 5: 1 Balken Abstand zur Logo-Unterkante (Balken 3), siehe grid-tabelle.md */
+  margin-block-start: var(--balken);
+  max-height: var(--balken);
+  z-index: 20;
+}
+
+/* Floating: bleibt an ihrer normalen Position, bis sie beim Runterscrollen
+   oben aus dem Viewport laufen wuerde — erst DANN fixiert sie sich am
+   oberen Rand (Absprache: "ganz oben bleiben, floaten kurz bevor sie
+   verschwinden würde"), statt durchgehend an einer festen Stelle zu
+   schweben. position:sticky allein reichte nicht: .site-nav sitzt im DOM
+   innerhalb von .hero (nur 6 Balken/732px hoch), sticky loest sich vom
+   Viewport sobald das Eltern-Element durchgescrollt ist. Deshalb per JS
+   (main.ts) die urspruengliche Scroll-Position gemessen und ab da manuell
+   auf fixed umgeschaltet — funktioniert unabhaengig von der Elterngroesse. */
+.site-nav.is-stuck {
   position: fixed;
-  /* 4 Balken statt nur 1 — sonst ueberlappt die fixierte Leiste anfangs
-     das grosse Logo-Wortzeichen (das reicht bis ca. Balken 3). 4 Balken
-     entspricht in etwa der urspruenglichen Position unterhalb des Logos. */
-  top: calc(4 * var(--balken));
+  top: 0;
   left: 0;
   right: 0;
-  z-index: 20;
-  max-height: var(--balken);
+  /* Sonst wirkt margin-block-start (fuer die normale Position gedacht)
+     weiterhin und schiebt die fixierte Leiste 1 Balken zu weit nach unten
+     statt ganz oben anzuliegen. */
+  margin-block-start: 0;
 }
 
 /* Nr. 2b grid-tabelle.md: eigener Kasten (Liniendicke 1pt) um die Nav-Leiste,
