@@ -52,21 +52,19 @@ ul {
 }
 
 /* ---------- Sektionssystem ----------
-   8 Sektionen mit exakter Balken-Höhe (Absprache), ersetzt die vorherigen
-   Ad-hoc-Abstände (--space-N Tokens), die sich nicht exakt zur Balken-Zahl
-   aufsummierten und so zu Abstandsfehlern zwischen den Sektionen führten.
-   min-height statt height, damit variabler Text (z.B. lange Adressen)
-   nie abgeschnitten wird, auch wenn die Sektion dadurch minimal höher wird
-   als die nominale Balken-Zahl. */
+   Abstände zwischen den Elementen werden jetzt explizit in Balken auf den
+   jeweiligen Elementen/Trennstrichen gesetzt (siehe "Vertikaler Rhythmus"
+   weiter unten), nicht mehr über zentrierten Leerraum in einer festen
+   Sektionshöhe verteilt. Die vorherige min-height+justify-content:center-
+   Lösung erzeugte unvorhersehbaren, asymmetrischen Leerraum an
+   Sektionsgrenzen, abhängig davon wie viel Inhalt zufällig auf jeder Seite
+   der Grenze stand — dadurch waren Abstände nicht proportional/systematisch
+   (Feedback). display:flow-root verhindert, dass Margins von Kind-Elementen
+   durch die Sektionsgrenze nach außen kollabieren, damit jede Lücke exakt
+   der hier gesetzte Wert ist, ohne Überlagerung mit der Nachbarsektion. */
 .page-section {
   position: relative;
-}
-
-.page-section--centered {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-6);
+  display: flow-root;
 }
 
 /* Eyebrow-Label und Statement landen im selben Grid-Row, sollen oben bündig
@@ -83,36 +81,56 @@ ul {
   min-height: calc(8 * var(--balken));
 }
 
-.page-section--3 {
-  min-height: calc(7 * var(--balken));
+/* ---------- Vertikaler Rhythmus ----------
+   Jede Lücke zwischen zwei Elementen ist hier genau einmal als expliziter
+   Balken-Wert gesetzt (nie auf beiden angrenzenden Elementen gleichzeitig,
+   sonst würden sich die Abstände addieren). Werte laut Absprache; wo kein
+   exakter Wert genannt wurde, per Analogie zum Muster der anderen
+   Trennstriche auf 1 Balken gesetzt (Default). */
+
+/* Hero-Foto -> Mission: kein Wert genannt, 2 Balken als Analogie zu About. */
+#mission > .grid {
+  margin-block-start: calc(2 * var(--balken));
 }
 
-.page-section--4 {
-  min-height: calc(6 * var(--balken));
+/* Mission-Text -> Trennstrich vor Team-Galerie: 2,5 Balken (Absprache). */
+.divider-row--before-team .divider {
+  margin-block-start: calc(2.5 * var(--balken));
+  /* Trennstrich -> Team-Fotos: kein Wert genannt, 1 Balken als Default. */
+  margin-block-end: var(--balken);
 }
 
-.page-section--5 {
-  /* 6 statt 8 Balken — bei 8 Balken blieben durch die Zentrierung 423px
-     ungenutzt (Next-Event-Kasten braucht nur ~553px/4,5 Balken), spürbar
-     mehr Leerraum als z.B. Sektion 6 (dort bleiben bei 7 Balken nur ~1
-     Balken Luft). 6 Balken bringt den Puffer auf ein vergleichbares Maß. */
-  min-height: calc(6 * var(--balken));
+/* Team-Galerie -> Next-Event-Kasten: 1 Balken (Absprache). */
+.next-event-row {
+  margin-block-start: var(--balken);
 }
 
-.page-section--6 {
-  min-height: calc(7 * var(--balken));
+/* Next-Event-Kasten <-> Trennstrich vor Session-Kästen: beide Seiten
+   1 Balken, symmetrisch (Absprache: "derselbe Abstand oben und unten"). */
+.divider-row--before-sessions .divider {
+  margin-block-start: var(--balken);
+  margin-block-end: var(--balken);
 }
 
-.page-section--7 {
-  min-height: calc(7 * var(--balken));
+/* Session-Kästen <-> Trennstrich vor Fotogalerie 2: kein Wert genannt,
+   symmetrisch 1 Balken als Default (gleiches Prinzip wie oben). */
+.divider-row--before-gallery2 .divider {
+  margin-block-start: var(--balken);
+  margin-block-end: var(--balken);
 }
 
-.page-section--8 {
-  min-height: calc(8 * var(--balken));
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-6);
+/* Fotogalerie 2 -> Trennstrich vor About: 1 Balken (Absprache). */
+.divider-row--before-about .divider {
+  margin-block-start: var(--balken);
+  /* Trennstrich -> About-Text: 2 Balken (Absprache). */
+  margin-block-end: calc(2 * var(--balken));
+}
+
+/* About-Text -> Trennstrich vor Sponsoring: 2 Balken (Absprache). */
+.divider-row--before-sponsoring .divider {
+  margin-block-start: calc(2 * var(--balken));
+  /* Trennstrich -> Sponsoren-Leiste: kein Wert genannt, 1 Balken Default. */
+  margin-block-end: var(--balken);
 }
 
 /* ---------- Nav ---------- */
@@ -590,7 +608,9 @@ ul {
      ohne die Farbe selbst zu verändern. */
   border-top: var(--line-thickness) solid var(--color-border);
   box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.5);
-  margin-block: var(--space-7);
+  /* Kein einheitlicher margin-block mehr — jeder Trennstrich hat seinen
+     eigenen Abstand nach oben/unten, siehe "Vertikaler Rhythmus". */
+  margin-block: 0;
 }
 
 /* ---------- Footer ---------- */

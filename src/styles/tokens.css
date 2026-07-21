@@ -11,8 +11,15 @@
      Strenges Spaltensystem laut Vorgabe: M1(140) + 12×Spalte(122) + 11×Gutter(16) + M2(140) = 1920.
      --px skaliert jeden Referenz-Pixelwert proportional zur Viewport-Breite, damit
      Margin/Spalte/Gutter/Balken exakt im Verhältnis zu 1920px bleiben (fluid, nicht fixed),
-     bis zum Mobile-Breakpoint unten. */
-  --px: calc(100vw / 1920);
+     bis zum Mobile-Breakpoint unten.
+     min(100vw, 1920px) statt nur 100vw: die .grid selbst ist bei max-width:1920px
+     gedeckelt, aber --px skalierte ohne dieses min() auf Viewports >1920px trotzdem
+     ungebremst weiter (100vw wächst unbegrenzt) — dadurch wuchsen Margin/Gutter/Balken
+     über ihren 1920px-Referenzwert hinaus, obwohl die Grid-Box selbst nicht breiter
+     wurde. Ergebnis: Der Innenabstand (Margin) wurde auf jedem Bildschirm >1920px
+     (also den meisten Desktop-Monitoren) sichtbar zu breit, zusätzlich zum normalen
+     Letterboxing durch margin-inline:auto. Ab 1920px bleibt --px jetzt bei genau 1. */
+  --px: calc(min(100vw, 1920px) / 1920);
   --grid-columns: 12;
   --grid-gutter: calc(16 * var(--px));
   --grid-margin: calc(140 * var(--px));
