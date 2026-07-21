@@ -271,6 +271,13 @@ ul {
   background: transparent;
 }
 
+/* Schwebend (fixiert) bekommt die Leiste einen deckend schwarzen
+   Hintergrund, damit sie sich klar vom durchscheinenden Seiteninhalt
+   abhebt statt sich mit ihm zu ueberlagern (Absprache). */
+.site-nav.is-stuck .site-nav__pill {
+  background: var(--color-bg);
+}
+
 .site-nav__logo {
   display: flex;
   align-items: center;
@@ -282,11 +289,33 @@ ul {
   height: auto;
 }
 
+/* Feste Spalten statt flex+space-between: vorher hing die Position jedes
+   Links vom verfuegbaren Platz ab (verschob sich je nach Bildschirmbreite/
+   Kastengroesse gegenueber den Spalten des restlichen Seiteninhalts,
+   sichtbar z.B. wenn "MISSION" im Nav nicht mit "MISSION" im Content
+   fluchtet). Jetzt im selben 12-Spalten-Raster wie der Rest der Seite,
+   jeder Link an einer fixen Spalte verankert (Absprache). */
 .site-nav nav {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
   flex: 1;
   margin-inline-start: var(--space-8);
+}
+
+.site-nav nav a:nth-child(1) {
+  grid-column: 2;
+}
+
+.site-nav nav a:nth-child(2) {
+  grid-column: 5;
+}
+
+.site-nav nav a:nth-child(3) {
+  grid-column: 8;
+}
+
+.site-nav nav a:nth-child(4) {
+  grid-column: 11;
 }
 
 .site-nav nav a {
