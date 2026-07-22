@@ -160,6 +160,11 @@ ul {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+    /* Immer positioniert (nicht erst ab .is-stuck), sonst wird z-index
+       ignoriert (gilt nur fuer positionierte Elemente) — das Vollbild-
+       Menue (position:fixed) hat dann die noch statische Leiste verdeckt
+       und das Plus verschwand, solange man noch nicht gescrollt hatte. */
+    position: relative;
     z-index: 20;
     /* Max. 4 Balken (Logo-Bbox + Puffer oben/unten, Balken 1-4), damit die
        schwebende Leiste nicht hoeher wird als das urspruengliche
@@ -185,12 +190,19 @@ ul {
   }
 
   /* Kein weisser Rand mehr, dafuer groesser — gleiche Groesse wie die
-     Galerie-Pfeile (Absprache). */
+     Galerie-Pfeile (Absprache). position+z-index hoeher als das Panel
+     (19): Toggle und Panel sind Geschwister innerhalb derselben
+     Stacking-Context von .mobile-nav-bar — das Panel gewann sonst trotz
+     .mobile-nav-bar { z-index:20 }, weil dieser Wert nur zaehlt, wie die
+     Leiste als Ganzes gegen AUSSEN steht, nicht die Reihenfolge der Kinder
+     untereinander (Bug: Plus verschwand hinter dem Vollbild-Menue). */
   .mobile-nav-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    position: relative;
+    z-index: 21;
     width: var(--mobile-control-size);
     height: var(--mobile-control-size);
     border: none;
@@ -488,7 +500,8 @@ ul {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
+  /* Komplett weiss statt gedaempft (Absprache) — Groesse bleibt gleich. */
+  color: var(--color-text);
 }
 
 /* ---------- Events: Next-Event-Kasten (grid-tabelle.md Nr. 8–12) ----------
@@ -841,7 +854,9 @@ ul {
     height: var(--mobile-control-size);
     border: none;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.4);
+    /* Durchsichtig statt schwarz getoent — sobald echte Fotos eingefuegt
+       werden, sollen sie hier durchscheinen (Absprache). */
+    background: transparent;
     color: var(--color-text);
     font-size: calc(1.2 * var(--font-size-bold));
     cursor: pointer;
