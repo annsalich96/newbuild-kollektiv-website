@@ -309,9 +309,9 @@ ul {
    auf fixed umgeschaltet — funktioniert unabhaengig von der Elterngroesse. */
 .site-nav.is-stuck {
   position: fixed;
-  /* Halber Balken Abstand zum oberen Rand statt ganz oben festzukleben
-     (Absprache). */
-  top: calc(0.5 * var(--balken));
+  /* Nochmal halbiert auf ein Viertel Balken (Absprache: war noch zu viel
+     Abstand). */
+  top: calc(0.25 * var(--balken));
   left: 0;
   right: 0;
   /* Sonst wirkt margin-block-start (fuer die normale Position gedacht)
@@ -827,13 +827,11 @@ ul {
   width: max-content;
   /* Ruhezustand entspricht bewusst dem "from"-Keyframe der Animation
      (siehe unten): ohne das zeigte der allererste Frame nach dem Laden
-     kurz transform:none (= 0%) statt -50%, wodurch alle Elemente fuer
+     kurz transform:none (= 0%) statt -33,333%, wodurch alle Elemente fuer
      einen Wimpernschlag an derselben Stelle kollabierten, bevor die
-     Animation richtig einsetzte — sichtbar als kurze Luecke am rechten
-     Rand bei Sponsoren-Leiste und Team-Galerie (beide marquee-rtl).
-     Fotogalerie 2 (marquee-ltr, from:0%) braucht das nicht, siehe
-     Override weiter unten. */
-  transform: translateX(-50%);
+     Animation richtig einsetzte. Fotogalerie 2 (marquee-ltr, from:0%)
+     braucht das nicht, siehe Override weiter unten. */
+  transform: translateX(-33.333%);
   animation: marquee-rtl 24s linear infinite;
 }
 
@@ -843,9 +841,22 @@ ul {
   }
 }
 
+/* -33,333% (ein Drittel) statt -50%: bei Sponsoren-Leiste und Team-
+   Galerie ist der Viewport (z.B. 1920px) breiter als ein volles Set
+   Inhalte (1640px, da 4 Elemente x 3 Spalten = nur 12 Spalten Breite,
+   der Viewport bleedet aber randlos ueber diese 12 Spalten hinaus).
+   Mit nur einer Verdopplung (-50%) reichte der zweite Satz nicht aus,
+   um den Viewport durchgehend zu fuellen — am rechten Rand entstand bei
+   jedem der 24s-Durchlaeufe fuer mehrere Sekunden eine echte Luecke,
+   nicht nur ein einzelner Frame (gemessen, nicht nur vermutet). Jetzt
+   drei Kopien im Markup (is-desktop-duplicate x2) und Animation ueber
+   ein Drittel statt die Haelfte — damit ist immer mind. Viewport+ein-Set
+   an Inhalt vorhanden, egal an welcher Stelle des Loops. Fotogalerie 2
+   braucht das nicht (ihr Set ist mit 2468px schon breiter als jeder
+   uebliche Viewport). */
 @keyframes marquee-rtl {
   from {
-    transform: translateX(-50%);
+    transform: translateX(-33.333%);
   }
   to {
     transform: translateX(0%);

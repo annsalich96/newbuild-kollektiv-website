@@ -25,7 +25,17 @@ document.querySelectorAll<HTMLElement>('.site-nav, .mobile-nav-bar').forEach((ba
 
   update()
   window.addEventListener('scroll', update, { passive: true })
+
+  // Nur bei echter Breitenaenderung zuruecksetzen (z.B. Geraet gedreht),
+  // nicht bei jedem 'resize' — mobile Browser feuern 'resize' auch, wenn
+  // beim Scrollen die Adressleiste ein-/ausblendet (Hoehenaenderung). Ein
+  // Reset genau in diesem Moment konnte eine falsche Ruheposition
+  // einfangen (Bug: Leiste blieb nach dem Hochscrollen faelschlich im
+  // schwebenden/blurry Zustand haengen).
+  let lastWidth = window.innerWidth
   window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return
+    lastWidth = window.innerWidth
     bar.classList.remove('is-stuck')
     naturalTop = null
     update()

@@ -29,13 +29,18 @@
           >
             <span aria-hidden="true">+</span>
           </button>
-          <nav id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Hauptnavigation" hidden>
-            <a href="#mission">Mission</a>
-            <a href="#events">Events</a>
-            <a href="#sponsoring">Sponsoring</a>
-            <a href="#about">About</a>
-          </nav>
         </div>
+        <!-- Ausserhalb von .mobile-nav-bar: sobald die Leiste sticky ist,
+             bekommt sie backdrop-filter (Glas-Effekt) — das erzeugt einen
+             eigenen Containing Block fuer position:fixed-Nachfahren, das
+             Vollbild-Menue haette sich sonst nur ueber die winzige Leiste
+             statt ueber den ganzen Bildschirm gelegt (Bug). -->
+        <nav id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Hauptnavigation" hidden>
+          <a href="#mission">Mission</a>
+          <a href="#events">Events</a>
+          <a href="#sponsoring">Sponsoring</a>
+          <a href="#about">About</a>
+        </nav>
 
         <header class="site-nav">
           <div class="site-nav__pill">
@@ -101,6 +106,32 @@
                   <span class="team-row__name">Ann-Kathrin Salich</span>
                 </div>
               </li>
+              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
+                <div class="team-row__photo" aria-hidden="true">
+                  <span class="team-row__name">Team-Mitglied (Name folgt)</span>
+                </div>
+              </li>
+              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
+                <div class="team-row__photo" aria-hidden="true">
+                  <span class="team-row__name">Maria Stasevich</span>
+                </div>
+              </li>
+              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
+                <div class="team-row__photo" aria-hidden="true">
+                  <span class="team-row__name">Markus Kolb</span>
+                </div>
+              </li>
+              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
+                <div class="team-row__photo" aria-hidden="true">
+                  <span class="team-row__name">Ann-Kathrin Salich</span>
+                </div>
+              </li>
+              <!-- Dritte Kopie (nur Desktop): Viewport (z.B. 1920px) ist
+                   breiter als ein volles Set (1640px) — mit nur einer
+                   Verdopplung entsteht bei jedem Loop-Durchlauf eine echte,
+                   mehrere Sekunden sichtbare Luecke am rechten Rand statt
+                   nur eines einzelnen Frames (Absprache/gemessen). Drei
+                   Kopien + Animation auf -33,333% statt -50% beheben das. -->
               <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
                 <div class="team-row__photo" aria-hidden="true">
                   <span class="team-row__name">Team-Mitglied (Name folgt)</span>
@@ -245,6 +276,13 @@
               <li>Sponsor folgt</li>
               <li>Sponsor folgt</li>
               <li>Sponsor folgt</li>
+              <li aria-hidden="true">Sponsor folgt</li>
+              <li aria-hidden="true">Sponsor folgt</li>
+              <li aria-hidden="true">Sponsor folgt</li>
+              <li aria-hidden="true">Sponsor folgt</li>
+              <!-- Dritte Kopie: Viewport ist breiter als ein volles Set,
+                   mit nur einer Verdopplung entsteht sonst eine mehrere
+                   Sekunden sichtbare Luecke pro Loop-Durchlauf (Absprache). -->
               <li aria-hidden="true">Sponsor folgt</li>
               <li aria-hidden="true">Sponsor folgt</li>
               <li aria-hidden="true">Sponsor folgt</li>
