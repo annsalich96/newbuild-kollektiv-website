@@ -4,6 +4,31 @@
   box-sizing: border-box;
 }
 
+/* Sanftes Scrollen beim Klick auf Nav-Links (Mission/Events/Sponsoring/
+   About) statt sofortigem Sprung (Absprache) — gilt fuer Desktop-Nav und
+   das Mobile-Menue gleichermassen, da beide simple Anchor-Links (#mission
+   etc.) nutzen. prefers-reduced-motion respektiert, falls jemand
+   Bewegungseffekte reduziert haben moechte. */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Ohne das laeuft der Zielabschnitt beim Anspringen unter die schwebende
+   (position:fixed) Nav-Leiste, sobald diese "is-stuck" ist — Ziel bleibt
+   sonst teilweise verdeckt. */
+#mission,
+#events,
+#sponsoring,
+#about {
+  scroll-margin-top: calc(2 * var(--balken));
+}
+
 body {
   position: relative;
   margin: 0;
