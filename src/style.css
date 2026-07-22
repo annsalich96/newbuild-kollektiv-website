@@ -184,33 +184,37 @@ ul {
     padding-block-start: 0;
   }
 
+  /* Kein weisser Rand mehr, dafuer groesser — gleiche Groesse wie die
+     Galerie-Pfeile (Absprache). */
   .mobile-nav-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: calc(1.2 * var(--balken));
-    height: calc(1.2 * var(--balken));
-    border: var(--line-thickness) solid var(--color-border);
+    width: var(--mobile-control-size);
+    height: var(--mobile-control-size);
+    border: none;
     border-radius: 50%;
     background: transparent;
     color: var(--color-text);
-    font-size: var(--font-size-capital);
+    font-size: calc(1.2 * var(--font-size-bold));
     line-height: 1;
     cursor: pointer;
   }
 
+  /* Nimmt beim Oeffnen den ganzen Bildschirm ein statt nur als schmales
+     Dropdown unter der Leiste zu erscheinen (Absprache). Groessere
+     Schrift fuer die 4 Punkte, damit sie den Platz sinnvoll fuellen. */
   .mobile-nav-panel {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    padding: var(--space-5);
+    justify-content: center;
+    align-items: flex-start;
+    gap: var(--space-6);
+    position: fixed;
+    inset: 0;
+    padding: var(--space-6);
     background: var(--color-bg);
-    border-bottom: var(--line-thickness) solid var(--color-border);
     z-index: 19;
   }
 
@@ -221,7 +225,7 @@ ul {
   .mobile-nav-panel a {
     text-decoration: none;
     text-transform: uppercase;
-    font-size: var(--font-size-capital);
+    font-size: var(--font-size-bold);
     letter-spacing: var(--letter-spacing-label);
   }
 }
@@ -467,18 +471,24 @@ ul {
   flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
 }
 
 .team-row__photo {
+  position: relative;
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
 }
 
+/* Name liegt jetzt im Bild unten links statt als eigene Zeile darunter
+   (Absprache), Text Capital wie die anderen Labels der Seite. */
 .team-row__name {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
+  color: var(--color-muted);
 }
 
 /* ---------- Events: Next-Event-Kasten (grid-tabelle.md Nr. 8–12) ----------
@@ -717,6 +727,15 @@ ul {
   display: none;
 }
 
+/* Wrap-Klone (fuer den unendlichen Kreislauf auf Mobile, siehe Media
+   Query weiter unten) existieren auf Desktop nicht — dort sorgen die
+   is-desktop-duplicate-Elemente fuer den nahtlosen Marquee-Loop.
+   !important, da .team-row__member/.photo-gallery-2__slide je nach
+   Quellreihenfolge sonst ihr eigenes display:flex gewinnen lassen. */
+.is-mobile-wrap-clone {
+  display: none !important;
+}
+
 .marquee__inner {
   width: max-content;
   animation: marquee-rtl 24s linear infinite;
@@ -753,27 +772,51 @@ ul {
 
 /* Mobil (nur Team-Galerie/Fotogalerie 2, Sponsoren bleiben Marquee):
    statt Auto-Scroll-Laufband ein statisches Bild auf voller Breite, per
-   Pfeil-Buttons oder Wischen (scroll-snap uebernimmt das nativ) navigierbar
-   (Absprache). Die aria-hidden Duplikate fuer den Marquee-Loop werden hier
-   nicht gebraucht und ausgeblendet. */
+   Pfeil-Buttons oder Wischen (scroll-snap uebernimmt das nativ) navigierbar,
+   in beide Richtungen unendlich (Absprache) — je ein Klon des letzten
+   Bildes vor dem ersten und des ersten Bildes nach dem letzten (Klassen
+   is-mobile-wrap-clone im Markup), main.ts erkennt das Erreichen eines
+   Klons per scroll-Event und springt ohne Animation zum echten Gegenstueck.
+   .is-desktop-duplicate (fuer den Desktop-Marquee-Loop) wird hier nicht
+   gebraucht und ausgeblendet.
+   overflow-x sitzt jetzt auf .marquee__inner statt auf .marquee: die
+   Pfeile sind Geschwister von .marquee__inner, aber Kinder von .marquee —
+   waere .marquee selbst der Scroll-Container, wuerden die absolut
+   positionierten Pfeile als Teil von dessen Scroll-Inhalt mitscrollen und
+   nach dem ersten Bild aus dem sichtbaren Bereich wandern (genau das war
+   der gemeldete Bug: Pfeile nur beim ersten Bild sichtbar). Jetzt bleibt
+   .marquee unbewegt (Positionierungskontext fuer die Pfeile), nur
+   .marquee__inner scrollt intern. */
 @media (max-width: 768px) {
-  .team-marquee,
-  .gallery-marquee {
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
   .team-marquee .marquee__inner,
   .gallery-marquee .marquee__inner {
     animation: none !important;
     transform: none !important;
-    width: auto;
+    width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Native Scrollleiste ausblenden (Absprache) — scroll-snap uebernimmt
+       die Navigation, die Balken-Anzeige darunter ist nicht erwuenscht. */
+    scrollbar-width: none;
   }
 
-  .team-marquee .team-row__member:nth-child(n + 5),
-  .gallery-marquee .photo-gallery-2__slide:nth-child(n + 4) {
+  .team-marquee .marquee__inner::-webkit-scrollbar,
+  .gallery-marquee .marquee__inner::-webkit-scrollbar {
     display: none;
+  }
+
+  .team-marquee .is-desktop-duplicate,
+  .gallery-marquee .is-desktop-duplicate {
+    display: none !important;
+  }
+
+  /* Wrap-Klone werden auf Mobile gebraucht (unendlicher Kreislauf) — die
+     globale .is-mobile-wrap-clone{display:none} (fuer Desktop) hier wieder
+     aufheben. */
+  .team-marquee .is-mobile-wrap-clone,
+  .gallery-marquee .is-mobile-wrap-clone {
+    display: flex !important;
   }
 
   .team-marquee .team-row__member,
@@ -783,6 +826,9 @@ ul {
     margin-inline-end: 0 !important;
   }
 
+  /* Groesse/Optik wie das Nav-Plus: kein weisser Rand mehr, dafuer
+     groesser, Pfeile selbst weiss (Absprache). Auf jedem Bild sichtbar,
+     da sie jetzt an .marquee (nicht am Scroll-Inhalt) verankert sind. */
   .team-marquee .marquee__arrow,
   .gallery-marquee .marquee__arrow {
     display: flex;
@@ -791,13 +837,13 @@ ul {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: calc(1.2 * var(--balken));
-    height: calc(1.2 * var(--balken));
-    border: var(--line-thickness) solid var(--color-border);
+    width: var(--mobile-control-size);
+    height: var(--mobile-control-size);
+    border: none;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.4);
     color: var(--color-text);
-    font-size: var(--font-size-capital);
+    font-size: calc(1.2 * var(--font-size-bold));
     cursor: pointer;
     z-index: 5;
   }

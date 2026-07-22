@@ -119,6 +119,9 @@
     --font-size-bold: 26px;
     --line-height-regular-text: 22px;
     --line-height-bold: 32px;
+    /* Gemeinsame Groesse fuer Nav-Plus und Galerie-Pfeile (Absprache:
+       gleiche Groesse, kein weisser Rand mehr, dafuer groesser als vorher). */
+    --mobile-control-size: calc(1.8 * var(--balken));
   }
 
   .grid {

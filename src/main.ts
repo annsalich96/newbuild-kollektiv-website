@@ -47,17 +47,65 @@ if (navToggle && navPanel) {
 }
 
 // Mobile: Team-/Fotogalerie sind statische, per Pfeil/Swipe navigierbare
-// Galerien (scroll-snap uebernimmt das Wischen), keine Auto-Scroll-Marquee
-// mehr. Sponsoren-Leiste bewusst ausgenommen (bleibt Marquee).
+// Galerien, unendlich in beide Richtungen (Absprache). scroll-snap
+// uebernimmt das Wischen, keine Auto-Scroll-Marquee mehr. Sponsoren-Leiste
+// bewusst ausgenommen (bleibt Marquee). .marquee__inner ist der eigentliche
+// Scroll-Container (siehe style.css-Kommentar dort) — die Klone mit Klasse
+// is-mobile-wrap-clone (ein Klon des letzten Bildes vor dem ersten, ein
+// Klon des ersten Bildes nach dem letzten) machen den Kreislauf endlos:
+// landet man beim Scrollen auf einem Klon, springt es ohne Animation
+// unbemerkt zum echten Gegenstueck.
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach((marquee) => {
+  const inner = marquee.querySelector<HTMLElement>('.marquee__inner')
+  const list = inner?.querySelector('ul')
   const prev = marquee.querySelector<HTMLButtonElement>('.marquee__arrow--prev')
   const next = marquee.querySelector<HTMLButtonElement>('.marquee__arrow--next')
+  if (!inner || !list) return
+
+  const isMobileScrollable = () => getComputedStyle(inner).overflowX === 'auto'
+
+  const mobileSlides = Array.from(list.children).filter(
+    (el) => !el.classList.contains('is-desktop-duplicate')
+  )
+  const realCount = mobileSlides.length - 2 // minus die zwei Wrap-Klone
+
+  const jumpTo = (index: number, smooth: boolean) => {
+    inner.scrollTo({ left: index * inner.clientWidth, behavior: smooth ? 'smooth' : 'instant' })
+  }
+
+  // Startet beim ersten echten Bild (Index 1) — Index 0 ist der Klon des
+  // letzten Bildes, fuer den Wrap-Around nach links beim ersten Bild.
+  if (realCount > 0 && isMobileScrollable()) {
+    jumpTo(1, false)
+  }
+
+  let settleTimer: ReturnType<typeof setTimeout>
+  inner.addEventListener(
+    'scroll',
+    () => {
+      if (!isMobileScrollable() || realCount <= 0) return
+      clearTimeout(settleTimer)
+      settleTimer = setTimeout(() => {
+        const index = Math.round(inner.scrollLeft / inner.clientWidth)
+        if (index === 0) {
+          jumpTo(realCount, false)
+        } else if (index === realCount + 1) {
+          jumpTo(1, false)
+        }
+      }, 120)
+    },
+    { passive: true }
+  )
 
   prev?.addEventListener('click', () => {
-    marquee.scrollBy({ left: -marquee.clientWidth, behavior: 'smooth' })
+    inner.scrollBy({ left: -inner.clientWidth, behavior: 'smooth' })
   })
 
   next?.addEventListener('click', () => {
-    marquee.scrollBy({ left: marquee.clientWidth, behavior: 'smooth' })
+    inner.scrollBy({ left: inner.clientWidth, behavior: 'smooth' })
+  })
+
+  window.addEventListener('resize', () => {
+    if (realCount > 0 && isMobileScrollable()) jumpTo(1, false)
   })
 })
