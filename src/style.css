@@ -517,10 +517,17 @@ ul {
   align-items: start;
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
-  padding: var(--space-7);
+  /* Kein horizontales Innenpolster mehr: die Karte spannt schon exakt die
+     Breite von .grid (grid-column:1/-1), ein eigenes padding-inline hat
+     ihr internes 12-Spalten-Raster gegenueber dem Hauptraster (und damit
+     gegenueber den Nav-Spalten) um ~48px verschoben — "Session 01 — ..."
+     landete dadurch nicht pixelgenau unter "Events" trotz gleicher
+     Spaltennummer (Absprache). Spalte 1 bleibt ohnehin leer (Inhalt
+     beginnt bei Spalte 2), das wirkt wie der bisherige Rand. */
+  padding-inline: 0;
   /* Ueber "Next Event"/"Session 01 - ..." soll 1 Balken frei sein statt
      der generischen space-7-Polsterung (Absprache). */
-  padding-block-start: var(--balken);
+  padding-block: var(--balken) var(--space-7);
   background: transparent;
 }
 
@@ -543,6 +550,11 @@ ul {
      "NEXT"/"EVENT" um. Ueberlaeuft jetzt sichtbar in die Gutter statt
      umzubrechen (wie im PDF, dort auch einzeilig). */
   white-space: nowrap;
+  /* Ohne min-width:0 wuchs diese Spalte ueber ihren nominalen 1fr-Anteil
+     hinaus (Grid-Items schrumpfen sonst nicht unter ihre Inhaltsbreite),
+     wodurch Spalte 5 (Titel/Meta) nicht mehr pixelgenau mit "Events" in
+     der Nav fluchtete — derselbe Bug wie bei den Nav-Links zuvor. */
+  min-width: 0;
 }
 
 .event-card__title {
@@ -613,6 +625,12 @@ ul {
 @media (max-width: 768px) {
   .event-card {
     grid-template-columns: repeat(4, 1fr);
+    /* Auf Mobile beginnt der Inhalt bei Spalte 1 (volle Breite, siehe
+       unten) statt bei Spalte 2 wie auf Desktop — ohne eigenes Polster
+       saesse er sonst fast am Kastenrand. Desktop-Spaltenausrichtung
+       bleibt unberuehrt (padding-inline:0 gilt nur ausserhalb dieser
+       Media Query). */
+    padding-inline: var(--space-5);
   }
 
   .event-card__label,
