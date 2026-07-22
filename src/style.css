@@ -19,6 +19,21 @@ html {
   }
 }
 
+/* Mobile: die sichtbare vertikale Scroll-Leiste am rechten Rand (zeigt
+   Position auf der Gesamt-Homepage) wirkt dort wie am Desktop-PC, nicht
+   wie auf einem Handy — auf Mobile entfernt (Absprache). Betrifft nur die
+   Seite selbst, nicht die horizontalen Galerien (die haben ihr eigenes,
+   bereits ausgeblendetes Scrollbar-Handling in .marquee__inner). */
+@media (max-width: 768px) {
+  html {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Ohne das laeuft der Zielabschnitt beim Anspringen unter die schwebende
    (position:fixed) Nav-Leiste, sobald diese "is-stuck" ist — Ziel bleibt
    sonst teilweise verdeckt. */
@@ -309,9 +324,11 @@ ul {
    auf fixed umgeschaltet — funktioniert unabhaengig von der Elterngroesse. */
 .site-nav.is-stuck {
   position: fixed;
-  /* Nochmal halbiert auf ein Viertel Balken (Absprache: war noch zu viel
-     Abstand). */
-  top: calc(0.25 * var(--balken));
+  /* Nochmal halbiert auf ein Achtel Balken (Absprache: war noch zu viel
+     Abstand). Der Sprung beim Wechsel zu fixed wird jetzt in main.ts
+     vermieden (dort wird schon fixiert, kurz bevor die Leiste an ihrer
+     natuerlichen Position diesen Wert erreichen wuerde), nicht mehr hier. */
+  top: calc(0.125 * var(--balken));
   left: 0;
   right: 0;
   /* Sonst wirkt margin-block-start (fuer die normale Position gedacht)
