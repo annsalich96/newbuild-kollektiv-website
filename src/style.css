@@ -1090,7 +1090,11 @@ ul {
 
 @media (max-width: 768px) {
   .site-footer {
-    padding-block: var(--space-7);
+    /* Etwas mehr Platz als vorher (48px/48px), oben etwas grosszuegiger
+       als unten wie am Desktop — aber nicht die dortigen vollen 2/1-
+       Balken-Werte (64px/32px), da das "unten" gegenueber vorher sogar
+       verkleinert haette (Absprache). */
+    padding-block: var(--space-8) calc(var(--space-7) + var(--space-2));
   }
 }
 
