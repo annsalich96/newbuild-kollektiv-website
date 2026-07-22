@@ -1097,14 +1097,17 @@ ul {
 }
 
 .site-footer__col:first-child {
-  grid-column: 2 / 6;
+  /* Startet jetzt an Spalte 1 (statt 2) — buendig mit der linken Kante der
+     Trennlinien (.divider, grid-column:1/-1), nicht mit dem sonst ueblichen
+     1-Spalten-Einzug (Absprache). */
+  grid-column: 1 / 6;
 }
 
 .site-footer__col:last-child {
-  grid-column: 8 / 12;
-  /* Rechtsbuendig (Absprache) — Spalte 8/12 endet an Spalte 12, spiegelt
-     damit exakt den Randabstand von Spalte 2 links (dort beginnt der
-     Kontakt-Block, Spalte 1 bleibt frei; hier bleibt Spalte 12 frei). */
+  /* Endet jetzt an Spalte 13/-1 (statt 12) — buendig mit der rechten Kante
+     der Trennlinien, spiegelt damit exakt die linke Kante des Kontakt-
+     Blocks (Absprache). */
+  grid-column: 8 / -1;
   text-align: right;
 }
 
