@@ -294,12 +294,19 @@ ul {
   background: transparent;
 }
 
-/* Schwebend (fixiert) bekommt die Leiste einen deckend schwarzen
-   Hintergrund statt der duennen weissen Umrandung, damit sie sich klar
-   vom durchscheinenden Seiteninhalt abhebt (Absprache). */
+/* Schwebend (fixiert): durchscheinendes Weiss mit Weichzeichner statt
+   deckendem Schwarz — der Hintergrund (z.B. Bilder) bleibt als
+   verschwommene Ahnung sichtbar statt komplett verdeckt zu werden
+   (Absprache). Kein sichtbarer Rand mehr. */
 .site-nav.is-stuck .site-nav__pill {
-  background: var(--color-bg);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: none;
+  /* Auf den hellsten Verlaufsabschnitten (z.B. Uebergang zu Sektion 8)
+     wird Weiss auf dem durchscheinenden Glas sonst kontrastarm — dezenter
+     Schatten haelt Logo und Links ueberall lesbar. */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 .site-nav__logo {
