@@ -712,7 +712,10 @@ ul {
   }
 
   .event-card__cta {
-    justify-self: start;
+    /* Zentriert wie der Anmeldung-Button in den drei Session-Kaesten
+       darunter (.session-card__button), statt wie auf Desktop linksbuendig
+       (Absprache). */
+    justify-self: center;
   }
 }
 
