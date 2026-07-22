@@ -1077,10 +1077,21 @@ ul {
 /* ---------- Footer ---------- */
 
 .site-footer {
-  padding-block: var(--space-7);
+  /* Nur Desktop (Absprache): 2 Balken Platz ueber dem Text, 1 Balken
+     darunter, statt der bisherigen gleichmaessigen space-7-Polsterung.
+     Mobile-Wert bleibt unveraendert (siehe Media Query unten). Gilt fuer
+     alle Footer inkl. der rechtlichen Seiten, da dort dieselbe Klasse
+     verwendet wird. */
+  padding-block: calc(2 * var(--balken)) calc(1 * var(--balken));
   /* Einfarbig schwarz statt Verlauf/Scrim, keine obere Trennlinie mehr
      (Absprache). */
   background: var(--color-bg);
+}
+
+@media (max-width: 768px) {
+  .site-footer {
+    padding-block: var(--space-7);
+  }
 }
 
 /* Zwei Spalten statt Zeilen (Absprache): links Kontakt (Adresse/Telefon/

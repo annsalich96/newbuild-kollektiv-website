@@ -120,8 +120,8 @@
     --line-height-regular-text: 22px;
     --line-height-bold: 32px;
     /* Nur Mobile duenner: 2px auf dem kleinen Screen wirkte kraeftiger als
-       auf Desktop gewollt (Absprache). */
-    --line-thickness: 1.5px;
+       auf Desktop gewollt (Absprache). 1,5px reichte noch nicht, jetzt 1px. */
+    --line-thickness: 1px;
     /* Gemeinsame Groesse fuer Nav-Plus und Galerie-Pfeile (Absprache:
        gleiche Groesse, kein weisser Rand mehr, dafuer groesser als vorher). */
     --mobile-control-size: calc(1.8 * var(--balken));
