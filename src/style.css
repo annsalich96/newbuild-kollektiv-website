@@ -546,9 +546,11 @@ ul {
 }
 
 .event-card__title {
-  /* Bündig mit den Meta-Zeilen (Referentin/Zeit/Ort) statt mit dem "Next
-     Event"-Label darüber — Label bleibt links (Spalte B), Titel beginnt
-     weiter rechts bei Spalte E (Absprache). */
+  /* Zurueck zu Spalte 5, buendig mit den Meta-Zeilen (Referentin/Zeit/Ort).
+     Spalte 11 (buendig mit "About" in der Nav) wurde getestet, wirkte
+     aber zerrissen: Titel brach auf 4 Zeilen ganz rechts um, Meta-Zeilen
+     bekamen eine grosse Luecke links (Absprache, nach Vorschau verworfen).
+     "Next Event"-Label bleibt bei Spalte 2, buendig mit "Mission". */
   grid-column: 5 / 13;
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
