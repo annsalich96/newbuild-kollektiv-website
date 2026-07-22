@@ -210,8 +210,15 @@ ul {
     right: 0;
   }
 
+  /* Gleiches Problem wie beim Plus-Toggle: Logo, Toggle und Panel sind
+     Geschwister in derselben Stacking-Context — ohne eigenen z-index
+     ueber dem Panel (19) verschwand das Logo hinter dem Vollbild-Menue,
+     sobald es geoeffnet wurde, statt an seiner Stelle sichtbar zu
+     bleiben (Absprache). */
   .mobile-nav-bar .hero__logo {
     padding-block-start: 0;
+    position: relative;
+    z-index: 21;
   }
 
   /* Kein weisser Rand mehr, dafuer groesser — gleiche Groesse wie die
