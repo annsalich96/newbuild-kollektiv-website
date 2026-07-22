@@ -197,7 +197,9 @@ ul {
     max-height: calc(4 * var(--balken));
     padding-inline: var(--space-5);
     padding-block: var(--space-3);
-    background: var(--color-bg);
+    /* Im Ruhezustand (noch nicht sticky) durchsichtig, damit das
+       Hintergrundbild hinter Logo/Plus sichtbar bleibt (Absprache). */
+    background: transparent;
   }
 
   /* position:sticky allein reichte nicht (Eltern-Element .hero ist auf
@@ -208,6 +210,17 @@ ul {
     top: 0;
     left: 0;
     right: 0;
+    /* Durchscheinendes Weiss mit Weichzeichner statt durchsichtig, sobald
+       sticky — Logo/Plus heben sich dann klar vom Hintergrund ab
+       (Absprache, gleicher Effekt wie die Desktop-Nav). */
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* .hero__logo ist ein <img>, text-shadow greift nur beim Plus (Text). */
+  .mobile-nav-bar.is-stuck .mobile-nav-toggle {
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   }
 
   /* Gleiches Problem wie beim Plus-Toggle: Logo, Toggle und Panel sind
@@ -296,12 +309,13 @@ ul {
    auf fixed umgeschaltet — funktioniert unabhaengig von der Elterngroesse. */
 .site-nav.is-stuck {
   position: fixed;
-  top: 0;
+  /* Halber Balken Abstand zum oberen Rand statt ganz oben festzukleben
+     (Absprache). */
+  top: calc(0.5 * var(--balken));
   left: 0;
   right: 0;
   /* Sonst wirkt margin-block-start (fuer die normale Position gedacht)
-     weiterhin und schiebt die fixierte Leiste 1 Balken zu weit nach unten
-     statt ganz oben anzuliegen. */
+     weiterhin und schiebt die fixierte Leiste zusaetzlich nach unten. */
   margin-block-start: 0;
 }
 
@@ -329,12 +343,13 @@ ul {
 /* Schwebend (fixiert): durchscheinendes Weiss mit Weichzeichner statt
    deckendem Schwarz — der Hintergrund (z.B. Bilder) bleibt als
    verschwommene Ahnung sichtbar statt komplett verdeckt zu werden
-   (Absprache). Kein sichtbarer Rand mehr. */
+   (Absprache). Weisser Rand-Kasten wie bei anderen Elementen der Seite
+   (Absprache, war zwischenzeitlich entfernt). */
 .site-nav.is-stuck .site-nav__pill {
   background: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: none;
+  border: var(--line-thickness) solid var(--color-border);
   /* Auf den hellsten Verlaufsabschnitten (z.B. Uebergang zu Sektion 8)
      wird Weiss auf dem durchscheinenden Glas sonst kontrastarm — dezenter
      Schatten haelt Logo und Links ueberall lesbar. */
@@ -810,6 +825,15 @@ ul {
 
 .marquee__inner {
   width: max-content;
+  /* Ruhezustand entspricht bewusst dem "from"-Keyframe der Animation
+     (siehe unten): ohne das zeigte der allererste Frame nach dem Laden
+     kurz transform:none (= 0%) statt -50%, wodurch alle Elemente fuer
+     einen Wimpernschlag an derselben Stelle kollabierten, bevor die
+     Animation richtig einsetzte — sichtbar als kurze Luecke am rechten
+     Rand bei Sponsoren-Leiste und Team-Galerie (beide marquee-rtl).
+     Fotogalerie 2 (marquee-ltr, from:0%) braucht das nicht, siehe
+     Override weiter unten. */
+  transform: translateX(-50%);
   animation: marquee-rtl 24s linear infinite;
 }
 
@@ -840,6 +864,9 @@ ul {
 
 .gallery-marquee .marquee__inner {
   animation-name: marquee-ltr;
+  /* Laeuft gegenlaeufig, "from" ist hier 0% statt -50% — Ruhezustand von
+     .marquee__inner (fuer die anderen zwei Marquees) wieder zuruecksetzen. */
+  transform: translateX(0%);
 }
 
 /* Mobil (nur Team-Galerie/Fotogalerie 2, Sponsoren bleiben Marquee):
@@ -1009,6 +1036,13 @@ ul {
   margin-block: 0;
 }
 
+/* Nur Mobile (Absprache): kein Schatten hinter den Trennstrichen. */
+@media (max-width: 768px) {
+  .divider {
+    box-shadow: none;
+  }
+}
+
 /* ---------- Footer ---------- */
 
 .site-footer {
@@ -1037,6 +1071,10 @@ ul {
 
 .site-footer__col:last-child {
   grid-column: 8 / 12;
+  /* Rechtsbuendig (Absprache) — Spalte 8/12 endet an Spalte 12, spiegelt
+     damit exakt den Randabstand von Spalte 2 links (dort beginnt der
+     Kontakt-Block, Spalte 1 bleibt frei; hier bleibt Spalte 12 frei). */
+  text-align: right;
 }
 
 .site-footer__col a,
@@ -1051,6 +1089,12 @@ ul {
   .site-footer__col:first-child,
   .site-footer__col:last-child {
     grid-column: 1 / -1;
+  }
+
+  /* Rechtsbuendig gilt nur fuer Desktop (Absprache) — auf Mobile wieder
+     linksbuendig wie der Kontakt-Block. */
+  .site-footer__col:last-child {
+    text-align: left;
   }
 }
 

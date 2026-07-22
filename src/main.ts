@@ -15,7 +15,11 @@ document.querySelectorAll<HTMLElement>('.site-nav, .mobile-nav-bar').forEach((ba
     if (!bar.classList.contains('is-stuck')) {
       naturalTop = bar.getBoundingClientRect().top + window.scrollY
     }
-    const shouldStick = naturalTop !== null && window.scrollY >= naturalTop
+    // ">" statt ">=": .mobile-nav-bar sitzt ganz oben (naturalTop ~ 0), mit
+    // ">=" war sie dadurch schon bei scrollY=0 (Seitenanfang) faelschlich
+    // "stuck" — der transparente Ruhezustand (Absprache) war so nie
+    // sichtbar, da sofort das Glas-Aussehen griff.
+    const shouldStick = naturalTop !== null && window.scrollY > naturalTop
     bar.classList.toggle('is-stuck', shouldStick)
   }
 
