@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>__TITLE__ — NewBuild Kollektiv</title>
+    <meta name="description" content="__NUMBER__ — __TITLE__, __DATE__, __LOCATION__." />
+  </head>
+  <body>
+    <header class="legal-header">
+      <a href="/">← NewBuild Kollektiv</a>
+    </header>
+
+    <main class="legal-content event-detail">
+      <p class="event-detail__number">__NUMBER__</p>
+      <h1>__TITLE__</h1>
+
+      <dl class="event-detail__meta">
+        <div>
+          <dt>Datum</dt>
+          <dd>__DATE__, __TIME__</dd>
+        </div>
+        <div>
+          <dt>Ort</dt>
+          <dd>__LOCATION__</dd>
+        </div>
+        <div>
+          <dt>Referent:in</dt>
+          <dd>__SPEAKER__</dd>
+        </div>
+      </dl>
+
+      <p class="event-detail__description">__DESCRIPTION__</p>
+
+      <h2>Anmeldung</h2>
+      <form class="event-form" id="event-form" data-event-slug="__SLUG__" data-event-title="__TITLE__">
+        <div class="event-form__row">
+          <label>
+            <span>Vorname</span>
+            <input type="text" name="firstName" required />
+          </label>
+          <label>
+            <span>Nachname</span>
+            <input type="text" name="lastName" required />
+          </label>
+        </div>
+        <label>
+          <span>E-Mail</span>
+          <input type="email" name="email" required />
+        </label>
+        <div class="event-form__row">
+          <label>
+            <span>Unternehmen (optional)</span>
+            <input type="text" name="company" />
+          </label>
+          <label>
+            <span>Position (optional)</span>
+            <input type="text" name="position" />
+          </label>
+        </div>
+        <label class="event-form__checkbox">
+          <input type="checkbox" name="privacy" required />
+          <span
+            >Ich habe die
+            <a href="/datenschutzerklaerung.html" target="_blank" rel="noreferrer"
+              >Datenschutzerklärung</a
+            >
+            gelesen und stimme zu.</span
+          >
+        </label>
+        <button type="submit" class="button event-form__submit">Verbindlich anmelden</button>
+        <p class="event-form__status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <footer class="site-footer">
+      <div class="grid">
+        <div class="site-footer__col">
+          <span>Wilmersdorfer Str. 108–111, 10627 Berlin</span>
+          <a href="tel:+491702828889">+49 170 2828889</a>
+          <a href="mailto:info@newbuildkollektiv.com">info@newbuildkollektiv.com</a>
+        </div>
+        <div class="site-footer__col">
+          <a href="/impressum.html">Impressum</a>
+          <a href="/datenschutzerklaerung.html">Datenschutzerklärung</a>
+          <a href="/widerrufsrecht.html">Widerrufsrecht</a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/event-form.ts"></script>
+  </body>
+</html>

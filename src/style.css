@@ -1199,3 +1199,123 @@ ul {
   margin-block: var(--space-5);
   color: var(--color-text);
 }
+
+/* ---------- Event-Detailseite (events/<slug>/index.html) ---------- */
+
+.event-detail__number {
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+  color: var(--color-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.event-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-block: var(--space-6);
+  padding-block: var(--space-5);
+  border-block: var(--line-thickness) solid var(--color-border);
+}
+
+.event-detail__meta dt {
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+  color: var(--color-muted);
+  margin: 0 0 var(--space-1);
+}
+
+.event-detail__meta dd {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.event-detail__description {
+  white-space: pre-line;
+}
+
+/* ---------- Anmeldeformular ---------- */
+
+.event-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 480px;
+}
+
+.event-form__row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.event-form__row label {
+  flex: 1;
+}
+
+.event-form label {
+  display: block;
+}
+
+.event-form label > span {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+  color: var(--color-muted);
+  margin-block-end: var(--space-2);
+}
+
+.event-form input[type='text'],
+.event-form input[type='email'] {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: var(--line-thickness) solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  padding-block: var(--space-2);
+}
+
+.event-form input[type='text']:focus,
+.event-form input[type='email']:focus {
+  outline: none;
+  border-bottom-color: var(--color-text);
+}
+
+.event-form__checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.event-form__checkbox input {
+  margin-block-start: 0.3em;
+}
+
+.event-form__checkbox span,
+.event-form__checkbox a {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.event-form__submit {
+  align-self: flex-start;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-text);
+}
+
+.event-form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.event-form__status {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  min-height: 1.2em;
+}

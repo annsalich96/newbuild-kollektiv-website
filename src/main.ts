@@ -16,17 +16,27 @@ const setText = (id: string, value: string) => {
 setText('mission-text', missionAboutData.missionText)
 setText('about-text', missionAboutData.aboutText)
 
-const { nextEvent, sessions } = eventsData
-setText('next-event-title', nextEvent.title)
-setText('next-event-speaker', nextEvent.speaker)
-setText('next-event-time', nextEvent.time)
-setText('next-event-location', nextEvent.location)
-const nextEventCta = document.getElementById('next-event-cta')
-if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = nextEvent.ctaHref
+// Jedes Event bekommt jetzt eine eigene, beim Build generierte Unterseite
+// (siehe scripts/generate-event-pages.mjs) - "Anmeldung" verlinkt dorthin
+// statt wie zuvor auf "#".
+const eventHref = (slug: string) => `/events/${slug}/`
+
+const nextEvent = eventsData.events.find((e) => e.isNext) ?? eventsData.events[0]
+if (nextEvent) {
+  const speaker = nextEvent.speakerCompany
+    ? `${nextEvent.speakerName} — ${nextEvent.speakerCompany}`
+    : nextEvent.speakerName
+  setText('next-event-title', `${nextEvent.number} — ${nextEvent.title}`)
+  setText('next-event-speaker', speaker)
+  setText('next-event-time', `${nextEvent.date}, ${nextEvent.time}`)
+  setText('next-event-location', nextEvent.location)
+  const nextEventCta = document.getElementById('next-event-cta')
+  if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
+}
 
 const sessionRow = document.getElementById('session-row')
 if (sessionRow) {
-  sessionRow.innerHTML = sessions
+  sessionRow.innerHTML = eventsData.events
     .map(
       (s) => `
         <li class="session-card">
@@ -35,11 +45,11 @@ if (sessionRow) {
             <p>${s.title}</p>
           </div>
           <div class="session-card__meta-block">
-            <p>${s.speaker}</p>
+            <p>${s.speakerName}</p>
             <p>${s.date}</p>
             <p>${s.time}</p>
           </div>
-          <a class="button session-card__button" href="${s.ctaHref}">Anmeldung</a>
+          <a class="button session-card__button" href="${eventHref(s.slug)}">Anmeldung</a>
         </li>`
     )
     .join('')

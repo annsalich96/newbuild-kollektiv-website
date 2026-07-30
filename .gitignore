@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Generiert von scripts/generate-event-pages.mjs aus src/content/events.json
+# bei jedem "vite dev"/"vite build" - nicht einchecken.
+/events/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

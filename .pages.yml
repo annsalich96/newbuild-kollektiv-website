@@ -7,15 +7,28 @@ content:
     path: src/content/events.json
     format: json
     fields:
-      - name: nextEvent
-        label: Next Event (großer Kasten)
+      - name: events
+        label: Events
         type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{number} — {title}"
         fields:
+          - name: slug
+            label: "URL-Kürzel (nur Kleinbuchstaben/Zahlen/Bindestriche, keine Leerzeichen!)"
+            type: string
+          - name: number
+            label: Nummer (z.B. "Session 01")
+            type: string
           - name: title
             label: Titel
             type: string
-          - name: speaker
-            label: Referent:in
+          - name: isNext
+            label: Als "Next Event" auf der Startseite zeigen?
+            type: boolean
+          - name: date
+            label: Datum
             type: string
           - name: time
             label: Zeit
@@ -23,35 +36,15 @@ content:
           - name: location
             label: Ort
             type: string
-          - name: ctaHref
-            label: Anmeldelink
-            type: string
-      - name: sessions
-        label: Weitere Sessions
-        type: object
-        list:
-          collapsible:
-            collapsed: true
-            summary: "{number} — {title}"
-        fields:
-          - name: number
-            label: Nummer (z.B. "Session 01")
-            type: string
-          - name: title
-            label: Titel
-            type: string
-          - name: speaker
+          - name: speakerName
             label: Referent:in
             type: string
-          - name: date
-            label: Datum
+          - name: speakerCompany
+            label: Firma/Zusatz (optional)
             type: string
-          - name: time
-            label: Zeit
-            type: string
-          - name: ctaHref
-            label: Anmeldelink
-            type: string
+          - name: description
+            label: Beschreibung
+            type: text
 
   - name: team
     label: Team

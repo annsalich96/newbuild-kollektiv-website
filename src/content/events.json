@@ -1,35 +1,40 @@
 {
-  "nextEvent": {
-    "title": "Session 01 — Automate your practice with N8N",
-    "speaker": "Maria Stasevich — OBLIK",
-    "time": "Di., 04.03.2026, 18:30–20:00",
-    "location": "NowyStyl & Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin",
-    "ctaHref": "#"
-  },
-  "sessions": [
+  "events": [
     {
+      "slug": "session-01-automate-your-practice-mit-n8n",
       "number": "Session 01",
       "title": "Automate your practice with N8N",
-      "speaker": "Maria Stasevich",
-      "date": "di., 14.04.2026",
-      "time": "18:00",
-      "ctaHref": "#"
+      "isNext": true,
+      "date": "Di., 04.03.2026",
+      "time": "18:30–20:00",
+      "location": "NowyStyl & Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin",
+      "speakerName": "Maria Stasevich",
+      "speakerCompany": "OBLIK",
+      "description": "Beschreibung folgt."
     },
     {
+      "slug": "session-02-automate-your-practice-mit-n8n",
       "number": "Session 02",
       "title": "Automate your practice with N8N",
-      "speaker": "Maria Stasevich",
+      "isNext": false,
       "date": "di., 14.04.2026",
       "time": "18:00",
-      "ctaHref": "#"
+      "location": "Ort folgt",
+      "speakerName": "Maria Stasevich",
+      "speakerCompany": "",
+      "description": "Beschreibung folgt."
     },
     {
+      "slug": "session-03-automate-your-practice-mit-n8n",
       "number": "Session 03",
       "title": "Automate your practice with N8N",
-      "speaker": "Maria Stasevich",
+      "isNext": false,
       "date": "di., 14.04.2026",
       "time": "18:00",
-      "ctaHref": "#"
+      "location": "Ort folgt",
+      "speakerName": "Maria Stasevich",
+      "speakerCompany": "",
+      "description": "Beschreibung folgt."
     }
   ]
 }
