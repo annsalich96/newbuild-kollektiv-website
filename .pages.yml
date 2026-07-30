@@ -1,0 +1,103 @@
+media: public
+
+content:
+  - name: events
+    label: Events (Seite)
+    type: file
+    path: src/content/events.json
+    format: json
+    fields:
+      - name: nextEvent
+        label: Next Event (großer Kasten)
+        type: object
+        fields:
+          - name: title
+            label: Titel
+            type: string
+          - name: speaker
+            label: Referent:in
+            type: string
+          - name: time
+            label: Zeit
+            type: string
+          - name: location
+            label: Ort
+            type: string
+          - name: ctaHref
+            label: Anmeldelink
+            type: string
+      - name: sessions
+        label: Weitere Sessions
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{number} — {title}"
+        fields:
+          - name: number
+            label: Nummer (z.B. "Session 01")
+            type: string
+          - name: title
+            label: Titel
+            type: string
+          - name: speaker
+            label: Referent:in
+            type: string
+          - name: date
+            label: Datum
+            type: string
+          - name: time
+            label: Zeit
+            type: string
+          - name: ctaHref
+            label: Anmeldelink
+            type: string
+
+  - name: team
+    label: Team
+    type: file
+    path: src/content/team.json
+    format: json
+    fields:
+      - name: members
+        label: Team-Mitglieder
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{name}"
+        fields:
+          - name: name
+            label: Name
+            type: string
+
+  - name: sponsors
+    label: Sponsoring
+    type: file
+    path: src/content/sponsors.json
+    format: json
+    fields:
+      - name: sponsors
+        label: Sponsoren
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{name}"
+        fields:
+          - name: name
+            label: Name
+            type: string
+
+  - name: mission-about
+    label: Mission & About (Texte)
+    type: file
+    path: src/content/mission-about.json
+    format: json
+    fields:
+      - name: missionText
+        label: Mission-Text
+        type: text
+      - name: aboutText
+        label: About-Text
+        type: text

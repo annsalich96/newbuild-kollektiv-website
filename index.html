@@ -68,10 +68,7 @@
       <section id="mission" class="page-section page-section--3">
         <div class="grid">
           <p class="section__eyebrow">Mission</p>
-          <p class="section__statement">
-            We are a new generation of architects, construction people who
-            believe that networking will make us resilient.
-          </p>
+          <p class="section__statement" id="mission-text"></p>
         </div>
       </section>
 
@@ -80,83 +77,9 @@
         <div class="grid divider-row divider-row--before-team"><hr class="divider" /></div>
         <div class="marquee team-marquee" aria-label="Team">
           <div class="marquee__inner">
-            <ul class="team-row">
-              <li class="team-row__member is-mobile-wrap-clone" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Ann-Kathrin Salich</span>
-                </div>
-              </li>
-              <li class="team-row__member">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Team-Mitglied (Name folgt)</span>
-                </div>
-              </li>
-              <li class="team-row__member">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Maria Stasevich</span>
-                </div>
-              </li>
-              <li class="team-row__member">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Markus Kolb</span>
-                </div>
-              </li>
-              <li class="team-row__member">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Ann-Kathrin Salich</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Team-Mitglied (Name folgt)</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Maria Stasevich</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Markus Kolb</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Ann-Kathrin Salich</span>
-                </div>
-              </li>
-              <!-- Dritte Kopie (nur Desktop): Viewport (z.B. 1920px) ist
-                   breiter als ein volles Set (1640px) — mit nur einer
-                   Verdopplung entsteht bei jedem Loop-Durchlauf eine echte,
-                   mehrere Sekunden sichtbare Luecke am rechten Rand statt
-                   nur eines einzelnen Frames (Absprache/gemessen). Drei
-                   Kopien + Animation auf -33,333% statt -50% beheben das. -->
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Team-Mitglied (Name folgt)</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Maria Stasevich</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Markus Kolb</span>
-                </div>
-              </li>
-              <li class="team-row__member is-desktop-duplicate" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Ann-Kathrin Salich</span>
-                </div>
-              </li>
-              <li class="team-row__member is-mobile-wrap-clone" aria-hidden="true">
-                <div class="team-row__photo" aria-hidden="true">
-                  <span class="team-row__name">Team-Mitglied (Name folgt)</span>
-                </div>
-              </li>
+            <ul class="team-row" id="team-row">
+              <!-- Wird von src/main.ts aus content/team.json befuellt (Klone
+                   fuer den Marquee-Loop werden dort dynamisch erzeugt). -->
             </ul>
           </div>
           <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorheriges Bild">‹</button>
@@ -169,22 +92,22 @@
         <div class="grid next-event-row">
           <article class="event-card event-card--next">
             <p class="event-card__label">Next Event</p>
-            <h2 class="event-card__title">Session 01 — Automate your practice with N8N</h2>
+            <h2 class="event-card__title" id="next-event-title"></h2>
             <dl class="event-card__meta">
               <div>
                 <dt>Referentin</dt>
-                <dd>Maria Stasevich — OBLIK</dd>
+                <dd id="next-event-speaker"></dd>
               </div>
               <div>
                 <dt>Zeit</dt>
-                <dd>Di., 04.03.2026, 18:30–20:00</dd>
+                <dd id="next-event-time"></dd>
               </div>
               <div>
                 <dt>Ort</dt>
-                <dd>NowyStyl &amp; Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin</dd>
+                <dd id="next-event-location"></dd>
               </div>
             </dl>
-            <a class="button event-card__cta" href="#">Anmeldung</a>
+            <a class="button event-card__cta" id="next-event-cta" href="#">Anmeldung</a>
           </article>
         </div>
       </section>
@@ -193,46 +116,8 @@
       <section class="page-section page-section--6">
         <div class="grid divider-row divider-row--before-sessions"><hr class="divider" /></div>
         <div class="grid">
-          <ul class="session-row" aria-label="Weitere Sessions">
-            <li class="session-card">
-              <p class="session-card__number">Session 01</p>
-              <div class="session-card__text">
-                <p>Automate your</p>
-                <p>practice with N8N</p>
-              </div>
-              <div class="session-card__meta-block">
-                <p>Maria Stasevich</p>
-                <p>di., 14.04.2026</p>
-                <p>18:00</p>
-              </div>
-              <a class="button session-card__button" href="#">Anmeldung</a>
-            </li>
-            <li class="session-card">
-              <p class="session-card__number">Session 02</p>
-              <div class="session-card__text">
-                <p>Automate your</p>
-                <p>practice with N8N</p>
-              </div>
-              <div class="session-card__meta-block">
-                <p>Maria Stasevich</p>
-                <p>di., 14.04.2026</p>
-                <p>18:00</p>
-              </div>
-              <a class="button session-card__button" href="#">Anmeldung</a>
-            </li>
-            <li class="session-card">
-              <p class="session-card__number">Session 03</p>
-              <div class="session-card__text">
-                <p>Automate your</p>
-                <p>practice with N8N</p>
-              </div>
-              <div class="session-card__meta-block">
-                <p>Maria Stasevich</p>
-                <p>di., 14.04.2026</p>
-                <p>18:00</p>
-              </div>
-              <a class="button session-card__button" href="#">Anmeldung</a>
-            </li>
+          <ul class="session-row" id="session-row" aria-label="Weitere Sessions">
+            <!-- Wird von src/main.ts aus content/events.json befuellt. -->
           </ul>
         </div>
       </section>
@@ -263,30 +148,14 @@
         <div class="grid divider-row divider-row--before-about"><hr class="divider" /></div>
         <div id="about" class="grid">
           <p class="section__eyebrow">About</p>
-          <p class="section__statement">
-            We are a new generation of architects, construction people who
-            believe that networking will make us resilient.
-          </p>
+          <p class="section__statement" id="about-text"></p>
         </div>
         <div class="grid divider-row divider-row--before-sponsoring"><hr class="divider" /></div>
         <div id="sponsoring" class="marquee sponsor-marquee" aria-label="Sponsoren">
           <div class="marquee__inner">
-            <ul class="marquee__track">
-              <li>Sponsor folgt</li>
-              <li>Sponsor folgt</li>
-              <li>Sponsor folgt</li>
-              <li>Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
-              <!-- Dritte Kopie: Viewport ist breiter als ein volles Set,
-                   mit nur einer Verdopplung entsteht sonst eine mehrere
-                   Sekunden sichtbare Luecke pro Loop-Durchlauf (Absprache). -->
-              <li aria-hidden="true">Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
-              <li aria-hidden="true">Sponsor folgt</li>
+            <ul class="marquee__track" id="sponsor-track">
+              <!-- Wird von src/main.ts aus content/sponsors.json befuellt
+                   (3 Kopien fuer den nahtlosen Marquee-Loop, siehe style.css). -->
             </ul>
           </div>
         </div>

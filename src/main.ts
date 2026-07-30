@@ -1,4 +1,94 @@
 import './style.css'
+import eventsData from './content/events.json'
+import teamData from './content/team.json'
+import sponsorsData from './content/sponsors.json'
+import missionAboutData from './content/mission-about.json'
+
+// --- Content-Rendering aus content/*.json (editierbar via Pages CMS) ---
+// Muss vor der Marquee-Logik weiter unten laufen, da diese die bereits
+// befuellten Listen im DOM ausliest (Anzahl Elemente, Klassen etc.).
+
+const setText = (id: string, value: string) => {
+  const el = document.getElementById(id)
+  if (el) el.textContent = value
+}
+
+setText('mission-text', missionAboutData.missionText)
+setText('about-text', missionAboutData.aboutText)
+
+const { nextEvent, sessions } = eventsData
+setText('next-event-title', nextEvent.title)
+setText('next-event-speaker', nextEvent.speaker)
+setText('next-event-time', nextEvent.time)
+setText('next-event-location', nextEvent.location)
+const nextEventCta = document.getElementById('next-event-cta')
+if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = nextEvent.ctaHref
+
+const sessionRow = document.getElementById('session-row')
+if (sessionRow) {
+  sessionRow.innerHTML = sessions
+    .map(
+      (s) => `
+        <li class="session-card">
+          <p class="session-card__number">${s.number}</p>
+          <div class="session-card__text">
+            <p>${s.title}</p>
+          </div>
+          <div class="session-card__meta-block">
+            <p>${s.speaker}</p>
+            <p>${s.date}</p>
+            <p>${s.time}</p>
+          </div>
+          <a class="button session-card__button" href="${s.ctaHref}">Anmeldung</a>
+        </li>`
+    )
+    .join('')
+}
+
+// Team-Marquee: gleiche Klon-Logik wie zuvor fest im HTML (1x Klon des
+// letzten Mitglieds vor dem ersten Eintrag fuer den mobilen Wrap-Around,
+// 2x volle Duplizierung fuer den nahtloser Desktop-Loop, 1x Klon des ersten
+// Mitglieds am Ende) — jetzt aus content/team.json erzeugt statt statisch
+// im Markup zu stehen. Funktioniert unabhaengig von der Mitgliederanzahl.
+const teamRow = document.getElementById('team-row')
+if (teamRow && teamData.members.length > 0) {
+  const memberItem = (name: string, extraClass: string | null) => {
+    const li = document.createElement('li')
+    li.className = extraClass ? `team-row__member ${extraClass}` : 'team-row__member'
+    if (extraClass) li.setAttribute('aria-hidden', 'true')
+    li.innerHTML = `
+      <div class="team-row__photo" aria-hidden="true">
+        <span class="team-row__name">${name}</span>
+      </div>`
+    return li
+  }
+
+  const names = teamData.members.map((m) => m.name)
+  const first = names[0]
+  const last = names[names.length - 1]
+
+  teamRow.appendChild(memberItem(last, 'is-mobile-wrap-clone'))
+  names.forEach((name) => teamRow.appendChild(memberItem(name, null)))
+  names.forEach((name) => teamRow.appendChild(memberItem(name, 'is-desktop-duplicate')))
+  names.forEach((name) => teamRow.appendChild(memberItem(name, 'is-desktop-duplicate')))
+  teamRow.appendChild(memberItem(first, 'is-mobile-wrap-clone'))
+}
+
+// Sponsoren-Leiste: reine CSS-Marquee ohne JS-Scroll-Handling (siehe unten,
+// bewusst ausgenommen), braucht nur 3 identische Kopien fuer den nahtlosen
+// Loop (siehe style.css-Kommentar bei .marquee__inner).
+const sponsorTrack = document.getElementById('sponsor-track')
+if (sponsorTrack && sponsorsData.sponsors.length > 0) {
+  const names = sponsorsData.sponsors.map((s) => s.name)
+  ;[false, true, true].forEach((hidden) => {
+    names.forEach((name) => {
+      const li = document.createElement('li')
+      li.textContent = name
+      if (hidden) li.setAttribute('aria-hidden', 'true')
+      sponsorTrack.appendChild(li)
+    })
+  })
+}
 
 // Floating Nav (Desktop .site-nav / Mobile .mobile-nav-bar): bleibt an der
 // normalen Position, bis sie beim Runterscrollen oben aus dem Viewport
