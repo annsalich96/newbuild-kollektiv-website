@@ -62,7 +62,10 @@ if (sessionRow) {
 // im Markup zu stehen. Funktioniert unabhaengig von der Mitgliederanzahl.
 const teamRow = document.getElementById('team-row')
 if (teamRow && teamData.members.length > 0) {
-  type Member = { name: string; image: string }
+  // image ist optional (`?`), weil Pages CMS ein leer gelassenes optionales
+  // Feld komplett weglaesst statt eines leeren Strings - ein Team-Mitglied
+  // ohne Foto hat also schlicht keinen "image"-Schluessel in der JSON.
+  type Member = { name: string; image?: string }
 
   const memberItem = (member: Member, extraClass: string | null) => {
     const li = document.createElement('li')
