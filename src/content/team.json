@@ -1,16 +1,20 @@
 {
   "members": [
     {
-      "name": "Mitglied"
+      "name": "Mitglied",
+      "image": ""
     },
     {
-      "name": "Maria Stasevich"
+      "name": "Maria Stasevich",
+      "image": ""
     },
     {
-      "name": "Markus Kolb"
+      "name": "Markus Kolb",
+      "image": ""
     },
     {
-      "name": "Ann-Kathrin Salich"
+      "name": "Ann-Kathrin Salich",
+      "image": ""
     }
   ]
 }

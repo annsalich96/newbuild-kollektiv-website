@@ -62,25 +62,33 @@ if (sessionRow) {
 // im Markup zu stehen. Funktioniert unabhaengig von der Mitgliederanzahl.
 const teamRow = document.getElementById('team-row')
 if (teamRow && teamData.members.length > 0) {
-  const memberItem = (name: string, extraClass: string | null) => {
+  type Member = { name: string; image: string }
+
+  const memberItem = (member: Member, extraClass: string | null) => {
     const li = document.createElement('li')
     li.className = extraClass ? `team-row__member ${extraClass}` : 'team-row__member'
     if (extraClass) li.setAttribute('aria-hidden', 'true')
+    // Solange kein Foto hinterlegt ist, bleibt es beim dunklen Platzhalter-
+    // Kasten (siehe .team-row__photo-Hintergrundfarbe) - sobald ueber Pages
+    // CMS ein Bild hochgeladen wird, erscheint es hier automatisch, ohne
+    // dass main.ts nochmal angefasst werden muss.
+    const photo = member.image ? `<img src="${member.image}" alt="" />` : ''
     li.innerHTML = `
       <div class="team-row__photo" aria-hidden="true">
-        <span class="team-row__name">${name}</span>
+        ${photo}
+        <span class="team-row__name">${member.name}</span>
       </div>`
     return li
   }
 
-  const names = teamData.members.map((m) => m.name)
-  const first = names[0]
-  const last = names[names.length - 1]
+  const members = teamData.members
+  const first = members[0]
+  const last = members[members.length - 1]
 
   teamRow.appendChild(memberItem(last, 'is-mobile-wrap-clone'))
-  names.forEach((name) => teamRow.appendChild(memberItem(name, null)))
-  names.forEach((name) => teamRow.appendChild(memberItem(name, 'is-desktop-duplicate')))
-  names.forEach((name) => teamRow.appendChild(memberItem(name, 'is-desktop-duplicate')))
+  members.forEach((member) => teamRow.appendChild(memberItem(member, null)))
+  members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-desktop-duplicate')))
+  members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-desktop-duplicate')))
   teamRow.appendChild(memberItem(first, 'is-mobile-wrap-clone'))
 }
 

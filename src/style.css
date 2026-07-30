@@ -560,6 +560,18 @@ ul {
   position: relative;
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
+  overflow: hidden;
+}
+
+/* Nur vorhanden, sobald ueber Pages CMS ein Foto hochgeladen wurde - bis
+   dahin bleibt der dunkle Platzhalter-Hintergrund von .team-row__photo
+   sichtbar (siehe main.ts). */
+.team-row__photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Name liegt jetzt im Bild unten links statt als eigene Zeile darunter

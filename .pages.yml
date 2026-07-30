@@ -63,6 +63,10 @@ content:
           - name: name
             label: Name
             type: string
+          - name: image
+            label: Foto (optional, solange leer bleibt der Platzhalter)
+            type: image
+            required: false
 
   - name: sponsors
     label: Sponsoring
