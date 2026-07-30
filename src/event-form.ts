@@ -28,7 +28,11 @@ if (form instanceof HTMLFormElement && status) {
     const formData = new FormData(form)
     const payload = {
       eventSlug: form.dataset.eventSlug ?? '',
+      eventNumber: form.dataset.eventNumber ?? '',
       eventTitle: form.dataset.eventTitle ?? '',
+      eventDate: form.dataset.eventDate ?? '',
+      eventTime: form.dataset.eventTime ?? '',
+      eventLocation: form.dataset.eventLocation ?? '',
       firstName: formData.get('firstName'),
       lastName: formData.get('lastName'),
       email: formData.get('email'),
