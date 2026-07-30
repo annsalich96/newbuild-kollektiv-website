@@ -1,8 +1,9 @@
 import './style.css'
 import eventsData from './content/events.json'
 import teamData from './content/team.json'
-import sponsorsData from './content/sponsors.json'
 import missionAboutData from './content/mission-about.json'
+import { initMobileNavToggle, initStickyNav } from './nav'
+import { renderSponsorMarquee } from './sponsors-marquee'
 
 // --- Content-Rendering aus content/*.json (editierbar via Pages CMS) ---
 // Muss vor der Marquee-Logik weiter unten laufen, da diese die bereits
@@ -95,104 +96,9 @@ if (teamRow && teamData.members.length > 0) {
   teamRow.appendChild(memberItem(first, 'is-mobile-wrap-clone'))
 }
 
-// Sponsoren-Leiste: reine CSS-Marquee ohne JS-Scroll-Handling (siehe unten,
-// bewusst ausgenommen), braucht nur 3 identische Kopien fuer den nahtlosen
-// Loop (siehe style.css-Kommentar bei .marquee__inner).
-const sponsorTrack = document.getElementById('sponsor-track')
-if (sponsorTrack && sponsorsData.sponsors.length > 0) {
-  const names = sponsorsData.sponsors.map((s) => s.name)
-  ;[false, true, true].forEach((hidden) => {
-    names.forEach((name) => {
-      const li = document.createElement('li')
-      li.textContent = name
-      if (hidden) li.setAttribute('aria-hidden', 'true')
-      sponsorTrack.appendChild(li)
-    })
-  })
-}
-
-// Floating Nav (Desktop .site-nav / Mobile .mobile-nav-bar): bleibt an der
-// normalen Position, bis sie beim Runterscrollen oben aus dem Viewport
-// laufen wuerde — erst dann wird sie fixiert. position:sticky allein reicht
-// nicht, da beide Leisten im DOM innerhalb von .hero sitzen (nur 6 Balken
-// hoch) und sich dadurch schon nach kurzer Scrolldistanz wieder loesen
-// wuerden. Die urspruengliche Position wird einmalig gemessen (vor jedem
-// Fixieren neu, falls sich die Seite/Schriftgroessen aendern), damit es bei
-// jeder Viewport-Breite (Desktop/Mobile-Umschaltung) korrekt bleibt.
-document.querySelectorAll<HTMLElement>('.site-nav, .mobile-nav-bar').forEach((bar) => {
-  let naturalTop: number | null = null
-  let stuckOffset = 0
-
-  // Misst den CSS-"top"-Wert von .is-stuck (z.B. 0.125*Balken bei der
-  // Desktop-Nav, 0 bei der Mobile-Leiste) live ueber das Layout, statt ihn
-  // hier als Zahl zu duplizieren — bleibt so automatisch korrekt, egal was
-  // in style.css eingestellt ist. Kurzes synchrones An/Abschalten der
-  // Klasse fuer die Messung erzeugt keinen sichtbaren Flackerer, da der
-  // Browser erst nach Ende dieses Scripts neu zeichnet.
-  const measureStuckOffset = () => {
-    const wasStuck = bar.classList.contains('is-stuck')
-    if (!wasStuck) bar.classList.add('is-stuck')
-    const top = bar.getBoundingClientRect().top
-    if (!wasStuck) bar.classList.remove('is-stuck')
-    return top
-  }
-
-  const update = () => {
-    if (!bar.classList.contains('is-stuck')) {
-      naturalTop = bar.getBoundingClientRect().top + window.scrollY
-    }
-    if (naturalTop === null) return
-    // Fixiert wird schon, sobald die Leiste an ihrer natuerlichen Position
-    // den Sticky-Abstand (stuckOffset) erreichen wuerde — nicht erst wenn
-    // sie komplett am oberen Rand ankaeme. So passiert der Wechsel zu
-    // position:fixed nahtlos ohne sichtbaren Sprung (Absprache).
-    // +2px Toleranz: manche mobile Browser liefern beim Zurueckscrollen an
-    // die Seitenspitze einen minimal von 0 abweichenden scrollY (Rundungs-
-    // /Adressleisten-Artefakt) — bei der Mobile-Leiste (stuckOffset ~ 0)
-    // blieb sie dadurch faelschlich im blurry/sticky Zustand haengen,
-    // obwohl man sichtbar ganz oben war.
-    const threshold = naturalTop - stuckOffset + 2
-    bar.classList.toggle('is-stuck', window.scrollY > threshold)
-  }
-
-  stuckOffset = measureStuckOffset()
-  update()
-  window.addEventListener('scroll', update, { passive: true })
-
-  // Nur bei echter Breitenaenderung zuruecksetzen (z.B. Geraet gedreht),
-  // nicht bei jedem 'resize' — mobile Browser feuern 'resize' auch, wenn
-  // beim Scrollen die Adressleiste ein-/ausblendet (Hoehenaenderung). Ein
-  // Reset genau in diesem Moment konnte eine falsche Ruheposition
-  // einfangen (Bug: Leiste blieb nach dem Hochscrollen faelschlich im
-  // schwebenden/blurry Zustand haengen).
-  let lastWidth = window.innerWidth
-  window.addEventListener('resize', () => {
-    if (window.innerWidth === lastWidth) return
-    lastWidth = window.innerWidth
-    bar.classList.remove('is-stuck')
-    naturalTop = null
-    stuckOffset = measureStuckOffset()
-    update()
-  })
-})
-
-const navToggle = document.querySelector<HTMLButtonElement>('.mobile-nav-toggle')
-const navPanel = document.querySelector<HTMLElement>('.mobile-nav-panel')
-
-if (navToggle && navPanel) {
-  navToggle.addEventListener('click', () => {
-    const isOpen = !navPanel.hidden
-    navPanel.hidden = isOpen
-    navToggle.setAttribute('aria-expanded', String(!isOpen))
-  })
-
-  navPanel.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => {
-      navPanel.hidden = true
-      navToggle.setAttribute('aria-expanded', 'false')
-    })
-  })
-}
+renderSponsorMarquee()
+initStickyNav()
+initMobileNavToggle()
 
 // Mobile: Team-/Fotogalerie sind statische, per Pfeil/Swipe navigierbare
 // Galerien, unendlich in beide Richtungen (Absprache). scroll-snap

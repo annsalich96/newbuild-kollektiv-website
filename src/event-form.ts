@@ -1,4 +1,10 @@
 import './style.css'
+import { initMobileNavToggle, initStickyNav } from './nav'
+import { renderSponsorMarquee } from './sponsors-marquee'
+
+renderSponsorMarquee()
+initStickyNav()
+initMobileNavToggle()
 
 // Web-App-URL des Google Apps Script (google-apps-script/Code.gs),
 // deployed von Xavi am 2026-07-30.
@@ -28,7 +34,9 @@ if (form instanceof HTMLFormElement && status) {
       lastName: formData.get('lastName'),
       email: formData.get('email'),
       company: formData.get('company'),
-      position: formData.get('position'),
+      companyAddress: formData.get('companyAddress'),
+      phone: formData.get('phone'),
+      newsletter: formData.get('newsletter') === 'on',
     }
 
     try {

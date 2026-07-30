@@ -8,80 +8,131 @@
     <meta name="description" content="__NUMBER__ — __TITLE__, __DATE__, __LOCATION__." />
   </head>
   <body>
-    <header class="legal-header">
-      <a href="/">← NewBuild Kollektiv</a>
-    </header>
+    <div class="event-hero">
+      <div class="mobile-nav-bar">
+        <h1 class="hero__logo">
+          <img src="/logo-wordmark.png" alt="NewBuild Kollektiv" width="815" height="195" />
+        </h1>
+        <button
+          type="button"
+          class="mobile-nav-toggle"
+          aria-label="Menü öffnen"
+          aria-expanded="false"
+          aria-controls="mobile-nav-panel"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+      </div>
+      <nav id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Hauptnavigation" hidden>
+        <a href="/#mission">Mission</a>
+        <a href="/#events">Events</a>
+        <a href="/#sponsoring">Sponsoring</a>
+        <a href="/#about">About</a>
+      </nav>
 
-    <main class="legal-content event-detail">
-      <p class="event-detail__number">__NUMBER__</p>
-      <h1>__TITLE__</h1>
+      <header class="site-nav">
+        <div class="site-nav__pill">
+          <a href="/" class="site-nav__logo" aria-label="NewBuild Kollektiv Startseite">
+            <img src="/logo-mark.png" alt="" width="29" height="28" />
+          </a>
+          <nav aria-label="Hauptnavigation">
+            <a href="/#mission">Mission</a>
+            <a href="/#events">Events</a>
+            <a href="/#sponsoring">Sponsoring</a>
+            <a href="/#about">About</a>
+          </nav>
+        </div>
+      </header>
 
-      <dl class="event-detail__meta">
-        <div>
-          <dt>Datum</dt>
-          <dd>__DATE__, __TIME__</dd>
+      <section class="grid event-detail__intro">
+        <p class="section__eyebrow">__NUMBER__</p>
+        <div class="event-detail__intro-content">
+          <h2 class="event-detail__title">__TITLE__</h2>
+          __DESCRIPTION_PARAGRAPHS__
         </div>
-        <div>
-          <dt>Ort</dt>
-          <dd>__LOCATION__</dd>
-        </div>
-        <div>
-          <dt>Referent:in</dt>
-          <dd>__SPEAKER__</dd>
-        </div>
-      </dl>
+      </section>
 
-      <p class="event-detail__description">__DESCRIPTION__</p>
+      <div class="grid divider-row"><hr class="divider" /></div>
 
-      <h2>Anmeldung</h2>
-      <form
-        class="event-form"
-        id="event-form"
-        data-event-slug="__SLUG__"
-        data-event-number="__NUMBER__"
-        data-event-title="__TITLE__"
-        data-event-date="__DATE__"
-        data-event-time="__TIME__"
-        data-event-location="__LOCATION__"
-      >
-        <div class="event-form__row">
-          <label>
-            <span>Vorname</span>
-            <input type="text" name="firstName" required />
-          </label>
-          <label>
-            <span>Nachname</span>
-            <input type="text" name="lastName" required />
-          </label>
+      <section class="grid event-detail__speaker">
+        <div class="event-detail__speaker-info">
+          <h3 class="event-detail__speaker-name">__SPEAKER__</h3>
+          __SPEAKER_BIO_BLOCK__
         </div>
-        <label>
-          <span>E-Mail</span>
-          <input type="email" name="email" required />
-        </label>
-        <div class="event-form__row">
-          <label>
-            <span>Unternehmen (optional)</span>
-            <input type="text" name="company" />
-          </label>
-          <label>
-            <span>Position (optional)</span>
-            <input type="text" name="position" />
-          </label>
+        <figure class="event-detail__speaker-photo">__SPEAKER_PHOTO__</figure>
+      </section>
+
+      <div class="grid divider-row"><hr class="divider" /></div>
+
+      <div class="marquee sponsor-marquee" aria-label="Sponsoren">
+        <div class="marquee__inner">
+          <ul class="marquee__track" id="sponsor-track"></ul>
         </div>
-        <label class="event-form__checkbox">
-          <input type="checkbox" name="privacy" required />
-          <span
-            >Ich habe die
-            <a href="/datenschutzerklaerung.html" target="_blank" rel="noreferrer"
-              >Datenschutzerklärung</a
+      </div>
+    </div>
+
+    <section class="event-form-section">
+      <div class="grid">
+        <p class="event-form-section__label">Anmeldeformular</p>
+        <form
+          class="event-form"
+          id="event-form"
+          data-event-slug="__SLUG__"
+          data-event-number="__NUMBER__"
+          data-event-title="__TITLE__"
+          data-event-date="__DATE__"
+          data-event-time="__TIME__"
+          data-event-location="__LOCATION__"
+        >
+          <div class="event-form__row">
+            <label>
+              <span>Vorname</span>
+              <input type="text" name="firstName" required />
+            </label>
+            <label>
+              <span>Nachname</span>
+              <input type="text" name="lastName" required />
+            </label>
+          </div>
+          <div class="event-form__row">
+            <label>
+              <span>Unternehmen</span>
+              <input type="text" name="company" />
+            </label>
+            <label>
+              <span>Unternehmensadresse</span>
+              <input type="text" name="companyAddress" />
+            </label>
+          </div>
+          <div class="event-form__row">
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" required />
+            </label>
+            <label>
+              <span>Telefonnummer</span>
+              <input type="tel" name="phone" />
+            </label>
+          </div>
+          <label class="event-form__checkbox">
+            <input type="checkbox" name="newsletter" />
+            <span>Bitte informiere mich über anstehende Events.</span>
+          </label>
+          <label class="event-form__checkbox">
+            <input type="checkbox" name="privacy" required />
+            <span
+              >Ich habe die
+              <a href="/datenschutzerklaerung.html" target="_blank" rel="noreferrer"
+                >Datenschutzerklärung</a
+              >
+              gelesen und stimme zu.</span
             >
-            gelesen und stimme zu.</span
-          >
-        </label>
-        <button type="submit" class="button event-form__submit">Verbindlich anmelden</button>
-        <p class="event-form__status" role="status" aria-live="polite"></p>
-      </form>
-    </main>
+          </label>
+          <button type="submit" class="button event-form__submit">Verbindlich anmelden</button>
+          <p class="event-form__status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
 
     <footer class="site-footer">
       <div class="grid">

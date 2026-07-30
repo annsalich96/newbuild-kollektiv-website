@@ -1212,50 +1212,154 @@ ul {
   color: var(--color-text);
 }
 
-/* ---------- Event-Detailseite (events/<slug>/index.html) ---------- */
+/* ---------- Event-Detailseite (events/<slug>/index.html) ----------
+   Eigener Verlaufs-Hintergrund (Orange -> hell) statt dem durchgehenden
+   Homepage-Hintergrundbild, laut Layout-Vorlage (Anmeldeseite_Layout.pdf).
+   Enthaelt Nav, Titel/Beschreibung, Referent:in, Sponsoren-Leiste - danach
+   folgt der helle Formular-Bereich (.event-form-section) separat. */
 
-.event-detail__number {
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-label);
-  font-size: var(--font-size-capital);
-  color: var(--color-muted);
-  margin: 0 0 var(--space-2);
+.event-hero {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-orange) 0%,
+    #4a4340 45%,
+    #d8d5d2 100%
+  );
+  padding-block-end: calc(2 * var(--balken));
 }
 
-.event-detail__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-6);
-  margin-block: var(--space-6);
-  padding-block: var(--space-5);
-  border-block: var(--line-thickness) solid var(--color-border);
+.event-detail__intro {
+  padding-block-start: calc(2.5 * var(--balken));
 }
 
-.event-detail__meta dt {
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-label);
-  font-size: var(--font-size-capital);
-  color: var(--color-muted);
-  margin: 0 0 var(--space-1);
+.event-hero .divider {
+  margin-block: calc(1.5 * var(--balken));
 }
 
-.event-detail__meta dd {
+.event-detail__intro-content {
+  grid-column: 5 / 13;
+}
+
+@media (max-width: 768px) {
+  .event-detail__intro-content {
+    grid-column: 1 / -1;
+  }
+}
+
+.event-detail__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-bold);
+  line-height: var(--line-height-bold);
+  font-weight: var(--font-weight-bold);
   margin: 0;
-  font-size: var(--font-size-base);
-  color: var(--color-text);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-detail__description {
-  white-space: pre-line;
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  margin: var(--space-6) 0 0;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
-/* ---------- Anmeldeformular ---------- */
+.event-detail__description + .event-detail__description {
+  margin-block-start: var(--space-4);
+}
+
+.event-detail__speaker {
+  margin-block-start: calc(1.5 * var(--balken));
+  align-items: center;
+}
+
+.event-detail__speaker-info {
+  grid-column: 2 / 6;
+}
+
+.event-detail__speaker-name {
+  font-size: var(--font-size-regular-text);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  margin: 0 0 var(--space-4);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.event-detail__speaker-bio {
+  color: var(--color-muted);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.event-detail__speaker-bio + .event-detail__speaker-bio {
+  margin-block-start: var(--space-3);
+}
+
+.event-detail__speaker-photo {
+  grid-column: 7 / 12;
+  aspect-ratio: 3 / 4;
+  background: #1a1a1a;
+  overflow: hidden;
+  margin: 0;
+}
+
+.event-detail__speaker-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .event-detail__speaker-info,
+  .event-detail__speaker-photo {
+    grid-column: 1 / -1;
+  }
+
+  .event-detail__speaker-photo {
+    margin-block-start: var(--space-6);
+  }
+}
+
+/* ---------- Anmeldeformular ----------
+   Heller Bereich (Absprache laut Layout-Vorlage) - ueberschreibt die
+   Farb-Tokens lokal auf dunkle Werte, damit Inputs/Labels/Button (die alle
+   ueber var(--color-*) gestylt sind) automatisch dunkel statt weiss werden,
+   ohne jede Regel einzeln zu duplizieren. */
+.event-form-section {
+  --color-text: #111111;
+  --color-muted: rgba(17, 17, 17, 0.65);
+  --color-border: #111111;
+  background: #ececea;
+  color: var(--color-text);
+  padding-block: calc(2 * var(--balken));
+}
+
+.event-form-section__label {
+  grid-column: 2 / 4;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+  margin: 0;
+}
 
 .event-form {
+  grid-column: 5 / 13;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  max-width: 480px;
+  max-width: 560px;
+  margin-block-start: calc(-1 * var(--font-size-capital));
+}
+
+@media (max-width: 768px) {
+  .event-form-section__label {
+    grid-column: 1 / -1;
+    margin-block-end: var(--space-5);
+  }
+
+  .event-form {
+    grid-column: 1 / -1;
+    margin-block-start: 0;
+  }
 }
 
 .event-form__row {
@@ -1281,7 +1385,8 @@ ul {
 }
 
 .event-form input[type='text'],
-.event-form input[type='email'] {
+.event-form input[type='email'],
+.event-form input[type='tel'] {
   width: 100%;
   background: transparent;
   border: none;
@@ -1292,7 +1397,8 @@ ul {
 }
 
 .event-form input[type='text']:focus,
-.event-form input[type='email']:focus {
+.event-form input[type='email']:focus,
+.event-form input[type='tel']:focus {
   outline: none;
   border-bottom-color: var(--color-text);
 }

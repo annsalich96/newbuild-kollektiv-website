@@ -44,6 +44,14 @@ content:
           - name: speakerCompany
             label: Firma/Zusatz (optional)
             type: string
+          - name: speakerBio
+            label: Referent:in — Kurzbeschreibung (optional)
+            type: text
+            required: false
+          - name: speakerImage
+            label: Referent:in — Foto (optional)
+            type: image
+            required: false
           - name: description
             label: Beschreibung
             type: text

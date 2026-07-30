@@ -40,6 +40,26 @@ export function generateEventPages() {
       ? `${event.speakerName} — ${event.speakerCompany}`
       : event.speakerName
 
+    // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
+    // eigener Absatz, wie im PDF-Layout vorgegeben.
+    const descriptionParagraphs = String(event.description || '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => `<p class="event-detail__description">${escapeHtml(line)}</p>`)
+      .join('\n')
+
+    // speakerBio/speakerImage sind optionale Felder - Pages CMS laesst den
+    // Schluessel komplett weg, wenn sie leer bleiben (daher || '' zur
+    // Absicherung). Ohne Bio/Foto wird der jeweilige Block einfach nicht
+    // ausgegeben statt einer leeren Zeile/einem leeren Bild.
+    const speakerBioBlock = event.speakerBio
+      ? `<p class="event-detail__speaker-bio">${escapeHtml(event.speakerBio)}</p>`
+      : ''
+    const speakerPhoto = event.speakerImage
+      ? `<img src="${escapeHtml(event.speakerImage)}" alt="" />`
+      : ''
+
     const html = template
       .replaceAll('__TITLE__', escapeHtml(event.title))
       .replaceAll('__NUMBER__', escapeHtml(event.number))
@@ -47,7 +67,9 @@ export function generateEventPages() {
       .replaceAll('__TIME__', escapeHtml(event.time))
       .replaceAll('__LOCATION__', escapeHtml(event.location))
       .replaceAll('__SPEAKER__', escapeHtml(speaker))
-      .replaceAll('__DESCRIPTION__', escapeHtml(event.description))
+      .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs)
+      .replaceAll('__SPEAKER_BIO_BLOCK__', speakerBioBlock)
+      .replaceAll('__SPEAKER_PHOTO__', speakerPhoto)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
 
     const eventDir = join(outDir, event.slug)
