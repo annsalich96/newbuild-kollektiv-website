@@ -40,7 +40,7 @@ Jedes Event bekommt beim Build automatisch eine eigene Unterseite unter `events/
 
 - `scripts/generate-event-pages.mjs` liest `src/content/events.json`, füllt `scripts/event-page.template.html` pro Event aus und schreibt das Ergebnis nach `events/<slug>/index.html`. Läuft automatisch bei jedem `vite dev`/`vite build` (aufgerufen aus `vite.config.ts`) — der `events/`-Ordner wird nicht eingecheckt (siehe `.gitignore`), entsteht immer frisch.
 - Neues Event-Feld `introLabel` (Standard: `"Mission"`) ist das Eyebrow-Label über dem Titel — **kein Session-Nummer-Feld**, sondern frei editierbar über Pages CMS (Ann kann daraus z.B. auch "Session 01" machen, wenn gewünscht).
-- Grid-Positionen der Event-Seite (Spalten/Balken) sind in `04-projects/newbuild-kollektiv-website/design files/Anmeldeseite_Spaltensystem.pdf` vorgegeben und am 2026-07-31 direkt aus den PDF-Koordinaten (nicht per Augenmaß) ausgemessen worden — siehe Commit-Historie für die exakten Werte, falls nochmal Layout-Fragen aufkommen.
+- Grid-Positionen der Event-Seite (Spalten/Balken) sind in `04-projects/newbuild-kollektiv-website/design files/Anmeldeseite_Spaltensystem.pdf` vorgegeben und am 2026-07-31 direkt aus den PDF-Koordinaten (nicht per Augenmaß) ausgemessen worden — Element-Tabelle mit den exakten Werten steht in [`docs/anmeldeseite-grid-tabelle.md`](./docs/anmeldeseite-grid-tabelle.md).
 - Registrierungsformular (`src/event-form.ts`) sendet an Google Apps Script, siehe nächster Abschnitt.
 
 ## Geteilte Bausteine (Nav, Footer, Sponsoren-Leiste)
@@ -97,7 +97,8 @@ docs/                              Grid-Tabelle, Anmeldesystem-Anforderungen
 
 ## Weitere Dokumentation (in diesem Repo)
 
-- `docs/grid-tabelle.md` — Spalten-/Balkensystem und Element-Positionen aus den Referenz-PDFs
+- `docs/grid-tabelle.md` — Spalten-/Balkensystem und Element-Positionen aus den Referenz-PDFs (Homepage)
+- `docs/anmeldeseite-grid-tabelle.md` — Element-Tabelle der Event-Anmeldeseite (aus `Anmeldeseite_Spaltensystem.pdf`)
 - `docs/event-anmeldesystem-anforderungen.md` — Anforderungen ans Anmeldesystem, Umsetzungsstand
 - `google-apps-script/README.md` — Setup-Anleitung für Code.gs (Bereitstellung im Apps-Script-Editor)
 
