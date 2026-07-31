@@ -11,9 +11,7 @@
       "location": "NowyStyl & Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin",
       "speakerName": "Maria Stasevich",
       "speakerCompany": "OBLIK",
-      "speakerBio": "",
-      "speakerImage": "",
-      "description": "Beschreibung folgt."
+      "description": "Beschreibung folgt. das hier ist ein test"
     },
     {
       "slug": "session-02-automate-your-practice-mit-n8n",
@@ -25,8 +23,6 @@
       "time": "18:00",
       "location": "Ort folgt",
       "speakerName": "Maria Stasevich",
-      "speakerBio": "",
-      "speakerImage": "",
       "description": "Beschreibung folgt."
     },
     {
@@ -39,8 +35,6 @@
       "time": "18:00",
       "location": "Ort folgt",
       "speakerName": "Maria Stasevich",
-      "speakerBio": "",
-      "speakerImage": "",
       "description": "Beschreibung folgt."
     }
   ]
