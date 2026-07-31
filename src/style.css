@@ -1218,7 +1218,11 @@ ul {
     #4a4340 45%,
     #d8d5d2 100%
   );
-  padding-block-end: calc(2 * var(--balken));
+  /* Kein eigenes Bottom-Padding mehr: Sponsoren-Leiste ist bereits exakt
+     1 Balken hoch, der Abstand zum Formular kommt allein aus
+     .event-form-section (0,5 Balken oben) - siehe Element-Tabelle. Mit
+     Padding hier zusaetzlich blieb ein grosser grauer Leerraum zwischen
+     Sponsoren-Leiste und Formular stehen (Bug aus a364b18). */
 }
 
 .event-detail__intro {
