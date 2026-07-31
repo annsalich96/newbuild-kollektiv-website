@@ -34,24 +34,53 @@ Content-Pflege läuft über [Pages CMS](https://app.pagescms.org) — Login per 
 >
 > Optionale Felder (`required: false`) im TS-Typ immer als `feld?: string` typisieren — lässt Ann ein optionales Feld im CMS leer, schreibt Pages CMS den Key gar nicht erst in die JSON. Ohne `?` bricht dann `tsc` beim nächsten Build (ist am 2026-07-30 bei Team → `image` genau so passiert).
 
+## Event-Anmeldeseiten (automatisch generiert)
+
+Jedes Event bekommt beim Build automatisch eine eigene Unterseite unter `events/<slug>/index.html` (z.B. `events/session-01-.../`) — dafür gibt es **keinen eigenen Pages-CMS-Eintrag**, die Seiten entstehen aus denselben Daten wie der "Events"-Bereich in Pages CMS.
+
+- `scripts/generate-event-pages.mjs` liest `src/content/events.json`, füllt `scripts/event-page.template.html` pro Event aus und schreibt das Ergebnis nach `events/<slug>/index.html`. Läuft automatisch bei jedem `vite dev`/`vite build` (aufgerufen aus `vite.config.ts`) — der `events/`-Ordner wird nicht eingecheckt (siehe `.gitignore`), entsteht immer frisch.
+- Neues Event-Feld `introLabel` (Standard: `"Mission"`) ist das Eyebrow-Label über dem Titel — **kein Session-Nummer-Feld**, sondern frei editierbar über Pages CMS (Ann kann daraus z.B. auch "Session 01" machen, wenn gewünscht).
+- Grid-Positionen der Event-Seite (Spalten/Balken) sind in `04-projects/newbuild-kollektiv-website/design files/Anmeldeseite_Spaltensystem.pdf` vorgegeben und am 2026-07-31 direkt aus den PDF-Koordinaten (nicht per Augenmaß) ausgemessen worden — siehe Commit-Historie für die exakten Werte, falls nochmal Layout-Fragen aufkommen.
+- Registrierungsformular (`src/event-form.ts`) sendet an Google Apps Script, siehe nächster Abschnitt.
+
+## Geteilte Bausteine (Nav, Footer, Sponsoren-Leiste)
+
+Nav-Leiste, Fußzeile und Sponsoren-Laufband sind **global identisch** auf Startseite, allen Event-Seiten und allen rechtlichen Seiten — als eigene TS-Module ausgelagert, damit die Logik nicht mehrfach existiert:
+
+- `src/nav.ts` — Sticky-Nav-Verhalten + Mobile-Menü-Toggle
+- `src/sponsors-marquee.ts` — rendert die Sponsoren-Laufband-Liste aus `src/content/sponsors.json`
+- `src/footer.ts` — rendert Adresse/Telefon/E-Mail + die drei rechtlichen Link-Texte aus `src/content/footer.json` (global editierbar über Pages CMS, wirkt auf **alle** Seiten gleichzeitig)
+- `src/legal-pages.ts` — rendert Impressum/Datenschutz/Widerrufsrecht-Inhalte aus den jeweiligen `src/content/*.json`
+
+Jeder HTML-Entry-Point (`index.html`, `scripts/event-page.template.html`, `impressum.html`, `datenschutzerklaerung.html`, `widerrufsrecht.html`) bindet je nach Bedarf `src/main.ts`, `src/event-form.ts` oder `src/legal-pages.ts` ein — diese importieren wiederum die geteilten Module. Footer-Felder haben zusätzlich einen fest im HTML stehenden Fallback-Text (nicht nur leer + JS-befüllt), damit die Fußzeile nie komplett leer erscheint, falls JavaScript mal verzögert lädt.
+
 ## Google Apps Script: Event-Anmeldungen
 
-`google-apps-script/Code.gs` (liegt im Vault unter `04-projects/newbuild-kollektiv-website/google-apps-script/`, nicht Teil dieses Git-Repos) läuft als Web-App unter dem Google-Account **"newbuild kollektiv"** (Alias `request@newbuild-kollektiv.com`). Nimmt Anmeldungen vom Event-Formular entgegen und trägt sie automatisch in eine Google-Sheets-Tabelle ein + verschickt eine Bestätigungsmail.
+`google-apps-script/Code.gs` (liegt im Vault unter `04-projects/newbuild-kollektiv-website/google-apps-script/`, nicht Teil dieses Git-Repos) läuft als Web-App unter dem Google-Account **"newbuild kollektiv"** (Alias `request@newbuild-kollektiv.com`). Nimmt Anmeldungen vom Event-Formular entgegen, trägt sie automatisch in Google Sheets ein und verschickt eine Bestätigungsmail.
 
-- Das Frontend-Formular (`src/event-form.ts`) sendet an die Web-App-URL (endet auf `/exec`).
+- Das Frontend-Formular (`src/event-form.ts`) sendet an die Web-App-URL (endet auf `/exec`) mit `Content-Type: text/plain` statt `application/json` — bewusst so, weil Apps-Script-Web-Apps den CORS-Preflight nicht beantworten, den JSON auslöst (das Skript liest den Body trotzdem als JSON).
+- **Ordnerstruktur in Google Drive:** Hauptordner "NewBuild Kollektiv — Event-Anmeldungen" → darin Unterordner **"Events"** (ein Sheet pro Event) und die Datei **"History Anmeldungen"** (alle Personen, die sich je angemeldet haben, dedupliziert per E-Mail-Adresse — bei erneuter Anmeldung wird nur "Letztes Event"/Zähler aktualisiert statt einer neuen Zeile).
 - **Wichtig:** Bei jeder Code-Änderung an `Code.gs` im Apps-Script-Editor muss erneut **Bereitstellen → Bereitstellungen verwalten → Bearbeiten (Stift) → Neue Version → Bereitstellen** gemacht werden — sonst läuft die Web-App weiter mit der alten Version.
+- Noch nicht gebaut: automatisierte Erinnerungs-E-Mail vor dem Event-Datum.
 
 ## Struktur
 
 ```
-index.html                 Einstiegspunkt
-src/main.ts                 App-Logik / Markup-Aufbau
-src/content/*.json          CMS-gepflegte Inhalte (siehe .pages.yml)
-src/event-form.ts           Anmeldeformular → Google Apps Script
-src/styles/tokens.css       Design-System: Grid, Spacing, Typografie, Farben
-.pages.yml                  Pages-CMS-Schema (manuell pflegen, siehe oben)
-scripts/check-cms-schema.mjs   Build-Vorcheck: Pflichtfelder vollständig?
-google-apps-script/         (im Vault, nicht hier im Repo) Code.gs + Setup-Anleitung
+index.html                        Startseite
+impressum.html, datenschutz...    Rechtliche Seiten (statisch, Inhalte per JS aus content/*.json)
+scripts/event-page.template.html  Vorlage für Event-Anmeldeseiten
+scripts/generate-event-pages.mjs  Erzeugt events/<slug>/index.html aus events.json (nicht eingecheckt)
+scripts/check-cms-schema.mjs      Build-Vorcheck: Pflichtfelder aus .pages.yml vollständig?
+src/main.ts                       App-Logik Startseite
+src/event-form.ts                 Anmeldeformular → Google Apps Script
+src/legal-pages.ts                Rendert Impressum/Datenschutz/Widerrufsrecht
+src/nav.ts                        Geteilte Sticky-Nav-Logik
+src/footer.ts                     Geteilte, global editierbare Fußzeile
+src/sponsors-marquee.ts           Geteiltes Sponsoren-Laufband
+src/content/*.json                CMS-gepflegte Inhalte (siehe .pages.yml)
+src/styles/tokens.css             Design-System: Grid, Spacing, Typografie, Farben
+.pages.yml                        Pages-CMS-Schema (manuell pflegen, siehe oben)
+google-apps-script/                (im Vault, nicht hier im Repo) Code.gs + Setup-Anleitung
 ```
 
 ## Befehle
