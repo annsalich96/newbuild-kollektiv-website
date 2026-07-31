@@ -10,8 +10,6 @@
       "location": "NowyStyl & Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin",
       "speakerName": "Maria Stasevich",
       "speakerCompany": "OBLIK",
-      "speakerBio": "",
-      "speakerImage": "",
       "description": "Beschreibung folgt."
     },
     {
@@ -23,23 +21,17 @@
       "time": "18:00",
       "location": "Ort folgt",
       "speakerName": "Maria Stasevich",
-      "speakerCompany": "",
-      "speakerBio": "",
-      "speakerImage": "",
       "description": "Beschreibung folgt."
     },
     {
       "slug": "session-03-automate-your-practice-mit-n8n",
       "number": "Session 03",
       "title": "Automate your practice with N8N",
-      "isNext": false,
+      "isNext": true,
       "date": "di., 14.04.2026",
       "time": "18:00",
       "location": "Ort folgt",
       "speakerName": "Maria Stasevich",
-      "speakerCompany": "",
-      "speakerBio": "",
-      "speakerImage": "",
       "description": "Beschreibung folgt."
     }
   ]
