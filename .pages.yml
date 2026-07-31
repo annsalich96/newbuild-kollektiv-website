@@ -44,6 +44,7 @@ content:
           - name: speakerCompany
             label: Firma/Zusatz (optional)
             type: string
+            required: false
           - name: speakerBio
             label: Referent:in — Kurzbeschreibung (optional)
             type: text
