@@ -23,6 +23,9 @@ content:
           - name: number
             label: Nummer (z.B. "Session 01")
             type: string
+          - name: introLabel
+            label: "Label über dem Titel (Standard: \"Mission\", frei änderbar)"
+            type: string
           - name: title
             label: Titel
             type: string

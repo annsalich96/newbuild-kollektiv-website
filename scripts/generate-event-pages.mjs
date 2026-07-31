@@ -63,6 +63,7 @@ export function generateEventPages() {
     const html = template
       .replaceAll('__TITLE__', escapeHtml(event.title))
       .replaceAll('__NUMBER__', escapeHtml(event.number))
+      .replaceAll('__INTRO_LABEL__', escapeHtml(event.introLabel))
       .replaceAll('__DATE__', escapeHtml(event.date))
       .replaceAll('__TIME__', escapeHtml(event.time))
       .replaceAll('__LOCATION__', escapeHtml(event.location))

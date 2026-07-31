@@ -1222,24 +1222,19 @@ ul {
 }
 
 .event-detail__intro {
-  padding-block-start: calc(2.5 * var(--balken));
+  /* Nav endet natuerlich variabel (geteiltes Bauteil wie Startseite), Titel
+     soll laut Element-Tabelle (2026-07-31) bei Balken 7 beginnen - 2 Balken
+     Abstand als Naeherung. */
+  padding-block-start: calc(2 * var(--balken));
 }
 
 .event-hero .divider {
   margin-block: calc(1.5 * var(--balken));
 }
 
-.event-detail__intro-content {
-  grid-column: 5 / 13;
-}
-
-@media (max-width: 768px) {
-  .event-detail__intro-content {
-    grid-column: 1 / -1;
-  }
-}
-
 .event-detail__title {
+  /* Spalten 5-11 (E-K) laut Element-Tabelle, Balken 7. */
+  grid-column: 5 / 12;
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
   line-height: var(--line-height-bold);
@@ -1249,14 +1244,25 @@ ul {
 }
 
 .event-detail__description {
+  /* Spalten 5-12 (E-L), Balken 9-16 - eigene Zeile unterhalb des Titels
+     (Grid-Auto-Placement rutscht automatisch eine Reihe weiter, da Spalte
+     11-12 vom Titel noch nicht belegt sind). */
+  grid-column: 5 / 13;
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  margin: var(--space-6) 0 0;
+  margin: calc(2 * var(--balken)) 0 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-detail__description + .event-detail__description {
   margin-block-start: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .event-detail__title,
+  .event-detail__description {
+    grid-column: 1 / -1;
+  }
 }
 
 .event-detail__speaker {
@@ -1265,11 +1271,14 @@ ul {
 }
 
 .event-detail__speaker-info {
-  grid-column: 2 / 6;
+  /* Spalten 2-7 laut Element-Tabelle. */
+  grid-column: 2 / 8;
 }
 
 .event-detail__speaker-name {
-  font-size: var(--font-size-regular-text);
+  /* 24pt = Text Capital, gemessen aus der Layout-Vorlage (nicht 36pt wie
+     zuvor angenommen). */
+  font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   margin: 0 0 var(--space-4);
@@ -1286,7 +1295,8 @@ ul {
 }
 
 .event-detail__speaker-photo {
-  grid-column: 7 / 12;
+  /* Spalten 9-12 laut Element-Tabelle. */
+  grid-column: 9 / 13;
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
   overflow: hidden;
@@ -1322,7 +1332,10 @@ ul {
   --color-border: #111111;
   background: #ececea;
   color: var(--color-text);
-  padding-block: calc(2 * var(--balken));
+  /* Formular-Label sitzt laut Element-Tabelle direkt bei Balken 27, die
+     Sponsoren-Leiste davor ist genau 1 Balken hoch (Balken 26) - kaum
+     Abstand dazwischen, anders als vorher angenommen. */
+  padding-block: calc(0.5 * var(--balken)) calc(2 * var(--balken));
 }
 
 .event-form-section__label {
