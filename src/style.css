@@ -1069,21 +1069,13 @@ ul {
   width: 100%;
   border: none;
   /* Deckend weiß (kein mix-blend-mode mehr — das kehrte Farben um und
-     erzeugte die grün/blau wirkende Linie). Ein dezenter dunkler Schatten
-     hält die Linie zusätzlich auf hellen Verlaufsabschnitten sichtbar,
-     ohne die Farbe selbst zu verändern. */
+     erzeugte die grün/blau wirkende Linie). Kein box-shadow mehr
+     (Absprache 2026-07-30 — vorher nur auf Mobile entfernt, jetzt auch
+     Desktop). */
   border-top: var(--line-thickness) solid var(--color-border);
-  box-shadow: 0 0 3px 0 rgba(0, 0, 0, 0.5);
   /* Kein einheitlicher margin-block mehr — jeder Trennstrich hat seinen
      eigenen Abstand nach oben/unten, siehe "Vertikaler Rhythmus". */
   margin-block: 0;
-}
-
-/* Nur Mobile (Absprache): kein Schatten hinter den Trennstrichen. */
-@media (max-width: 768px) {
-  .divider {
-    box-shadow: none;
-  }
 }
 
 /* ---------- Footer ---------- */
