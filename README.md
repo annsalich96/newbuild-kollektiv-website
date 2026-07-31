@@ -2,21 +2,15 @@
 
 Statische Website (Vite + TypeScript), kein Framework. Deployment über Cloudflare Pages, verbunden mit diesem GitHub-Repo — jeder Push auf `main` löst automatisch ein neues Deployment aus.
 
+> **Vollständigen Projekt-Kontext (Hosting, CMS-Workflow, Anmeldesystem, bekannte Stolpersteine) gibt's in [`CLAUDE.md`](./CLAUDE.md).** Diese Datei hier ist nur der kurze Einstieg.
+
 ## Struktur
 
-```
-index.html              Einstiegspunkt
-src/main.ts              App-Logik / Markup-Aufbau
-src/style.css            Basis-Styles, importiert tokens.css
-src/styles/tokens.css    Design-System: Grid, Spacing, Typografie, Farben
-public/                  Statische Assets (Favicon etc.)
-```
+Siehe [`CLAUDE.md`](./CLAUDE.md) für die vollständige, aktuelle Übersicht.
 
 ## Grid-System
 
-12-Spalten-Grid, definiert in `src/styles/tokens.css` über die Klasse `.grid`. Werte für Gutter, Margin und Breakpoints sind zentral als CSS-Variablen gepflegt — nicht hart im Markup verdrahten.
-
-> Aktuell Platzhalterwerte. Werden nach Auswertung des Moodboards final gesetzt.
+12-Spalten-Grid, definiert in `src/styles/tokens.css` über die Klasse `.grid`. Werte für Gutter, Margin und Breakpoints sind zentral als CSS-Variablen gepflegt — nicht hart im Markup verdrahten. Details/Element-Positionen: [`docs/grid-tabelle.md`](./docs/grid-tabelle.md).
 
 ## Workflow
 

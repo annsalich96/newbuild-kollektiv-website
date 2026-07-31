@@ -56,7 +56,10 @@ Jeder HTML-Entry-Point (`index.html`, `scripts/event-page.template.html`, `impre
 
 ## Google Apps Script: Event-Anmeldungen
 
-`google-apps-script/Code.gs` (liegt im Vault unter `04-projects/newbuild-kollektiv-website/google-apps-script/`, nicht Teil dieses Git-Repos) läuft als Web-App unter dem Google-Account **"newbuild kollektiv"** (Alias `request@newbuild-kollektiv.com`). Nimmt Anmeldungen vom Event-Formular entgegen, trägt sie automatisch in Google Sheets ein und verschickt eine Bestätigungsmail.
+`google-apps-script/Code.gs` (liegt in diesem Repo, siehe `google-apps-script/README.md` für die Einrichtung) läuft als Web-App unter dem Google-Account **"newbuild kollektiv"** (Alias `request@newbuild-kollektiv.com`). Nimmt Anmeldungen vom Event-Formular entgegen, trägt sie automatisch in Google Sheets ein und verschickt eine Bestätigungsmail.
+
+> [!warning] Code.gs im Repo ist nur eine Kopie
+> Der tatsächlich laufende Code liegt im Google-Apps-Script-Editor selbst (im Google-Account "newbuild kollektiv") — das hier im Repo ist die Referenzkopie. Nach jeder Änderung an dieser Datei muss der Code manuell in den Apps-Script-Editor kopiert und dort neu bereitgestellt werden (siehe unten), es gibt keine automatische Synchronisation.
 
 - Das Frontend-Formular (`src/event-form.ts`) sendet an die Web-App-URL (endet auf `/exec`) mit `Content-Type: text/plain` statt `application/json` — bewusst so, weil Apps-Script-Web-Apps den CORS-Preflight nicht beantworten, den JSON auslöst (das Skript liest den Body trotzdem als JSON).
 - **Ordnerstruktur in Google Drive:** Hauptordner "NewBuild Kollektiv — Event-Anmeldungen" → darin Unterordner **"Events"** (ein Sheet pro Event) und die Datei **"History Anmeldungen"** (alle Personen, die sich je angemeldet haben, dedupliziert per E-Mail-Adresse — bei erneuter Anmeldung wird nur "Letztes Event"/Zähler aktualisiert statt einer neuen Zeile).
@@ -80,7 +83,8 @@ src/sponsors-marquee.ts           Geteiltes Sponsoren-Laufband
 src/content/*.json                CMS-gepflegte Inhalte (siehe .pages.yml)
 src/styles/tokens.css             Design-System: Grid, Spacing, Typografie, Farben
 .pages.yml                        Pages-CMS-Schema (manuell pflegen, siehe oben)
-google-apps-script/                (im Vault, nicht hier im Repo) Code.gs + Setup-Anleitung
+google-apps-script/                Code.gs (Referenzkopie) + Setup-Anleitung
+docs/                              Grid-Tabelle, Anmeldesystem-Anforderungen
 ```
 
 ## Befehle
@@ -91,9 +95,10 @@ google-apps-script/                (im Vault, nicht hier im Repo) Code.gs + Setu
 | `npm run build` | Schema-Check + Produktions-Build nach `dist/` |
 | `npm run preview` | Lokale Vorschau des Builds |
 
-## Verwandte Dokumentation im Second-Brain-Vault
+## Weitere Dokumentation (in diesem Repo)
 
-- `04-projects/newbuild-kollektiv-website/README.md` — Projekt-Überblick, Referenz-PDFs
-- `04-projects/newbuild-kollektiv-website/grid-tabelle.md` — Layout-Vorgaben aus Referenz-PDFs
-- `04-projects/newbuild-kollektiv-website/event-anmeldesystem-anforderungen.md` — Anforderungen ans Anmeldesystem
-- `04-projects/newbuild-kollektiv-website/google-apps-script/README.md` — Setup-Anleitung für Code.gs
+- `docs/grid-tabelle.md` — Spalten-/Balkensystem und Element-Positionen aus den Referenz-PDFs
+- `docs/event-anmeldesystem-anforderungen.md` — Anforderungen ans Anmeldesystem, Umsetzungsstand
+- `google-apps-script/README.md` — Setup-Anleitung für Code.gs (Bereitstellung im Apps-Script-Editor)
+
+Die großen Referenz-PDFs (Grid-Vorlagen, teils 150MB+) sind bewusst **nicht** im Git-Repo (Repo-Größe, GitHub-Limits) — die Werte daraus stecken schon in `docs/grid-tabelle.md` und im Code. Bei Bedarf über das gemeinsame Google-Drive-Backup teilen.
