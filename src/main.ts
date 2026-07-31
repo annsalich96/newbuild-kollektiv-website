@@ -25,7 +25,30 @@ setText('about-text', missionAboutData.aboutText)
 // statt wie zuvor auf "#".
 const eventHref = (slug: string) => `/events/${slug}/`
 
-const nextEvent = eventsData.events.find((e) => e.isNext) ?? eventsData.events[0]
+// Explizit typisiert statt die JSON-Struktur roh zu inferieren: Pages CMS
+// laesst ein leer gelassenes optionales Feld komplett aus der JSON weg
+// (wie bei Team -> image, siehe CLAUDE.md). Ohne eigenen Typ mit `?` bricht
+// tsc, sobald ein Event (z.B. durchs Bearbeiten in Pages CMS) als einziges
+// die letzte verbliebene Instanz eines Felds verliert - passiert am
+// 2026-07-31 genau so mit speakerCompany.
+type EventItem = {
+  slug: string
+  number: string
+  introLabel: string
+  title: string
+  isNext: boolean
+  date: string
+  time: string
+  location: string
+  speakerName: string
+  speakerCompany?: string
+  speakerBio?: string
+  speakerImage?: string
+  description: string
+}
+
+const events = eventsData.events as EventItem[]
+const nextEvent = events.find((e) => e.isNext) ?? events[0]
 if (nextEvent) {
   const speaker = nextEvent.speakerCompany
     ? `${nextEvent.speakerName} — ${nextEvent.speakerCompany}`
@@ -40,7 +63,7 @@ if (nextEvent) {
 
 const sessionRow = document.getElementById('session-row')
 if (sessionRow) {
-  sessionRow.innerHTML = eventsData.events
+  sessionRow.innerHTML = events
     .map(
       (s) => `
         <li class="session-card">
