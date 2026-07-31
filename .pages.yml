@@ -161,3 +161,19 @@ content:
       - name: body
         label: Text
         type: text
+
+  - name: footer
+    label: Fußzeile (global, alle Seiten)
+    type: file
+    path: src/content/footer.json
+    format: json
+    fields:
+      - name: address
+        label: Adresse
+        type: string
+      - name: phone
+        label: Telefon
+        type: string
+      - name: email
+        label: E-Mail
+        type: string

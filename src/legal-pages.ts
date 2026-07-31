@@ -2,6 +2,9 @@ import './style.css'
 import impressumData from './content/impressum.json'
 import datenschutzData from './content/datenschutz.json'
 import widerrufsrechtData from './content/widerrufsrecht.json'
+import { renderFooter } from './footer'
+
+renderFooter()
 
 // Rendert die Abschnitte (Ueberschrift + Text) von Impressum/Datenschutz in
 // den jeweiligen Container - welche Daten genutzt werden, steht als

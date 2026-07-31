@@ -1,10 +1,12 @@
 import './style.css'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
+import { renderFooter } from './footer'
 
 renderSponsorMarquee()
 initStickyNav()
 initMobileNavToggle()
+renderFooter()
 
 // Web-App-URL des Google Apps Script (google-apps-script/Code.gs),
 // deployed von Xavi am 2026-07-30.

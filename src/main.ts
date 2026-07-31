@@ -4,10 +4,13 @@ import teamData from './content/team.json'
 import missionAboutData from './content/mission-about.json'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
+import { renderFooter } from './footer'
 
 // --- Content-Rendering aus content/*.json (editierbar via Pages CMS) ---
 // Muss vor der Marquee-Logik weiter unten laufen, da diese die bereits
 // befuellten Listen im DOM ausliest (Anzahl Elemente, Klassen etc.).
+
+renderFooter()
 
 const setText = (id: string, value: string) => {
   const el = document.getElementById(id)
