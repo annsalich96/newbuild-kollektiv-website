@@ -19,4 +19,12 @@ export function renderFooter() {
     emailEl.textContent = footerData.email
     emailEl.href = `mailto:${footerData.email}`
   }
+
+  const setLabel = (id: string, value: string) => {
+    const el = document.getElementById(id)
+    if (el) el.textContent = value
+  }
+  setLabel('footer-impressum-label', footerData.impressumLabel)
+  setLabel('footer-datenschutz-label', footerData.datenschutzLabel)
+  setLabel('footer-widerrufsrecht-label', footerData.widerrufsrechtLabel)
 }

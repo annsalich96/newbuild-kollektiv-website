@@ -177,3 +177,12 @@ content:
       - name: email
         label: E-Mail
         type: string
+      - name: impressumLabel
+        label: Link-Text "Impressum"
+        type: string
+      - name: datenschutzLabel
+        label: Link-Text "Datenschutz"
+        type: string
+      - name: widerrufsrechtLabel
+        label: Link-Text "Widerrufsrecht"
+        type: string
