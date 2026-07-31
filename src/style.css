@@ -1248,13 +1248,21 @@ ul {
 }
 
 .event-detail__description {
-  /* Spalten 5-12 (E-L), Balken 9-16 - eigene Zeile unterhalb des Titels
-     (Grid-Auto-Placement rutscht automatisch eine Reihe weiter, da Spalte
-     11-12 vom Titel noch nicht belegt sind). */
+  /* Spalten 5-12 (E-L) - eigene Zeile unterhalb des Titels (Grid-Auto-
+     Placement rutscht automatisch eine Reihe weiter, da Spalte 11-12 vom
+     Titel noch nicht belegt sind).
+     Abstand zum Titel bewusst als fester, kleiner Wert statt Balken-
+     skaliert (Vergleich mit Anmeldeseite_Layout.pdf, 2026-07-31): ein
+     Balken-Abstand (~2*balken war vorher gesetzt) ging von einem 2-
+     zeiligen Titel aus und wirkte bei kurzen 1-zeiligen Titeln (z.B.
+     "Automate your practice with N8N") wie eine riesige leere Lücke,
+     weil der Abstand nicht vom tatsächlichen Zeilenende, sondern von
+     einer fixen Bezugsgroesse aus gerechnet wurde. Laut Vorlage folgt
+     die Beschreibung direkt mit normalem Absatzabstand auf den Titel. */
   grid-column: 5 / 13;
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  margin: calc(2 * var(--balken)) 0 0;
+  margin: var(--space-6) 0 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 

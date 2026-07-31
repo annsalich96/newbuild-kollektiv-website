@@ -33,6 +33,7 @@ Quelle: Ann-Kathrins korrigierte Element-Tabelle (2026-07-31). Notation wie bei 
 
 ## Umsetzung (2026-07-31)
 
+- **Nr. 7/8 (Titel → Beschreibung) korrigiert:** Der Abstand war als fester Balken-Wert gesetzt (an einem 2-zeiligen Beispieltitel aus `Anmeldeseite_Layout.pdf` gemessen) und riss bei kurzen 1-zeiligen Titeln eine riesige leere Lücke auf. Direkt gegen die Layout-PDF verglichen: Beschreibung soll mit normalem Absatzabstand auf den Titel folgen, unabhängig von dessen Zeilenzahl. Jetzt fester kleiner Wert (`var(--space-6)`) statt Balken-Skalierung.
 - **Nr. 10/11 korrigiert:** Referent:innen-Name und Bio-Text hatten bisher dieselbe Spaltenspanne (2–7, gemeinsamer Wrapper). Jetzt getrennt: Name eigenständig auf Spalte 2–3, Bio auf 2–7 — siehe `src/style.css` (`.event-detail__speaker-name`, `.event-detail__speaker-bio`).
 - **Nr. 15 geklärt:** Sponsoren-Laufband bleibt Text Capital 24pt wie auf der Startseite (`.marquee__track li`, gemeinsame Klasse für alle Laufbänder) — keine Änderung nötig, war bereits korrekt.
 - Alle anderen Positionen (Titel, Beschreibung, Foto, Formular-Label, Formularfelder, Footer) stimmten bereits mit dieser Tabelle überein, keine weitere Änderung nötig.
