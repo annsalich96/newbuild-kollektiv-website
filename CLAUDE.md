@@ -98,7 +98,8 @@ docs/                              Grid-Tabelle, Anmeldesystem-Anforderungen
 ## Weitere Dokumentation (in diesem Repo)
 
 - `docs/grid-tabelle.md` — Spalten-/Balkensystem und Element-Positionen aus den Referenz-PDFs (Homepage)
-- `docs/anmeldeseite-grid-tabelle.md` — Element-Tabelle der Event-Anmeldeseite (aus `Anmeldeseite_Spaltensystem.pdf`)
+- `docs/Anmeldeseite_Position_der_Elemente.md` — **maßgebliche** Element-Tabelle der Event-Anmeldeseite (Ann-Kathrins korrigierte Version, 2026-07-31), gilt für alle aktuellen und zukünftigen Events
+- `docs/anmeldeseite-grid-tabelle.md` — ältere Version derselben Tabelle (aus `Anmeldeseite_Spaltensystem.pdf`, vor der Korrektur), nur noch als Historie
 - `docs/event-anmeldesystem-anforderungen.md` — Anforderungen ans Anmeldesystem, Umsetzungsstand
 - `google-apps-script/README.md` — Setup-Anleitung für Code.gs (Bereitstellung im Apps-Script-Editor)
 

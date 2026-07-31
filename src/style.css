@@ -1275,11 +1275,17 @@ ul {
 }
 
 .event-detail__speaker-info {
-  /* Spalten 2-7 laut Element-Tabelle. */
-  grid-column: 2 / 8;
+  /* Nur noch semantischer Wrapper, kein eigenes Grid-Item mehr - Name und
+     Bio haben laut Element-Tabelle (2026-07-31) unterschiedliche
+     Spaltenspannen (2-3 bzw. 2-7), brauchen also getrennte grid-column-
+     Werte statt einer gemeinsamen Box. display:contents reicht die Kinder
+     direkt an das Grid von .event-detail__speaker weiter. */
+  display: contents;
 }
 
 .event-detail__speaker-name {
+  /* Spalte 2-3 laut Element-Tabelle (eigenständig, nicht mit der Bio geteilt). */
+  grid-column: 2 / 4;
   /* 24pt = Text Capital, gemessen aus der Layout-Vorlage (nicht 36pt wie
      zuvor angenommen). */
   font-size: var(--font-size-capital);
@@ -1290,6 +1296,8 @@ ul {
 }
 
 .event-detail__speaker-bio {
+  /* Spalte 2-7 laut Element-Tabelle. */
+  grid-column: 2 / 8;
   color: var(--color-muted);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
@@ -1315,7 +1323,8 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .event-detail__speaker-info,
+  .event-detail__speaker-name,
+  .event-detail__speaker-bio,
   .event-detail__speaker-photo {
     grid-column: 1 / -1;
   }
