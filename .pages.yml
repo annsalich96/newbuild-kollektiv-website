@@ -109,3 +109,55 @@ content:
       - name: aboutText
         label: About-Text
         type: text
+
+  - name: impressum
+    label: Impressum (Seite)
+    type: file
+    path: src/content/impressum.json
+    format: json
+    fields:
+      - name: sections
+        label: Abschnitte
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{heading}"
+        fields:
+          - name: heading
+            label: Überschrift
+            type: string
+          - name: body
+            label: Text
+            type: text
+
+  - name: datenschutz
+    label: Datenschutzerklärung (Seite)
+    type: file
+    path: src/content/datenschutz.json
+    format: json
+    fields:
+      - name: sections
+        label: Abschnitte
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{heading}"
+        fields:
+          - name: heading
+            label: Überschrift
+            type: string
+          - name: body
+            label: Text
+            type: text
+
+  - name: widerrufsrecht
+    label: Widerrufsrecht (Seite)
+    type: file
+    path: src/content/widerrufsrecht.json
+    format: json
+    fields:
+      - name: body
+        label: Text
+        type: text

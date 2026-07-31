@@ -1,0 +1,28 @@
+{
+  "sections": [
+    {
+      "heading": "Verantwortlicher",
+      "body": "[Name/Firma, Anschrift, Kontakt — folgt, identisch zum Impressum]"
+    },
+    {
+      "heading": "Hosting",
+      "body": "Diese Website wird bei Cloudflare Pages gehostet. [Details zum Auftragsverarbeitungsvertrag folgen]"
+    },
+    {
+      "heading": "Kontaktaufnahme",
+      "body": "[Falls es ein Kontaktformular gibt: welche Daten werden erhoben, wie lange gespeichert — folgt]"
+    },
+    {
+      "heading": "Cookies und Tracking",
+      "body": "[Werden Analyse-/Tracking-Tools eingesetzt (z.B. Google Analytics)? Falls ja, welche — folgt]"
+    },
+    {
+      "heading": "E-Mail-Versand",
+      "body": "[Welcher E-Mail-Anbieter wird für info@newbuildkollektiv.com genutzt — folgt]"
+    },
+    {
+      "heading": "Ihre Rechte",
+      "body": "[Auskunft, Berichtigung, Löschung, Widerspruch, Beschwerde bei einer Aufsichtsbehörde — folgt]"
+    }
+  ]
+}

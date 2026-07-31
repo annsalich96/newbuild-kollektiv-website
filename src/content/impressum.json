@@ -1,0 +1,28 @@
+{
+  "sections": [
+    {
+      "heading": "Angaben gemäß § 5 TMG",
+      "body": "[Name/Firma, Rechtsform, Anschrift folgt]"
+    },
+    {
+      "heading": "Vertreten durch",
+      "body": "[Vertretungsberechtigte Person(en) folgt]"
+    },
+    {
+      "heading": "Kontakt",
+      "body": "E-Mail: info@newbuildkollektiv.com\nTelefon: [folgt]"
+    },
+    {
+      "heading": "Registereintrag",
+      "body": "[Handelsregister/Vereinsregister-Nummer und Registergericht, falls vorhanden — folgt]"
+    },
+    {
+      "heading": "Umsatzsteuer-ID",
+      "body": "[USt-IdNr. nach § 27a UStG, falls vorhanden — folgt]"
+    },
+    {
+      "heading": "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV",
+      "body": "[Name, Anschrift — folgt]"
+    }
+  ]
+}
