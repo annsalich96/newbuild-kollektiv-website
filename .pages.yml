@@ -82,6 +82,40 @@ content:
             type: image
             required: false
 
+  - name: hero
+    label: Hero-Foto (Startseite)
+    type: file
+    path: src/content/hero.json
+    format: json
+    fields:
+      - name: photo
+        label: Foto (optional, solange leer bleibt der Platzhalter)
+        type: image
+        required: false
+
+  - name: gallery
+    label: Fotogalerie (Startseite)
+    type: file
+    path: src/content/gallery.json
+    format: json
+    fields:
+      - name: photos
+        label: Fotos
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "Foto {index}"
+        fields:
+          - name: photo
+            label: Foto (optional, solange leer bleibt der Platzhalter)
+            type: image
+            required: false
+          - name: alt
+            label: Alt-Text (optional, für Barrierefreiheit)
+            type: string
+            required: false
+
   - name: sponsors
     label: Sponsoring
     type: file

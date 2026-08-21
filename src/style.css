@@ -488,6 +488,15 @@ ul {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-sm);
+  overflow: hidden;
+}
+
+/* Nur vorhanden, sobald ueber Pages CMS ein Foto hochgeladen wurde - bis
+   dahin bleibt der "Foto folgt"-Platzhalter sichtbar (siehe main.ts). */
+.hero__photo-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ---------- Sections (shared) ---------- */
@@ -1058,6 +1067,15 @@ ul {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
+  overflow: hidden;
+}
+
+/* Nur vorhanden, sobald ueber Pages CMS ein Foto hochgeladen wurde - bis
+   dahin bleibt der "Foto folgt"-Platzhalter sichtbar (siehe main.ts). */
+.photo-gallery-2__slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ---------- Trennlinien (grid-tabelle.md Nr. 6/13/18/20/23) ---------- */

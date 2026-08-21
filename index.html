@@ -59,7 +59,9 @@
 
       <!-- Sektion 2 — Balken 7-14: Hero-Foto -->
       <section class="page-section page-section--2">
-        <div class="hero__photo-placeholder" aria-hidden="true">
+        <!-- Foto wird von src/main.ts aus content/hero.json eingesetzt, sobald
+             ueber Pages CMS hochgeladen - bis dahin bleibt der Platzhalter. -->
+        <div class="hero__photo-placeholder" id="hero-photo" aria-hidden="true">
           <span>Foto folgt</span>
         </div>
       </section>
@@ -127,15 +129,10 @@
         <div class="grid divider-row divider-row--before-gallery2"><hr class="divider" /></div>
         <div class="marquee gallery-marquee" aria-label="Fotogalerie">
           <div class="marquee__inner">
-            <ul class="photo-gallery-2">
-              <li class="photo-gallery-2__slide is-mobile-wrap-clone" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide is-desktop-duplicate" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide is-desktop-duplicate" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide is-desktop-duplicate" aria-hidden="true">Foto folgt</li>
-              <li class="photo-gallery-2__slide is-mobile-wrap-clone" aria-hidden="true">Foto folgt</li>
+            <ul class="photo-gallery-2" id="photo-gallery-2">
+              <!-- Wird von src/main.ts aus content/gallery.json befuellt
+                   (Klone fuer den Marquee-Loop werden dort dynamisch
+                   erzeugt, gleiches Prinzip wie beim Team-Marquee). -->
             </ul>
           </div>
           <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorheriges Bild">‹</button>

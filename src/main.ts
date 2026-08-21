@@ -2,6 +2,8 @@ import './style.css'
 import eventsData from './content/events.json'
 import teamData from './content/team.json'
 import missionAboutData from './content/mission-about.json'
+import heroData from './content/hero.json'
+import galleryData from './content/gallery.json'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
@@ -19,6 +21,16 @@ const setText = (id: string, value: string) => {
 
 setText('mission-text', missionAboutData.missionText)
 setText('about-text', missionAboutData.aboutText)
+
+// Hero-Foto ist optional (`?`), aus demselben Grund wie Team -> image (s.
+// CLAUDE.md): Pages CMS laesst ein leer gelassenes optionales Feld komplett
+// aus der JSON weg.
+type HeroData = { photo?: string }
+const hero = heroData as HeroData
+const heroPhoto = document.getElementById('hero-photo')
+if (heroPhoto && hero.photo) {
+  heroPhoto.innerHTML = `<img src="${hero.photo}" alt="" />`
+}
 
 // Jedes Event bekommt jetzt eine eigene, beim Build generierte Unterseite
 // (siehe scripts/generate-event-pages.mjs) - "Anmeldung" verlinkt dorthin
@@ -120,6 +132,33 @@ if (teamRow && teamData.members.length > 0) {
   members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-desktop-duplicate')))
   members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-desktop-duplicate')))
   teamRow.appendChild(memberItem(first, 'is-mobile-wrap-clone'))
+}
+
+// Fotogalerie 2: gleiches Klon-Prinzip wie das Team-Marquee, aber nur 1x
+// volle Duplizierung statt 2x (Fotogalerie-Slides sind breiter, siehe
+// marquee-ltr auf -50% statt marquee-rtl auf -33,333% in style.css) — aus
+// content/gallery.json erzeugt statt statisch im Markup zu stehen.
+const galleryRow = document.getElementById('photo-gallery-2')
+if (galleryRow && galleryData.photos.length > 0) {
+  // photo/alt sind optional (`?`), aus demselben Grund wie Team -> image.
+  type GalleryPhoto = { photo?: string; alt?: string }
+
+  const galleryItem = (photo: GalleryPhoto, extraClass: string | null) => {
+    const li = document.createElement('li')
+    li.className = extraClass ? `photo-gallery-2__slide ${extraClass}` : 'photo-gallery-2__slide'
+    li.setAttribute('aria-hidden', 'true')
+    li.innerHTML = photo.photo ? `<img src="${photo.photo}" alt="${photo.alt ?? ''}" />` : 'Foto folgt'
+    return li
+  }
+
+  const photos = galleryData.photos as GalleryPhoto[]
+  const first = photos[0]
+  const last = photos[photos.length - 1]
+
+  galleryRow.appendChild(galleryItem(last, 'is-mobile-wrap-clone'))
+  photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, null)))
+  photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, 'is-desktop-duplicate')))
+  galleryRow.appendChild(galleryItem(first, 'is-mobile-wrap-clone'))
 }
 
 renderSponsorMarquee()
