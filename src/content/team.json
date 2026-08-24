@@ -8,18 +8,21 @@
     },
     {
       "name": "Markus Kolb",
-      "image": "/team-markus-kolb.jpg"
+      "image": "/team-markus-kolb.jpg",
+      "role": "Bräunlin Kolb Architekten"
     },
     {
       "name": "Ann-Kathrin Salich",
-      "image": "/team-ann-kathrin-salich.jpg"
+      "image": "/team-ann-kathrin-salich.jpg",
+      "role": "An(n) Architecture Solution"
     },
     {
       "name": "Xavier Rodriguez"
     },
     {
       "name": "Georg Schmidthals",
-      "image": "/team-georg-schmidthals.jpg"
+      "image": "/team-georg-schmidthals.jpg",
+      "role": "GRAFT"
     }
   ]
 }

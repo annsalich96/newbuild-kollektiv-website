@@ -83,6 +83,10 @@ content:
             label: Foto (optional, solange leer bleibt der Platzhalter)
             type: image
             required: false
+          - name: role
+            label: "Rolle/Firma (optional, erscheint unter dem Namen)"
+            type: string
+            required: false
 
   - name: hero
     label: Hero-Foto (Startseite)

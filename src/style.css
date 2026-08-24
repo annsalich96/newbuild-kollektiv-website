@@ -583,17 +583,33 @@ ul {
   object-fit: cover;
 }
 
-/* Name liegt jetzt im Bild unten links statt als eigene Zeile darunter
-   (Absprache), Text Capital wie die anderen Labels der Seite. */
-.team-row__name {
+/* Name (+ optionale Rolle/Firma darunter, duennere Schrift, Absprache)
+   liegt im Bild unten links statt als eigene Zeile darunter (aeltere
+   Absprache), Text Capital wie die anderen Labels der Seite. */
+.team-row__caption {
   position: absolute;
   left: var(--space-3);
   bottom: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.team-row__name {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   /* Komplett weiss statt gedaempft (Absprache) — Groesse bleibt gleich. */
   color: var(--color-text);
+}
+
+.team-row__role {
+  display: block;
+  font-size: var(--font-size-capital);
+  font-weight: var(--font-weight-light);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  color: var(--color-muted);
 }
 
 /* ---------- Events: Next-Event-Kasten (grid-tabelle.md Nr. 8–12) ----------
