@@ -1,9 +1,6 @@
 {
   "members": [
     {
-      "name": "Mitglied"
-    },
-    {
       "name": "Maria Stasevich"
     },
     {
@@ -15,9 +12,6 @@
       "name": "Ann-Kathrin Salich",
       "image": "/team-ann-kathrin-salich.jpg",
       "role": "An(n) Architecture Solution"
-    },
-    {
-      "name": "Xavier Rodriguez"
     },
     {
       "name": "Georg Schmidthals",
