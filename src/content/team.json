@@ -1,7 +1,9 @@
 {
   "members": [
     {
-      "name": "Maria Stasevich"
+      "name": "Maria Stasevich",
+      "image": "/team-maria-stasevich.jpg",
+      "role": "OBLIK"
     },
     {
       "name": "Markus Kolb",
