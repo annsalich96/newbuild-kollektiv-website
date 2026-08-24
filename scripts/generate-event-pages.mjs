@@ -36,9 +36,14 @@ export function generateEventPages() {
   const entries = {}
 
   for (const event of eventsData.events) {
+    // number/speakerName sind optional (nicht jedes Event hat eine
+    // Session-Nummer oder genau eine:n Referent:in - z.B. Multi-Speaker-
+    // Events wie "Architecture Intelligence", die alle Namen stattdessen in
+    // der Kurzbeschreibung auflisten) - ohne "|| ''" wuerde String(undefined)
+    // als sichtbarer Text "undefined" auf der Seite landen.
     const speaker = event.speakerCompany
-      ? `${event.speakerName} — ${event.speakerCompany}`
-      : event.speakerName
+      ? `${event.speakerName || ''} — ${event.speakerCompany}`
+      : event.speakerName || ''
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
     // eigener Absatz, wie im PDF-Layout vorgegeben.
@@ -62,7 +67,7 @@ export function generateEventPages() {
 
     const html = template
       .replaceAll('__TITLE__', escapeHtml(event.title))
-      .replaceAll('__NUMBER__', escapeHtml(event.number))
+      .replaceAll('__NUMBER__', escapeHtml(event.number || ''))
       .replaceAll('__INTRO_LABEL__', escapeHtml(event.introLabel))
       .replaceAll('__DATE__', escapeHtml(event.date))
       .replaceAll('__TIME__', escapeHtml(event.time))

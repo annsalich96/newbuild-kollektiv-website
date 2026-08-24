@@ -45,14 +45,14 @@ const eventHref = (slug: string) => `/events/${slug}/`
 // 2026-07-31 genau so mit speakerCompany.
 type EventItem = {
   slug: string
-  number: string
+  number?: string
   introLabel: string
   title: string
   isNext: boolean
   date: string
   time: string
   location: string
-  speakerName: string
+  speakerName?: string
   speakerCompany?: string
   speakerBio?: string
   speakerImage?: string
@@ -63,9 +63,12 @@ const events = eventsData.events as EventItem[]
 const nextEvent = events.find((e) => e.isNext) ?? events[0]
 if (nextEvent) {
   const speaker = nextEvent.speakerCompany
-    ? `${nextEvent.speakerName} — ${nextEvent.speakerCompany}`
-    : nextEvent.speakerName
-  setText('next-event-title', `${nextEvent.number} — ${nextEvent.title}`)
+    ? `${nextEvent.speakerName ?? ''} — ${nextEvent.speakerCompany}`
+    : (nextEvent.speakerName ?? '')
+  setText(
+    'next-event-title',
+    nextEvent.number ? `${nextEvent.number} — ${nextEvent.title}` : nextEvent.title,
+  )
   setText('next-event-speaker', speaker)
   setText('next-event-time', `${nextEvent.date}, ${nextEvent.time}`)
   setText('next-event-location', nextEvent.location)
@@ -79,12 +82,12 @@ if (sessionRow) {
     .map(
       (s) => `
         <li class="session-card">
-          <p class="session-card__number">${s.number}</p>
+          ${s.number ? `<p class="session-card__number">${s.number}</p>` : ''}
           <div class="session-card__text">
             <p>${s.title}</p>
           </div>
           <div class="session-card__meta-block">
-            <p>${s.speakerName}</p>
+            ${s.speakerName ? `<p>${s.speakerName}</p>` : ''}
             <p>${s.date}</p>
             <p>${s.time}</p>
           </div>

@@ -21,8 +21,9 @@ content:
             label: "URL-Kürzel (nur Kleinbuchstaben/Zahlen/Bindestriche, keine Leerzeichen!)"
             type: string
           - name: number
-            label: Nummer (z.B. "Session 01")
+            label: "Nummer (z.B. \"Session 01\", optional - Events ohne Session-Nummer wie \"Architecture Intelligence\" lassen das leer)"
             type: string
+            required: false
           - name: introLabel
             label: "Label über dem Titel (Standard: \"Mission\", frei änderbar)"
             type: string
@@ -42,8 +43,9 @@ content:
             label: Ort
             type: string
           - name: speakerName
-            label: Referent:in
+            label: "Referent:in (optional - bei mehreren Speakern leer lassen und alle in der Kurzbeschreibung auflisten)"
             type: string
+            required: false
           - name: speakerCompany
             label: Firma/Zusatz (optional)
             type: string
