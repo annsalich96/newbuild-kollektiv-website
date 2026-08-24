@@ -1250,6 +1250,15 @@ ul {
   padding-block-start: calc(2 * var(--balken));
 }
 
+.event-detail__intro .section__eyebrow {
+  /* Eyebrow-Spalte ist laut Element-Tabelle nur 1 Spalte breit (wie auf der
+     Startseite mit "MISSION") - laengere, ueber Pages CMS frei editierbare
+     Labels wie "SESSION 01" brachen darin in zwei Zeilen um. Spalte 3/4
+     sind bis zum Titel (Spalte 5) ohnehin leer, daher hier bewusst nicht
+     umbrechen lassen statt den Titel-Abstand zu verschieben. */
+  white-space: nowrap;
+}
+
 .event-hero .divider {
   margin-block: calc(1.5 * var(--balken));
 }
@@ -1297,21 +1306,32 @@ ul {
 
 .event-detail__speaker {
   margin-block-start: calc(1.5 * var(--balken));
-  align-items: center;
+  /* War "center": Name/Bio (als eigene Grid-Items in Spalte 2-3 bzw. 2-7)
+     und das sehr hohe Foto (aspect-ratio) landeten durch Grid-Auto-
+     Placement in unterschiedlichen impliziten Zeilen, und egal wie die
+     Zeilenhoehen verteilt wurden, zog die Fotohoehe die Bio quer durchs
+     Foto nach unten - dadurch die riesige Luecke zwischen Name und Bio.
+     Jetzt oben ausgerichtet, siehe .event-detail__speaker-info fuer den
+     eigentlichen Fix. */
+  align-items: start;
 }
 
 .event-detail__speaker-info {
-  /* Nur noch semantischer Wrapper, kein eigenes Grid-Item mehr - Name und
-     Bio haben laut Element-Tabelle (2026-07-31) unterschiedliche
-     Spaltenspannen (2-3 bzw. 2-7), brauchen also getrennte grid-column-
-     Werte statt einer gemeinsamen Box. display:contents reicht die Kinder
-     direkt an das Grid von .event-detail__speaker weiter. */
-  display: contents;
+  /* Name + Bio als EIN Grid-Item (Spalte 2-7, wie die Bio laut
+     Element-Tabelle), das intern per Flexbox stapelt. Vorher waren beide
+     eigene Grid-Items mit unterschiedlicher Spaltenspanne (2-3 bzw. 2-7)
+     und display:contents auf diesem Wrapper - dadurch landeten sie in
+     verschiedenen automatischen Grid-Zeilen, und die Bio-Zeile wurde von
+     der Zeilenhoehe des nebenstehenden (viel hoeheren) Fotos mit nach
+     unten gezogen. Als ein gemeinsames Flex-Item bleibt der Abstand
+     zwischen Name und Bio unabhaengig von der Fotohoehe - der Ueberschuss
+     landet als Leerraum unterhalb des Blocks statt zwischen Name und Bio. */
+  grid-column: 2 / 8;
+  display: flex;
+  flex-direction: column;
 }
 
 .event-detail__speaker-name {
-  /* Spalte 2-3 laut Element-Tabelle (eigenständig, nicht mit der Bio geteilt). */
-  grid-column: 2 / 4;
   /* 24pt = Text Capital, gemessen aus der Layout-Vorlage (nicht 36pt wie
      zuvor angenommen). */
   font-size: var(--font-size-capital);
@@ -1322,8 +1342,11 @@ ul {
 }
 
 .event-detail__speaker-bio {
-  /* Spalte 2-7 laut Element-Tabelle. */
-  grid-column: 2 / 8;
+  /* Fehlte komplett - Bio erbte dadurch die winzige Basis-Schriftgroesse
+     statt "Text Regular 36pt" wie in der Element-Tabelle vorgegeben
+     (dieselbe Groesse wie .event-detail__description). */
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
   color: var(--color-muted);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
@@ -1349,8 +1372,7 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .event-detail__speaker-name,
-  .event-detail__speaker-bio,
+  .event-detail__speaker-info,
   .event-detail__speaker-photo {
     grid-column: 1 / -1;
   }
