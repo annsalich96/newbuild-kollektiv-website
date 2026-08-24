@@ -3,7 +3,20 @@
     {
       "photo": "/A.jpg"
     },
-    {},
-    {}
+    {
+      "photo": "/galerie-1.jpg"
+    },
+    {
+      "photo": "/galerie-2.jpg"
+    },
+    {
+      "photo": "/galerie-3.jpg"
+    },
+    {
+      "photo": "/galerie-4.jpg"
+    },
+    {
+      "photo": "/galerie-5.jpg"
+    }
   ]
 }
