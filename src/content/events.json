@@ -1,17 +1,19 @@
 {
   "events": [
     {
-      "slug": "session-01-automate-your-practice-mit-n8n",
+      "slug": "session-01-ki-belohnt-ordnung",
       "number": "Session 01",
       "introLabel": "SESSION 01",
-      "title": "Visibility That Converts: Social Media for Architecture Studios",
+      "title": "KI belohnt Ordnung — wie Menschen und KI-Agenten im Planungsbüro zusammenarbeiten",
       "isNext": true,
-      "date": "Di., 04.03.2026",
+      "date": "Di., 01.09.2026",
       "time": "18:30–20:00",
-      "location": "NowyStyl & Kusch+Co Showroom, Pfuelstraße 5, 10997 Berlin",
+      "location": "Projo Berlin, Chausseestraße 123, 10115 Berlin",
       "speakerName": "Markus Kolb",
+      "speakerCompany": "Geschäftsführer - Bräunlin Kolb Architekten",
       "speakerBio": "Geschäftsführere von Bräunlin Kolb Architeken.\nInterssiert sich begeistern für KI. Möchte anderen\nArchitekten das Thema nahe bringen.",
-      "description": "In dieser Session geht es darum, wie Architekturbüros ihre\nSichtbarkeit in digitalen Medien strategisch aufbauen können – und\nworin der entscheidende Unterschied zwischen reiner\nAufmerksamkeit für Projekte und echter Nachfrage von\nAuftraggeber:innen, Entwickler:innen und\nEntscheidungsträger:innen liegt. Wir sprechen darüber, wie soziale\nMedien nicht nur zur Präsentation von Projekten dienen, sondern\ngezielt genutzt werden können, um Vertrauen aufzubauen, Haltung\nzu vermitteln und langfristig als Architekturbüro wahrgenommen zu\nwerden. Im Fokus steht die Frage, warum viele Menschen\nArchitektur-Content konsumieren, aber nur wenige Büros\ntatsächlich kontaktiert werden – und was diejenigen anders\nmachen, bei denen Social Media zu realen Anfragen und Projekten\nführt. Gemeinsam analysieren wir konkrete Strategien und Formate\nfür Instagram, Facebook und LinkedIn, schauen uns erfolgreiche\nBeispiele an und zeigen, wie sich diese Ansätze auf Büros jeder\nGröße übertragen lassen. Die Session folgt einer klaren,\npraxisnahen Schritt-für-Schritt-Struktur: Was zeigen? Wie erzählen?\nWo posten? Und wie muss Content aufgebaut sein, damit aus\nSichtbarkeit echte Relevanz entsteht. "
+      "speakerImage": "/Kolb_Markus_hintergr_211006_web-e1633549342822-300x300.jpg",
+      "description": "Ein Architekturbüro produziert in 25 Jahren hunderttausende Dokumente. Das Wissen ist da, aber nur solange sich jemand erinnert, wo es liegt. Markus Kolb, Bauingenieur und Geschäftsführer von Bräunlin Kolb Architekten, hat im eigenen Büro ein Firmengedächtnis aufgebaut: eine durchsuchbare Wissensbasis über den gesamten Dokumentenbestand, verbunden mit KI-Agenten, die Briefe entwerfen, Dokumente ablegen und Projektwissen fortschreiben. Der Vortrag zeigt an echten Messwerten aus diesem Projekt, was funktioniert und was nicht: warum die Ablagestruktur und die Benennung von Dateien mehr über die Suchqualität entscheiden als das teuerste KI-Modell, wie die Rollenteilung aussieht, wenn der Agent schreibt und der Mensch prüft, und welche Voraussetzungen ein Planungsbüro schaffen muss, bevor sich der Einsatz lohnt. Kein Zukunftsszenario, sondern ein Werkstattbericht aus dem laufenden Betrieb."
     },
     {
       "slug": "session-02-automate-your-practice-mit-n8n",
