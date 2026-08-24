@@ -168,11 +168,12 @@ renderSponsorMarquee()
 initStickyNav()
 initMobileNavToggle()
 
-// Mobile: Team-/Fotogalerie sind statische, per Pfeil/Swipe navigierbare
-// Galerien, unendlich in beide Richtungen (Absprache). scroll-snap
-// uebernimmt das Wischen, keine Auto-Scroll-Marquee mehr. Sponsoren-Leiste
-// bewusst ausgenommen (bleibt Marquee). .marquee__inner ist der eigentliche
-// Scroll-Container (siehe style.css-Kommentar dort) — die Klone mit Klasse
+// Team-Galerie (nur mobil) und Fotogalerie 2 (auf jeder Bildschirmgroesse,
+// siehe style.css) sind per Pfeil/Wischen navigierbare Galerien, unendlich
+// in beide Richtungen (Absprache). scroll-snap uebernimmt das Wischen,
+// keine Auto-Scroll-Marquee mehr. Sponsoren-Leiste bewusst ausgenommen
+// (bleibt Marquee). .marquee__inner ist der eigentliche Scroll-Container
+// (siehe style.css-Kommentar dort) — die Klone mit Klasse
 // is-mobile-wrap-clone (ein Klon des letzten Bildes vor dem ersten, ein
 // Klon des ersten Bildes nach dem letzten) machen den Kreislauf endlos:
 // landet man beim Scrollen auf einem Klon, springt es ohne Animation
@@ -184,20 +185,30 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
   const next = marquee.querySelector<HTMLButtonElement>('.marquee__arrow--next')
   if (!inner || !list) return
 
-  const isMobileScrollable = () => getComputedStyle(inner).overflowX === 'auto'
+  const isScrollable = () => getComputedStyle(inner).overflowX === 'auto'
 
-  const mobileSlides = Array.from(list.children).filter(
+  const slides = Array.from(list.children).filter(
     (el) => !el.classList.contains('is-desktop-duplicate')
-  )
-  const realCount = mobileSlides.length - 2 // minus die zwei Wrap-Klone
+  ) as HTMLElement[]
+  const realCount = slides.length - 2 // minus die zwei Wrap-Klone
+
+  // Schrittweite = Abstand zwischen zwei echten Slides (Kartenbreite + Gap).
+  // Bei der mobilen Team-Galerie ist das die volle Containerbreite (ein
+  // Bild = ein Bildschirm), inner.clientWidth waere hier also gleichwertig
+  // gewesen - bei der jetzt auch auf Desktop slidbaren Fotogalerie sind
+  // aber mehrere Karten gleichzeitig sichtbar, dort waere die volle
+  // Containerbreite viel zu groß und die Wrap-Sprungziele wuerden nie
+  // exakt getroffen.
+  const stepWidth = () =>
+    slides.length > 2 ? slides[2].offsetLeft - slides[1].offsetLeft : inner.clientWidth
 
   const jumpTo = (index: number, smooth: boolean) => {
-    inner.scrollTo({ left: index * inner.clientWidth, behavior: smooth ? 'smooth' : 'instant' })
+    inner.scrollTo({ left: index * stepWidth(), behavior: smooth ? 'smooth' : 'instant' })
   }
 
   // Startet beim ersten echten Bild (Index 1) — Index 0 ist der Klon des
   // letzten Bildes, fuer den Wrap-Around nach links beim ersten Bild.
-  if (realCount > 0 && isMobileScrollable()) {
+  if (realCount > 0 && isScrollable()) {
     jumpTo(1, false)
   }
 
@@ -205,10 +216,10 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
   inner.addEventListener(
     'scroll',
     () => {
-      if (!isMobileScrollable() || realCount <= 0) return
+      if (!isScrollable() || realCount <= 0) return
       clearTimeout(settleTimer)
       settleTimer = setTimeout(() => {
-        const index = Math.round(inner.scrollLeft / inner.clientWidth)
+        const index = Math.round(inner.scrollLeft / stepWidth())
         if (index === 0) {
           jumpTo(realCount, false)
         } else if (index === realCount + 1) {
@@ -220,14 +231,14 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
   )
 
   prev?.addEventListener('click', () => {
-    inner.scrollBy({ left: -inner.clientWidth, behavior: 'smooth' })
+    inner.scrollBy({ left: -stepWidth(), behavior: 'smooth' })
   })
 
   next?.addEventListener('click', () => {
-    inner.scrollBy({ left: inner.clientWidth, behavior: 'smooth' })
+    inner.scrollBy({ left: stepWidth(), behavior: 'smooth' })
   })
 
   window.addEventListener('resize', () => {
-    if (realCount > 0 && isMobileScrollable()) jumpTo(1, false)
+    if (realCount > 0 && isScrollable()) jumpTo(1, false)
   })
 })

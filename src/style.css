@@ -914,14 +914,74 @@ ul {
   }
 }
 
+/* Fotogalerie 2 ist (anders als Team-Galerie/Sponsoren-Leiste) auf JEDER
+   Bildschirmgroesse eine manuell slidbare, endlose Karussell-Galerie statt
+   einer Auto-Scroll-Marquee (Absprache) - Pfeile + Wischen/Scrollen per
+   scroll-snap, mit Wrap-Klonen fuer nahtloses Endlos-Weiterslide in beide
+   Richtungen. Gleiches Prinzip wie die mobile Team-Galerie in der Media
+   Query weiter unten (siehe Kommentar dort + main.ts), hier aber
+   unconditional statt nur unter 768px - deshalb kein eigenes
+   marquee-ltr/-rtl-Transform-Loop mehr noetig, .is-desktop-duplicate bleibt
+   ungenutzt/ausgeblendet.
+   overflow-x sitzt bewusst auf .marquee__inner statt auf .marquee: die
+   Pfeile sind Geschwister von .marquee__inner, aber Kinder von .marquee -
+   waere .marquee selbst der Scroll-Container, wuerden die absolut
+   positionierten Pfeile mitscrollen (gleicher Bug wie beim mobilen Team-
+   Marquee, siehe Kommentar dort). */
 .gallery-marquee .marquee__inner {
-  animation-name: marquee-ltr;
-  /* Laeuft gegenlaeufig, "from" ist hier 0% statt -50% — Ruhezustand von
-     .marquee__inner (fuer die anderen zwei Marquees) wieder zuruecksetzen. */
-  transform: translateX(0%);
+  animation: none;
+  transform: none;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-/* Mobil (nur Team-Galerie/Fotogalerie 2, Sponsoren bleiben Marquee):
+.gallery-marquee .marquee__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-marquee .is-desktop-duplicate {
+  display: none !important;
+}
+
+.gallery-marquee .is-mobile-wrap-clone {
+  display: flex !important;
+}
+
+.photo-gallery-2__slide {
+  scroll-snap-align: start;
+}
+
+.gallery-marquee .marquee__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(1.8 * var(--balken));
+  height: calc(1.8 * var(--balken));
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  font-size: calc(1.2 * var(--font-size-bold));
+  cursor: pointer;
+  z-index: 5;
+}
+
+.gallery-marquee .marquee__arrow--prev {
+  left: var(--space-3);
+}
+
+.gallery-marquee .marquee__arrow--next {
+  right: var(--space-3);
+}
+
+/* Mobil (nur Team-Galerie, Sponsoren bleiben Marquee - Fotogalerie 2 ist
+   jetzt unconditional slidbar, siehe .gallery-marquee-Regeln oben):
    statt Auto-Scroll-Laufband ein statisches Bild auf voller Breite, per
    Pfeil-Buttons oder Wischen (scroll-snap uebernimmt das nativ) navigierbar,
    in beide Richtungen unendlich (Absprache) — je ein Klon des letzten
@@ -939,8 +999,7 @@ ul {
    .marquee unbewegt (Positionierungskontext fuer die Pfeile), nur
    .marquee__inner scrollt intern. */
 @media (max-width: 768px) {
-  .team-marquee .marquee__inner,
-  .gallery-marquee .marquee__inner {
+  .team-marquee .marquee__inner {
     animation: none !important;
     transform: none !important;
     width: 100%;
@@ -952,36 +1011,39 @@ ul {
     scrollbar-width: none;
   }
 
-  .team-marquee .marquee__inner::-webkit-scrollbar,
-  .gallery-marquee .marquee__inner::-webkit-scrollbar {
+  .team-marquee .marquee__inner::-webkit-scrollbar {
     display: none;
   }
 
-  .team-marquee .is-desktop-duplicate,
-  .gallery-marquee .is-desktop-duplicate {
+  .team-marquee .is-desktop-duplicate {
     display: none !important;
   }
 
   /* Wrap-Klone werden auf Mobile gebraucht (unendlicher Kreislauf) — die
      globale .is-mobile-wrap-clone{display:none} (fuer Desktop) hier wieder
      aufheben. */
-  .team-marquee .is-mobile-wrap-clone,
-  .gallery-marquee .is-mobile-wrap-clone {
+  .team-marquee .is-mobile-wrap-clone {
     display: flex !important;
   }
 
-  .team-marquee .team-row__member,
-  .gallery-marquee .photo-gallery-2__slide {
+  .team-marquee .team-row__member {
     flex: 0 0 100%;
     scroll-snap-align: start;
+    margin-inline-end: 0 !important;
+  }
+
+  /* Fotogalerie 2 ist zwar jetzt auch auf Desktop slidbar (siehe
+     .gallery-marquee-Regeln oben), auf Mobile soll aber weiterhin ein Foto
+     die volle Breite einnehmen statt der kleinen Desktop-Kartengroesse. */
+  .gallery-marquee .photo-gallery-2__slide {
+    flex: 0 0 100%;
     margin-inline-end: 0 !important;
   }
 
   /* Groesse/Optik wie das Nav-Plus: kein weisser Rand mehr, dafuer
      groesser, Pfeile selbst weiss (Absprache). Auf jedem Bild sichtbar,
      da sie jetzt an .marquee (nicht am Scroll-Inhalt) verankert sind. */
-  .team-marquee .marquee__arrow,
-  .gallery-marquee .marquee__arrow {
+  .team-marquee .marquee__arrow {
     display: flex;
     align-items: center;
     justify-content: center;
