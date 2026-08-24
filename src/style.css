@@ -1263,6 +1263,14 @@ ul {
   margin-block: calc(1.5 * var(--balken));
 }
 
+.event-hero .divider-row--before-sponsoring .divider {
+  /* Wie auf der Startseite (.divider-row--before-sponsoring): die Linie
+     sitzt direkt ueber der Sponsoren-Leiste, kein Abstand danach - sonst
+     wirkt der Bereich zwischen Linie und Leiste (die schon exakt 1 Balken
+     hoch ist) faelschlich wie ein viel groesseres, eigenes Abteil. */
+  margin-block-end: 0;
+}
+
 .event-detail__title {
   /* Spalten 5-11 (E-K) laut Element-Tabelle, Balken 7. */
   grid-column: 5 / 12;
