@@ -930,20 +930,22 @@ ul {
   }
 }
 
-/* Fotogalerie 2 ist (anders als Team-Galerie/Sponsoren-Leiste) auf JEDER
-   Bildschirmgroesse eine manuell slidbare, endlose Karussell-Galerie statt
-   einer Auto-Scroll-Marquee (Absprache) - Pfeile + Wischen/Scrollen per
-   scroll-snap, mit Wrap-Klonen fuer nahtloses Endlos-Weiterslide in beide
-   Richtungen. Gleiches Prinzip wie die mobile Team-Galerie in der Media
-   Query weiter unten (siehe Kommentar dort + main.ts), hier aber
-   unconditional statt nur unter 768px - deshalb kein eigenes
-   marquee-ltr/-rtl-Transform-Loop mehr noetig, .is-desktop-duplicate bleibt
-   ungenutzt/ausgeblendet.
+/* Team-Galerie UND Fotogalerie 2 sind (anders als die Sponsoren-Leiste,
+   die einzige verbleibende reine Auto-Scroll-Marquee) auf JEDER
+   Bildschirmgroesse eine manuell slidbare, endlose Karussell-Galerie -
+   Pfeile + Wischen/Scrollen per scroll-snap, mit Wrap-Klonen fuer
+   nahtloses Endlos-Weiterslide in beide Richtungen (Absprache). Kein
+   marquee-ltr/-rtl-Transform-Loop mehr noetig, .is-desktop-duplicate
+   bleibt ungenutzt/ausgeblendet.
    overflow-x sitzt bewusst auf .marquee__inner statt auf .marquee: die
    Pfeile sind Geschwister von .marquee__inner, aber Kinder von .marquee -
    waere .marquee selbst der Scroll-Container, wuerden die absolut
-   positionierten Pfeile mitscrollen (gleicher Bug wie beim mobilen Team-
-   Marquee, siehe Kommentar dort). */
+   positionierten Pfeile mitscrollen und nach dem ersten Bild aus dem
+   sichtbaren Bereich wandern (urspruenglich als Mobile-Bug reproduziert:
+   Pfeile nur beim ersten Bild sichtbar). Jetzt bleibt .marquee unbewegt
+   (Positionierungskontext fuer die Pfeile), nur .marquee__inner scrollt
+   intern. */
+.team-marquee .marquee__inner,
 .gallery-marquee .marquee__inner {
   animation: none;
   transform: none;
@@ -954,22 +956,27 @@ ul {
   scrollbar-width: none;
 }
 
+.team-marquee .marquee__inner::-webkit-scrollbar,
 .gallery-marquee .marquee__inner::-webkit-scrollbar {
   display: none;
 }
 
+.team-marquee .is-desktop-duplicate,
 .gallery-marquee .is-desktop-duplicate {
   display: none !important;
 }
 
+.team-marquee .is-mobile-wrap-clone,
 .gallery-marquee .is-mobile-wrap-clone {
   display: flex !important;
 }
 
+.team-row__member,
 .photo-gallery-2__slide {
   scroll-snap-align: start;
 }
 
+.team-marquee .marquee__arrow,
 .gallery-marquee .marquee__arrow {
   display: flex;
   align-items: center;
@@ -988,103 +995,25 @@ ul {
   z-index: 5;
 }
 
+.team-marquee .marquee__arrow--prev,
 .gallery-marquee .marquee__arrow--prev {
   left: var(--space-3);
 }
 
+.team-marquee .marquee__arrow--next,
 .gallery-marquee .marquee__arrow--next {
   right: var(--space-3);
 }
 
-/* Mobil (nur Team-Galerie, Sponsoren bleiben Marquee - Fotogalerie 2 ist
-   jetzt unconditional slidbar, siehe .gallery-marquee-Regeln oben):
-   statt Auto-Scroll-Laufband ein statisches Bild auf voller Breite, per
-   Pfeil-Buttons oder Wischen (scroll-snap uebernimmt das nativ) navigierbar,
-   in beide Richtungen unendlich (Absprache) — je ein Klon des letzten
-   Bildes vor dem ersten und des ersten Bildes nach dem letzten (Klassen
-   is-mobile-wrap-clone im Markup), main.ts erkennt das Erreichen eines
-   Klons per scroll-Event und springt ohne Animation zum echten Gegenstueck.
-   .is-desktop-duplicate (fuer den Desktop-Marquee-Loop) wird hier nicht
-   gebraucht und ausgeblendet.
-   overflow-x sitzt jetzt auf .marquee__inner statt auf .marquee: die
-   Pfeile sind Geschwister von .marquee__inner, aber Kinder von .marquee —
-   waere .marquee selbst der Scroll-Container, wuerden die absolut
-   positionierten Pfeile als Teil von dessen Scroll-Inhalt mitscrollen und
-   nach dem ersten Bild aus dem sichtbaren Bereich wandern (genau das war
-   der gemeldete Bug: Pfeile nur beim ersten Bild sichtbar). Jetzt bleibt
-   .marquee unbewegt (Positionierungskontext fuer die Pfeile), nur
-   .marquee__inner scrollt intern. */
+/* Mobil: statt der Desktop-Kartengroesse (mehrere Fotos gleichzeitig
+   sichtbar) nimmt ein Foto die volle Breite ein - ein Bild pro Wisch/Klick
+   statt mehrerer kleiner Karten. scroll-snap-align steht schon oben
+   unconditional. */
 @media (max-width: 768px) {
-  .team-marquee .marquee__inner {
-    animation: none !important;
-    transform: none !important;
-    width: 100%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    /* Native Scrollleiste ausblenden (Absprache) — scroll-snap uebernimmt
-       die Navigation, die Balken-Anzeige darunter ist nicht erwuenscht. */
-    scrollbar-width: none;
-  }
-
-  .team-marquee .marquee__inner::-webkit-scrollbar {
-    display: none;
-  }
-
-  .team-marquee .is-desktop-duplicate {
-    display: none !important;
-  }
-
-  /* Wrap-Klone werden auf Mobile gebraucht (unendlicher Kreislauf) — die
-     globale .is-mobile-wrap-clone{display:none} (fuer Desktop) hier wieder
-     aufheben. */
-  .team-marquee .is-mobile-wrap-clone {
-    display: flex !important;
-  }
-
-  .team-marquee .team-row__member {
-    flex: 0 0 100%;
-    scroll-snap-align: start;
-    margin-inline-end: 0 !important;
-  }
-
-  /* Fotogalerie 2 ist zwar jetzt auch auf Desktop slidbar (siehe
-     .gallery-marquee-Regeln oben), auf Mobile soll aber weiterhin ein Foto
-     die volle Breite einnehmen statt der kleinen Desktop-Kartengroesse. */
+  .team-marquee .team-row__member,
   .gallery-marquee .photo-gallery-2__slide {
     flex: 0 0 100%;
     margin-inline-end: 0 !important;
-  }
-
-  /* Groesse/Optik wie das Nav-Plus: kein weisser Rand mehr, dafuer
-     groesser, Pfeile selbst weiss (Absprache). Auf jedem Bild sichtbar,
-     da sie jetzt an .marquee (nicht am Scroll-Inhalt) verankert sind. */
-  .team-marquee .marquee__arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: var(--mobile-control-size);
-    height: var(--mobile-control-size);
-    border: none;
-    border-radius: 50%;
-    /* Durchsichtig statt schwarz getoent — sobald echte Fotos eingefuegt
-       werden, sollen sie hier durchscheinen (Absprache). */
-    background: transparent;
-    color: var(--color-text);
-    font-size: calc(1.2 * var(--font-size-bold));
-    cursor: pointer;
-    z-index: 5;
-  }
-
-  .marquee__arrow--prev {
-    left: var(--space-3);
-  }
-
-  .marquee__arrow--next {
-    right: var(--space-3);
   }
 }
 
