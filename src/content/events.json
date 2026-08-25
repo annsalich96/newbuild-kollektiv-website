@@ -34,7 +34,7 @@
       "description": "Neue KI-Tools, Visualisierungslösungen und digitale Workflows erscheinen fast täglich. Die Möglichkeiten sind enorm – gleichzeitig fehlt im Büroalltag oft die Zeit, alles selbst zu testen und herauszufinden, was wirklich funktioniert.\n\nGenau deshalb habe ich gemeinsam mit Maria Stasevich “Architecture Intelligence” ins Leben gerufen: eine Veranstaltung für den Austausch zwischen Architektur und Technologie.\n\nAm 24. September 2026 bringen wir im Deutsches Architektur Zentrum DAZ in Berlin Architekt:innen, Planer:innen und Technologieunternehmen zusammen.\n\nIn drei moderierten Sessions sprechen wir über:\n\n→ Practice & Leadership\n→ Visualization & Creative Technologies\n→ BIM, Collaboration & Digital Construction\n"
     },
     {
-      "slug": "session-03-automate-your-practice-mit-n8n",
+      "slug": "session-03-developing-custome-tools",
       "number": "Session 03",
       "introLabel": "Mission",
       "title": "Developing Custom Tools: AI Usage for customized workflows & tools for Architecture Offices",
@@ -43,7 +43,8 @@
       "time": "18:00",
       "location": "Ort folgt",
       "speakerName": "Ann-Kathrin Salich",
-      "speakerBio": "folgt",
+      "speakerCompany": "An(n) Architecture Solution",
+      "speakerImage": "/team-ann-kathrin-salich.jpg",
       "description": "Beschreibung folgt."
     }
   ]
