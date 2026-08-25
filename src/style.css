@@ -348,12 +348,28 @@ ul {
    pixelgenau auf denselben Stellen wie ueberall sonst auf der Seite. */
 .site-nav__pill {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  /* Feste Spaltenbreite (--balken, dieselbe wie ueberall sonst auf der
+     Seite) statt 1fr: bei 1fr haette der Rand (border, siehe unten) die
+     fuer 1fr verfuegbare Breite geschmaelert und die Spalten progressiv
+     schmaler als im restlichen Seiteninhalt gemacht. Mit fester Breite
+     bleiben die Spaltenpositionen exakt gleich, der letzte Millimeter
+     Restbreite bleibt einfach ungenutzt innerhalb der ohnehin runden
+     Pille. */
+  grid-template-columns: repeat(12, var(--balken));
   gap: var(--grid-gutter);
   align-items: center;
   width: 100%;
   padding-block: var(--space-3);
-  border: var(--line-thickness) solid var(--color-border);
+  /* outline statt border: border zaehlt bei box-sizing:border-box zum
+     Boxmodell und haette den Grid-Inhalt trotz fester Spaltenbreite noch
+     um 1x --line-thickness (2px) nach innen verschoben, da Grid-Tracks
+     erst nach dem Rand beginnen - dadurch lagen die Nav-Links minimal
+     neben den Spalten des restlichen Seiteninhalts (gemeldet per
+     Grid-Overlay-Vergleich). outline liegt aussen auf der Boxkante,
+     ohne die Boxgroesse/den Inhaltsbereich zu beeinflussen, und folgt in
+     allen aktuellen Browsern trotzdem dem border-radius. */
+  outline: var(--line-thickness) solid var(--color-border);
+  outline-offset: calc(-1 * var(--line-thickness));
   border-radius: 999px;
   /* Alle Kästen sind durchsichtig — nur die 1pt-Linie, Hintergrund scheint durch */
   background: transparent;
