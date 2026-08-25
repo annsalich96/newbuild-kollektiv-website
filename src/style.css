@@ -979,11 +979,30 @@ ul {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  /* Zeigt an, dass sich die Leiste mit der Maus ziehen laesst (siehe
+     Klick-und-Ziehen-Handler in main.ts) - Touch/Trackpad brauchen das
+     nicht, scrollen bereits nativ per Wischen. */
+  cursor: grab;
 }
 
 .team-marquee .marquee__inner::-webkit-scrollbar,
 .gallery-marquee .marquee__inner::-webkit-scrollbar {
   display: none;
+}
+
+.team-marquee .marquee__inner.is-dragging,
+.gallery-marquee .marquee__inner.is-dragging {
+  cursor: grabbing;
+  /* Verhindert Textmarkierung und das native Bild-Ziehen (sonst startet
+     ein Browser-eigener Bild-Drag statt unseres Scroll-Drags, sobald der
+     Mauszeiger beim Ziehen über ein <img> wandert). */
+  user-select: none;
+}
+
+.team-marquee .marquee__inner.is-dragging img,
+.gallery-marquee .marquee__inner.is-dragging img {
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .team-marquee .is-mobile-wrap-clone,

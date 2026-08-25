@@ -242,7 +242,39 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
     inner.scrollBy({ left: stepWidth(), behavior: 'smooth' })
   })
 
+  // Klick-und-Ziehen mit der Maus: Touch/Trackpad scrollen bereits nativ
+  // (overflow-x:auto reicht dafuer), eine Maus ohne Trackpad hat aber
+  // keine eingebaute Moeglichkeit, horizontal zu scrollen - nur ueber die
+  // Pfeile. pointerType-Check verhindert, dass dieser Handler dem
+  // nativen Touch-Scrollen in die Quere kommt (setPointerCapture wuerde
+  // sonst z.B. Klicks auf die Pfeil-Buttons waehrend eines Touch-Scrolls
+  // stoeren).
+  let isDragging = false
+  let dragStartX = 0
+  let dragStartScrollLeft = 0
+
+  inner.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'mouse' || !isScrollable()) return
+    isDragging = true
+    dragStartX = event.clientX
+    dragStartScrollLeft = inner.scrollLeft
+    inner.setPointerCapture(event.pointerId)
+    inner.classList.add('is-dragging')
+  })
+
+  inner.addEventListener('pointermove', (event) => {
+    if (!isDragging) return
+    inner.scrollLeft = dragStartScrollLeft - (event.clientX - dragStartX)
+  })
+
+  const endDrag = () => {
+    isDragging = false
+    inner.classList.remove('is-dragging')
+  }
+  inner.addEventListener('pointerup', endDrag)
+  inner.addEventListener('pointercancel', endDrag)
+
   window.addEventListener('resize', () => {
-    if (realCount > 0 && isScrollable()) jumpTo(1, false)
+    if (realCount > 0 && isScrollable()) jumpTo(realCount, false)
   })
 })
