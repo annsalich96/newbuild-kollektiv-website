@@ -1435,11 +1435,16 @@ ul {
 }
 
 .event-form {
+  /* Spalte 5-12 laut Element-Tabelle - kein max-width mehr: das kappte die
+     Formularbreite bisher auf feste 560px statt die volle zugewiesene
+     Spaltenbreite zu nutzen, wodurch die Felder darin (via generischem
+     50/50-Flex-Split statt echter Spalten) nicht mehr mit dem
+     Seiten-Spaltensystem fluchteten (gemeldet: "Spaltensystem nicht
+     eingehalten"). */
   grid-column: 5 / 13;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  max-width: 560px;
   margin-block-start: calc(-1 * var(--font-size-capital));
 }
 
@@ -1455,13 +1460,16 @@ ul {
   }
 }
 
+/* Echtes 2-Spalten-Grid mit dem Standard-Gutter statt generischem 50/50-
+   Flex-Split mit --space-4 (kleinerer, nicht zum Spaltensystem passender
+   Abstand) - bei exakt halbierter Restbreite (.event-form spannt Spalte
+   5-12, 8 Spalten) landen die Felder damit rechnerisch exakt auf Spalte
+   5-8 / 9-12 wie in der Element-Tabelle vorgegeben, statt nur ungefaehr
+   in der Mitte zu teilen. */
 .event-form__row {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.event-form__row label {
-  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grid-gutter);
 }
 
 .event-form label {
