@@ -22,7 +22,6 @@ const setText = (id: string, value: string) => {
 
 setText('mission-text', missionAboutData.missionText)
 setText('about-text', missionAboutData.aboutText)
-setText('sponsoring-text', sponsorsData.statement)
 
 // Hero-Foto ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst ein leer gelassenes optionales Feld komplett
@@ -170,7 +169,7 @@ if (galleryRow && galleryData.photos.length > 0) {
   photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, 'is-mobile-wrap-clone')))
 }
 
-renderSponsorMarquee()
+renderSponsorMarquee(undefined, sponsorsData.statement)
 initStickyNav()
 initMobileNavToggle()
 

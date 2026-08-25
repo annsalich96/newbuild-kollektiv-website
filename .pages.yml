@@ -141,7 +141,7 @@ content:
     format: json
     fields:
       - name: statement
-        label: "Spruch über der Sponsoren-Leiste (Startseite)"
+        label: "Spruch, der in der Sponsoren-Leiste mitläuft (Startseite)"
         type: text
       - name: sponsors
         label: "Sponsoren (Startseite - allgemeine Sponsoren-Leiste)"
