@@ -144,8 +144,9 @@ content:
         label: "Spruch, der in der Sponsoren-Leiste mitläuft (Startseite)"
         type: text
       - name: sponsors
-        label: "Sponsoren (Startseite - allgemeine Sponsoren-Leiste)"
+        label: "Sponsoren (Startseite - allgemeine Sponsoren-Leiste, optional - leer lassen wenn keine allgemeinen Sponsoren gezeigt werden sollen)"
         type: object
+        required: false
         list:
           collapsible:
             collapsed: true

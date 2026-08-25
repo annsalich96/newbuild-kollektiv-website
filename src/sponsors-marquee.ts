@@ -1,4 +1,7 @@
-import sponsorsData from './content/sponsors.json'
+import sponsorsDataRaw from './content/sponsors.json'
+
+type SponsorsData = { statement?: string; sponsors?: { name: string }[] }
+const sponsorsData = sponsorsDataRaw as SponsorsData
 
 // Sponsoren-Leiste: reine CSS-Marquee ohne JS-Scroll-Handling, braucht nur 3
 // identische Kopien fuer den nahtlosen Loop (siehe style.css-Kommentar bei
@@ -13,8 +16,8 @@ import sponsorsData from './content/sponsors.json'
 // (inhaltsbreite statt feste Slotbreite) Groesse, siehe style.css.
 export function renderSponsorMarquee(overrideNames?: string[], leadingStatement?: string) {
   const sponsorTrack = document.getElementById('sponsor-track')
-  const names = overrideNames ?? sponsorsData.sponsors.map((s) => s.name)
-  if (!sponsorTrack || names.length === 0) return
+  const names = overrideNames ?? (sponsorsData.sponsors ?? []).map((s) => s.name)
+  if (!sponsorTrack || (names.length === 0 && !leadingStatement)) return
 
   ;[false, true, true].forEach((hidden) => {
     if (leadingStatement) {
