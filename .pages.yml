@@ -107,8 +107,12 @@ content:
     format: json
     fields:
       - name: photo
-        label: Foto (optional, solange leer bleibt der Platzhalter)
+        label: "Foto (optional, solange leer bleibt der Platzhalter - dient auch als Standbild/Vorschau, solange das Video laedt, wenn zusaetzlich ein Video gesetzt ist)"
         type: image
+        required: false
+      - name: video
+        label: "Video (optional - wird anstelle des Fotos abgespielt, stumme Endlosschleife, wenn gesetzt)"
+        type: file
         required: false
 
   - name: gallery
