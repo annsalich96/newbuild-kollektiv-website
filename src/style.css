@@ -983,6 +983,19 @@ ul {
      Klick-und-Ziehen-Handler in main.ts) - Touch/Trackpad brauchen das
      nicht, scrollen bereits nativ per Wischen. */
   cursor: grab;
+  /* Unsichtbar bis main.ts die Startposition gesetzt hat (Klasse
+     is-ready) - manche Browser stellen die zuletzt gescrollte Position
+     eines Containers beim Neuladen kurz wieder her, bevor unser Skript
+     sie auf die korrekte Klon-Start-Position korrigiert. Ohne das war
+     dieser kurze Zwischenzustand als sichtbarer "Hack"/Sprung beim
+     Neuladen der Seite gemeldet worden. */
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+
+.team-marquee .marquee__inner.is-ready,
+.gallery-marquee .marquee__inner.is-ready {
+  opacity: 1;
 }
 
 .team-marquee .marquee__inner::-webkit-scrollbar,

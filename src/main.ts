@@ -215,6 +215,11 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
   if (realCount > 0 && isScrollable()) {
     jumpTo(realCount, false)
   }
+  // Erst jetzt sichtbar machen (siehe style.css-Kommentar bei
+  // .marquee__inner) - verhindert den kurzen sichtbaren Sprung, falls der
+  // Browser beim Neuladen kurz eine alte Scroll-Position wiederherstellt,
+  // bevor obiges jumpTo() sie korrigiert.
+  inner.classList.add('is-ready')
 
   let settleTimer: ReturnType<typeof setTimeout>
   inner.addEventListener(
