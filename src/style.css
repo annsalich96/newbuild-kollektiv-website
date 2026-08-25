@@ -171,8 +171,18 @@ ul {
   margin-block-start: calc(2 * var(--balken));
   /* Kein Abstand mehr zur Sponsoren-Leiste: die Sponsoren-Leiste selbst
      ist der 1-Balken-Block zwischen Trennlinie und Fusszeile, keine
-     zusaetzliche Luecke davor (Absprache: "Sponsoren sind die Grenze"). */
+     zusaetzliche Luecke davor (Absprache: "Sponsoren sind die Grenze") -
+     der neue Sponsoring-Spruch (.sponsoring-statement) bringt seinen
+     eigenen Abstand mit statt diese Regel anzufassen, die auf der
+     Event-Detailseite genauso fuer den direkten Linie-zu-Leiste-Anschluss
+     sorgt. */
   margin-block-end: 0;
+}
+
+/* Spruch ("Werde Sponsor & ...") zwischen Trennlinie und Sponsoren-Leiste,
+   gleicher Rhythmus wie bei About (2 Balken vor und nach dem Text). */
+.sponsoring-statement {
+  margin-block: calc(2 * var(--balken));
 }
 
 /* ---------- Mobile-Nav (nur <768px aktiv) ----------

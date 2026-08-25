@@ -1,9 +1,21 @@
 import './style.css'
+import eventsData from './content/events.json'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
 
-renderSponsorMarquee()
+// sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
+// CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
+// JSON weg. Ohne eigene Sponsoren traegt renderSponsorMarquee() automatisch
+// die allgemeine Sponsoren-Leiste aus content/sponsors.json nach (Fallback).
+type EventWithSponsors = { slug: string; sponsors?: { name: string }[] }
+const eventSlug = document.getElementById('event-form')?.getAttribute('data-event-slug')
+const currentEvent = (eventsData.events as EventWithSponsors[]).find((e) => e.slug === eventSlug)
+const eventSponsorNames = currentEvent?.sponsors?.length
+  ? currentEvent.sponsors.map((s) => s.name)
+  : undefined
+
+renderSponsorMarquee(eventSponsorNames)
 initStickyNav()
 initMobileNavToggle()
 renderFooter()

@@ -4,6 +4,7 @@ import teamData from './content/team.json'
 import missionAboutData from './content/mission-about.json'
 import heroData from './content/hero.json'
 import galleryData from './content/gallery.json'
+import sponsorsData from './content/sponsors.json'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
@@ -21,6 +22,7 @@ const setText = (id: string, value: string) => {
 
 setText('mission-text', missionAboutData.missionText)
 setText('about-text', missionAboutData.aboutText)
+setText('sponsoring-text', sponsorsData.statement)
 
 // Hero-Foto ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst ein leer gelassenes optionales Feld komplett

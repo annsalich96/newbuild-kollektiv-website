@@ -61,6 +61,18 @@ content:
           - name: description
             label: Beschreibung
             type: text
+          - name: sponsors
+            label: "Sponsoren für dieses Event (optional - leer lassen zeigt die allgemeine Sponsoren-Leiste von der Startseite)"
+            type: object
+            required: false
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{name}"
+            fields:
+              - name: name
+                label: Name
+                type: string
 
   - name: team
     label: Team
@@ -128,8 +140,11 @@ content:
     path: src/content/sponsors.json
     format: json
     fields:
+      - name: statement
+        label: "Spruch über der Sponsoren-Leiste (Startseite)"
+        type: text
       - name: sponsors
-        label: Sponsoren
+        label: "Sponsoren (Startseite - allgemeine Sponsoren-Leiste)"
         type: object
         list:
           collapsible:
