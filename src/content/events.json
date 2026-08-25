@@ -17,13 +17,15 @@
     },
     {
       "slug": "session-02-architecture-intelligence",
-      "introLabel": "Mission",
+      "number": "MAIN EVENT",
+      "introLabel": "Event",
       "title": "ARCHITECTURE INTELLIGENCE",
       "isNext": false,
       "date": "Do., 24.09.2026",
       "time": "18:00",
       "location": "DAZ, Wilhelmine-Gemberg-Weg 6, 10179 Berlin",
-      "speakerBio": "Mariana Cabugueira - MC Studios\nMartin Jasper - Jasper Architect\nEike Becker - Eike Becker Architekten\nMark Szoke - VISOID\nGeorg Schmidthals - GRAFT ",
+      "speakerName": "SPEAKER",
+      "speakerBio": "Mariana Cabugueira - MC Studios,\nMartin Jasper - Jasper Architect,\nEike Becker - Eike Becker Architekten,\nMark Szoke - VISOID,\nGeorg Schmidthals - GRAFT ",
       "description": "Neue KI-Tools, Visualisierungslösungen und digitale Workflows erscheinen fast täglich. Die Möglichkeiten sind enorm – gleichzeitig fehlt im Büroalltag oft die Zeit, alles selbst zu testen und herauszufinden, was wirklich funktioniert.\n\nGenau deshalb habe ich gemeinsam mit Maria Stasevich “Architecture Intelligence” ins Leben gerufen: eine Veranstaltung für den Austausch zwischen Architektur und Technologie.\n\nAm 24. September 2026 bringen wir im Deutsches Architektur Zentrum DAZ in Berlin Architekt:innen, Planer:innen und Technologieunternehmen zusammen.\n\nIn drei moderierten Sessions sprechen wir über:\n\n→ Practice & Leadership\n→ Visualization & Creative Technologies\n→ BIM, Collaboration & Digital Construction\n"
     },
     {
