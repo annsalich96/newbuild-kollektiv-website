@@ -65,6 +65,22 @@ export function generateEventPages() {
       ? `<img src="${escapeHtml(event.speakerImage)}" alt="" />`
       : ''
 
+    // Datum/Uhrzeit/Ort standen bisher nirgends sichtbar auf der
+    // Anmeldeseite (nur versteckt als data-event-* Attribute am Formular) -
+    // Ann wollte sie direkt unter der Referent:innen-Beschreibung sehen,
+    // gleiche dt/dd-Struktur wie die "Next Event"-Karte auf der Startseite
+    // (.event-card__meta).
+    const eventMetaBlock = `<dl class="event-detail__speaker-meta">
+        <div>
+          <dt>Zeit</dt>
+          <dd>${escapeHtml(event.date)}, ${escapeHtml(event.time)}</dd>
+        </div>
+        <div>
+          <dt>Ort</dt>
+          <dd>${escapeHtml(event.location)}</dd>
+        </div>
+      </dl>`
+
     const html = template
       .replaceAll('__TITLE__', escapeHtml(event.title))
       .replaceAll('__NUMBER__', escapeHtml(event.number || ''))
@@ -75,6 +91,7 @@ export function generateEventPages() {
       .replaceAll('__SPEAKER__', escapeHtml(speaker))
       .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs)
       .replaceAll('__SPEAKER_BIO_BLOCK__', speakerBioBlock)
+      .replaceAll('__EVENT_META_BLOCK__', eventMetaBlock)
       .replaceAll('__SPEAKER_PHOTO__', speakerPhoto)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
 

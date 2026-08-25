@@ -1432,6 +1432,36 @@ ul {
   margin-block-start: var(--space-3);
 }
 
+.event-detail__speaker-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+}
+
+.event-detail__speaker-meta > div {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.event-detail__speaker-meta dt {
+  flex: 0 0 auto;
+  min-width: calc(120 * var(--px));
+  font-size: var(--font-size-capital);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  color: var(--color-muted);
+}
+
+.event-detail__speaker-meta dd {
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  color: var(--color-muted);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  margin: 0;
+}
+
 .event-detail__speaker-photo {
   /* Spalten 9-12 laut Element-Tabelle. */
   grid-column: 9 / 13;
