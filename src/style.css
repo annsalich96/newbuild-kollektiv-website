@@ -881,11 +881,12 @@ ul {
   display: none;
 }
 
-/* Wrap-Klone (fuer den unendlichen Kreislauf auf Mobile, siehe Media
-   Query weiter unten) existieren auf Desktop nicht — dort sorgen die
-   is-desktop-duplicate-Elemente fuer den nahtlosen Marquee-Loop.
-   !important, da .team-row__member/.photo-gallery-2__slide je nach
-   Quellreihenfolge sonst ihr eigenes display:flex gewinnen lassen. */
+/* Wrap-Klone fuer den unendlichen Kreislauf von Team-Galerie/Fotogalerie 2
+   (siehe main.ts + .team-marquee/.gallery-marquee-Regeln weiter unten, die
+   das hier wieder aufheben) - per Default ausgeblendet, falls die Klasse
+   je an anderer Stelle verwendet wird. !important, da .team-row__member/
+   .photo-gallery-2__slide je nach Quellreihenfolge sonst ihr eigenes
+   display:flex gewinnen lassen. */
 .is-mobile-wrap-clone {
   display: none !important;
 }
@@ -908,19 +909,20 @@ ul {
   }
 }
 
-/* -33,333% (ein Drittel) statt -50%: bei Sponsoren-Leiste und Team-
-   Galerie ist der Viewport (z.B. 1920px) breiter als ein volles Set
-   Inhalte (1640px, da 4 Elemente x 3 Spalten = nur 12 Spalten Breite,
-   der Viewport bleedet aber randlos ueber diese 12 Spalten hinaus).
-   Mit nur einer Verdopplung (-50%) reichte der zweite Satz nicht aus,
-   um den Viewport durchgehend zu fuellen — am rechten Rand entstand bei
-   jedem der 24s-Durchlaeufe fuer mehrere Sekunden eine echte Luecke,
-   nicht nur ein einzelner Frame (gemessen, nicht nur vermutet). Jetzt
-   drei Kopien im Markup (is-desktop-duplicate x2) und Animation ueber
-   ein Drittel statt die Haelfte — damit ist immer mind. Viewport+ein-Set
-   an Inhalt vorhanden, egal an welcher Stelle des Loops. Fotogalerie 2
-   braucht das nicht (ihr Set ist mit 2468px schon breiter als jeder
-   uebliche Viewport). */
+/* -33,333% (ein Drittel) statt -50%: bei der Sponsoren-Leiste (einziger
+   verbleibender Nutzer dieser Default-Animation - Team-Galerie/
+   Fotogalerie 2 sind mittlerweile beide slidbare Karussells statt
+   Auto-Scroll-Marquees, siehe main.ts) ist der Viewport (z.B. 1920px)
+   breiter als ein volles Set Inhalte (1640px, da 4 Elemente x 3 Spalten =
+   nur 12 Spalten Breite, der Viewport bleedet aber randlos ueber diese 12
+   Spalten hinaus). Mit nur einer Verdopplung (-50%) reichte der zweite
+   Satz nicht aus, um den Viewport durchgehend zu fuellen — am rechten
+   Rand entstand bei jedem der 24s-Durchlaeufe fuer mehrere Sekunden eine
+   echte Luecke, nicht nur ein einzelner Frame (gemessen, nicht nur
+   vermutet). Sponsors-marquee.ts erzeugt deshalb drei Kopien im Markup,
+   Animation laeuft ueber ein Drittel statt die Haelfte — damit ist immer
+   mind. Viewport+ein-Set an Inhalt vorhanden, egal an welcher Stelle des
+   Loops. */
 @keyframes marquee-rtl {
   from {
     transform: translateX(-33.333%);
@@ -943,10 +945,10 @@ ul {
 /* Team-Galerie UND Fotogalerie 2 sind (anders als die Sponsoren-Leiste,
    die einzige verbleibende reine Auto-Scroll-Marquee) auf JEDER
    Bildschirmgroesse eine manuell slidbare, endlose Karussell-Galerie -
-   Pfeile + Wischen/Scrollen per scroll-snap, mit Wrap-Klonen fuer
-   nahtloses Endlos-Weiterslide in beide Richtungen (Absprache). Kein
-   marquee-ltr/-rtl-Transform-Loop mehr noetig, .is-desktop-duplicate
-   bleibt ungenutzt/ausgeblendet.
+   Pfeile + Wischen/Scrollen per scroll-snap, mit je einer vollen
+   Listen-Kopie vor und nach den echten Eintraegen (Klasse
+   is-mobile-wrap-clone, siehe main.ts) fuer nahtloses Endlos-Weiterslide
+   in beide Richtungen (Absprache).
    overflow-x sitzt bewusst auf .marquee__inner statt auf .marquee: die
    Pfeile sind Geschwister von .marquee__inner, aber Kinder von .marquee -
    waere .marquee selbst der Scroll-Container, wuerden die absolut
@@ -969,11 +971,6 @@ ul {
 .team-marquee .marquee__inner::-webkit-scrollbar,
 .gallery-marquee .marquee__inner::-webkit-scrollbar {
   display: none;
-}
-
-.team-marquee .is-desktop-duplicate,
-.gallery-marquee .is-desktop-duplicate {
-  display: none !important;
 }
 
 .team-marquee .is-mobile-wrap-clone,

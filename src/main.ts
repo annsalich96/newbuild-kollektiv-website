@@ -134,19 +134,21 @@ if (teamRow && teamData.members.length > 0) {
   }
 
   const members = teamData.members
-  const first = members[0]
-  const last = members[members.length - 1]
 
-  teamRow.appendChild(memberItem(last, 'is-mobile-wrap-clone'))
+  // Volle Kopie der Liste vor UND nach den echten Eintraegen statt nur je
+  // einem einzelnen Klon-Element: auf breiten Bildschirmen sind mehrere
+  // Karten gleichzeitig sichtbar, mit nur einem Klon-Element waere der
+  // erste echte Eintrag (z.B. nach einer Umsortierung) gleichzeitig auch
+  // als Wrap-Klon direkt nach dem letzten Eintrag sichtbar - sah aus wie
+  // eine Dopplung. Mit einer vollen Kopie an jedem Ende bleibt immer eine
+  // komplette echte Runde zwischen zwei Vorkommen desselben Eintrags.
+  members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-mobile-wrap-clone')))
   members.forEach((member) => teamRow.appendChild(memberItem(member, null)))
-  members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-desktop-duplicate')))
-  members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-desktop-duplicate')))
-  teamRow.appendChild(memberItem(first, 'is-mobile-wrap-clone'))
+  members.forEach((member) => teamRow.appendChild(memberItem(member, 'is-mobile-wrap-clone')))
 }
 
-// Fotogalerie 2: gleiches Klon-Prinzip wie das Team-Marquee, aber nur 1x
-// volle Duplizierung statt 2x (Fotogalerie-Slides sind breiter, siehe
-// marquee-ltr auf -50% statt marquee-rtl auf -33,333% in style.css) — aus
+// Fotogalerie 2: gleiches Klon-Prinzip wie das Team-Marquee (volle Kopie
+// vor und nach den echten Eintraegen, siehe Kommentar dort) — aus
 // content/gallery.json erzeugt statt statisch im Markup zu stehen.
 const galleryRow = document.getElementById('photo-gallery-2')
 if (galleryRow && galleryData.photos.length > 0) {
@@ -162,29 +164,29 @@ if (galleryRow && galleryData.photos.length > 0) {
   }
 
   const photos = galleryData.photos as GalleryPhoto[]
-  const first = photos[0]
-  const last = photos[photos.length - 1]
 
-  galleryRow.appendChild(galleryItem(last, 'is-mobile-wrap-clone'))
+  photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, 'is-mobile-wrap-clone')))
   photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, null)))
-  photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, 'is-desktop-duplicate')))
-  galleryRow.appendChild(galleryItem(first, 'is-mobile-wrap-clone'))
+  photos.forEach((photo) => galleryRow.appendChild(galleryItem(photo, 'is-mobile-wrap-clone')))
 }
 
 renderSponsorMarquee()
 initStickyNav()
 initMobileNavToggle()
 
-// Team-Galerie (nur mobil) und Fotogalerie 2 (auf jeder Bildschirmgroesse,
-// siehe style.css) sind per Pfeil/Wischen navigierbare Galerien, unendlich
-// in beide Richtungen (Absprache). scroll-snap uebernimmt das Wischen,
-// keine Auto-Scroll-Marquee mehr. Sponsoren-Leiste bewusst ausgenommen
-// (bleibt Marquee). .marquee__inner ist der eigentliche Scroll-Container
-// (siehe style.css-Kommentar dort) — die Klone mit Klasse
-// is-mobile-wrap-clone (ein Klon des letzten Bildes vor dem ersten, ein
-// Klon des ersten Bildes nach dem letzten) machen den Kreislauf endlos:
-// landet man beim Scrollen auf einem Klon, springt es ohne Animation
-// unbemerkt zum echten Gegenstueck.
+// Team-Galerie und Fotogalerie 2 (auf jeder Bildschirmgroesse, siehe
+// style.css) sind per Pfeil/Wischen navigierbare Galerien, unendlich in
+// beide Richtungen (Absprache). scroll-snap uebernimmt das Wischen, keine
+// Auto-Scroll-Marquee mehr. Sponsoren-Leiste bewusst ausgenommen (bleibt
+// Marquee). .marquee__inner ist der eigentliche Scroll-Container (siehe
+// style.css-Kommentar dort) — je eine VOLLE Kopie der Liste vor und nach
+// den echten Eintraegen (Klasse is-mobile-wrap-clone, siehe main.ts weiter
+// oben) macht den Kreislauf endlos: landet man beim Scrollen in einer der
+// beiden Kopien, springt es ohne Animation zur entsprechenden Position in
+// der echten mittleren Kopie. Volle Listen-Kopien statt nur je einem
+// einzelnen Klon-Element, damit auf breiten Bildschirmen (mehrere Karten
+// gleichzeitig sichtbar) nie derselbe Eintrag zeitgleich zweimal im Bild
+// auftaucht.
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach((marquee) => {
   const inner = marquee.querySelector<HTMLElement>('.marquee__inner')
   const list = inner?.querySelector('ul')
@@ -194,29 +196,25 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
 
   const isScrollable = () => getComputedStyle(inner).overflowX === 'auto'
 
-  const slides = Array.from(list.children).filter(
-    (el) => !el.classList.contains('is-desktop-duplicate')
-  ) as HTMLElement[]
-  const realCount = slides.length - 2 // minus die zwei Wrap-Klone
+  const slides = Array.from(list.children) as HTMLElement[]
+  const realCount = slides.length / 3 // Klon-Kopie + echte Liste + Klon-Kopie
 
-  // Schrittweite = Abstand zwischen zwei echten Slides (Kartenbreite + Gap).
-  // Bei der mobilen Team-Galerie ist das die volle Containerbreite (ein
-  // Bild = ein Bildschirm), inner.clientWidth waere hier also gleichwertig
-  // gewesen - bei der jetzt auch auf Desktop slidbaren Fotogalerie sind
-  // aber mehrere Karten gleichzeitig sichtbar, dort waere die volle
-  // Containerbreite viel zu groß und die Wrap-Sprungziele wuerden nie
-  // exakt getroffen.
+  // Schrittweite = Abstand zwischen zwei Slides (Kartenbreite + Gap). Bei
+  // der mobilen Team-Galerie ist das die volle Containerbreite (ein Bild =
+  // ein Bildschirm) - bei der auf Desktop slidbaren Fotogalerie sind
+  // mehrere Karten gleichzeitig sichtbar, dort waere inner.clientWidth
+  // viel zu groß und die Wrap-Sprungziele wuerden nie exakt getroffen.
   const stepWidth = () =>
-    slides.length > 2 ? slides[2].offsetLeft - slides[1].offsetLeft : inner.clientWidth
+    slides.length > 1 ? slides[1].offsetLeft - slides[0].offsetLeft : inner.clientWidth
 
   const jumpTo = (index: number, smooth: boolean) => {
     inner.scrollTo({ left: index * stepWidth(), behavior: smooth ? 'smooth' : 'instant' })
   }
 
-  // Startet beim ersten echten Bild (Index 1) — Index 0 ist der Klon des
-  // letzten Bildes, fuer den Wrap-Around nach links beim ersten Bild.
+  // Startet am Anfang der echten (mittleren) Kopie - davor liegt die volle
+  // Klon-Kopie fuer den Wrap-Around nach links.
   if (realCount > 0 && isScrollable()) {
-    jumpTo(1, false)
+    jumpTo(realCount, false)
   }
 
   let settleTimer: ReturnType<typeof setTimeout>
@@ -227,10 +225,10 @@ document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEac
       clearTimeout(settleTimer)
       settleTimer = setTimeout(() => {
         const index = Math.round(inner.scrollLeft / stepWidth())
-        if (index === 0) {
-          jumpTo(realCount, false)
-        } else if (index === realCount + 1) {
-          jumpTo(1, false)
+        if (index < realCount) {
+          jumpTo(index + realCount, false)
+        } else if (index >= realCount * 2) {
+          jumpTo(index - realCount, false)
         }
       }, 120)
     },
