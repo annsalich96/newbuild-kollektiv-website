@@ -26,10 +26,11 @@ setText('about-text', missionAboutData.aboutText)
 // Hero-Foto ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst ein leer gelassenes optionales Feld komplett
 // aus der JSON weg.
-type HeroData = { photo?: string; video?: string }
+type HeroData = { mode?: 'Foto' | 'Video'; photo?: string; video?: string }
 const hero = heroData as HeroData
 const heroPhoto = document.getElementById('hero-photo')
-if (heroPhoto && hero.video) {
+const wantsVideo = hero.mode === 'Video' ? !!hero.video : !hero.photo && !!hero.video
+if (heroPhoto && wantsVideo) {
   const posterAttr = hero.photo ? ` poster="${hero.photo}"` : ''
   heroPhoto.innerHTML = `<video src="${hero.video}" autoplay muted loop playsinline${posterAttr}></video>`
 } else if (heroPhoto && hero.photo) {

@@ -101,17 +101,22 @@ content:
             required: false
 
   - name: hero
-    label: Hero-Foto (Startseite)
+    label: Hero-Bereich (Startseite)
     type: file
     path: src/content/hero.json
     format: json
     fields:
+      - name: mode
+        label: "Foto oder Video anzeigen?"
+        type: select
+        options:
+          values: [Foto, Video]
       - name: photo
-        label: "Foto (optional, solange leer bleibt der Platzhalter - dient auch als Standbild/Vorschau, solange das Video laedt, wenn zusaetzlich ein Video gesetzt ist)"
+        label: "Foto (nur benutzt, wenn oben \"Foto\" gewaehlt ist - zum Austauschen einfach neues Foto hochladen)"
         type: image
         required: false
       - name: video
-        label: "Video (optional - wird anstelle des Fotos abgespielt, stumme Endlosschleife, wenn gesetzt)"
+        label: "Video (nur benutzt, wenn oben \"Video\" gewaehlt ist - stumme Endlosschleife - zum Austauschen einfach neues Video hochladen)"
         type: file
         required: false
 
