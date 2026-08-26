@@ -234,16 +234,17 @@ function sendConfirmationEmail(data) {
   })
 }
 
+// Alle Anmeldungen fuer dasselbe Event landen in einem einzigen Mail-Thread
+// statt in einer neuen Mail pro Anmeldung: existiert schon ein Thread mit
+// diesem Betreff, wird als Antwort hineingehaengt (thread.reply setzt die
+// noetigen References/In-Reply-To-Header fuer sauberes Threading);
+// andernfalls startet die erste Anmeldung den Thread.
+// Braucht GmailApp.search(), also einen groesseren Autorisierungs-Scope als
+// nur "E-Mails senden" - beim naechsten Deploy erscheint dafuer ggf. erneut
+// die Berechtigungs-Abfrage, das ist normal.
 function sendAdminNotificationEmail(data) {
   const subject = 'Neue Anmeldung: ' + data.eventTitle
   const body =
-    'Neue Anmeldung für ' +
-    data.eventTitle +
-    ' (' +
-    (data.eventDate || '') +
-    ', ' +
-    (data.eventTime || '') +
-    ')\n\n' +
     data.firstName +
     ' ' +
     data.lastName +
@@ -254,12 +255,24 @@ function sendAdminNotificationEmail(data) {
     (data.company ? 'Unternehmen: ' + data.company + '\n' : '') +
     (data.phone ? 'Telefon: ' + data.phone + '\n' : '') +
     'Newsletter: ' +
-    (data.newsletter ? 'Ja' : 'Nein')
+    (data.newsletter ? 'Ja' : 'Nein') +
+    '\n\n' +
+    'Termin: ' +
+    (data.eventDate || '') +
+    ', ' +
+    (data.eventTime || '')
 
-  GmailApp.sendEmail(NOTIFY_EMAIL, subject, body, {
-    name: SENDER_NAME,
-    from: SENDER_EMAIL,
-  })
+  const escapedSubject = subject.replace(/"/g, '')
+  const threads = GmailApp.search('to:' + NOTIFY_EMAIL + ' subject:"' + escapedSubject + '"', 0, 1)
+
+  if (threads.length > 0) {
+    threads[0].reply(body, { name: SENDER_NAME, from: SENDER_EMAIL })
+  } else {
+    GmailApp.sendEmail(NOTIFY_EMAIL, subject, body, {
+      name: SENDER_NAME,
+      from: SENDER_EMAIL,
+    })
+  }
 }
 
 function jsonResponse(obj) {

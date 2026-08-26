@@ -51,3 +51,7 @@ Bei jeder Code-Änderung im Skript-Editor muss erneut **Bereitstellen → Bereit
 `Code.gs` verschickt jetzt zusätzlich zur Bestätigungsmail an die anmeldende Person eine Benachrichtigungsmail an `request@newbuild-kollektiv.com` (Konstante `NOTIFY_EMAIL`), sobald sich jemand für ein Event einträgt (`sendAdminNotificationEmail`, aufgerufen in `doPost`).
 
 Damit das live geht: den aktualisierten Inhalt von `Code.gs` im Apps-Script-Editor (script.google.com, eingeloggt als `newbuild kollektiv`-Account) einfügen und wie oben beschrieben neu bereitstellen (**Bereitstellen → Bereitstellungen verwalten → Bearbeiten → Neue Version → Bereitstellen**).
+
+## Update 2026-08-26: Alle Anmeldungen pro Event in einem Mail-Thread
+
+Alle Benachrichtigungsmails zu einem Event landen jetzt in einem einzigen Gmail-Thread (Antwort statt neue Mail), damit sich Anmeldungen nicht in vielen Einzelmails verteilen. Dafür braucht das Skript jetzt `GmailApp.search()`, also einen größeren Berechtigungs-Scope als vorher (nicht mehr nur "E-Mails senden", sondern auch Mails lesen/durchsuchen). Beim nächsten Deploy erscheint deshalb voraussichtlich noch einmal die Google-Berechtigungsabfrage — normal bestätigen (ggf. wieder über "Erweitert" → "Zu [Projektname] (unsicher) wechseln", falls die Warnung erscheint).
