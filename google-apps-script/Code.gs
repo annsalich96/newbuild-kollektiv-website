@@ -13,6 +13,7 @@ const EVENTS_SUBFOLDER_NAME = 'Events'
 const HISTORY_SHEET_NAME = 'History Anmeldungen'
 const SENDER_EMAIL = 'request@newbuild-kollektiv.com'
 const SENDER_NAME = 'NewBuild Kollektiv'
+const NOTIFY_EMAIL = 'request@newbuild-kollektiv.com'
 
 const SHEET_HEADERS = [
   'Vorname',
@@ -53,6 +54,7 @@ function doPost(e) {
     appendRegistration(sheet, data)
     upsertHistoryEntry(data)
     sendConfirmationEmail(data)
+    sendAdminNotificationEmail(data)
 
     return jsonResponse({ ok: true })
   } catch (error) {
@@ -213,6 +215,34 @@ function sendConfirmationEmail(data) {
     name: SENDER_NAME,
     from: SENDER_EMAIL,
     replyTo: SENDER_EMAIL,
+  })
+}
+
+function sendAdminNotificationEmail(data) {
+  const subject = 'Neue Anmeldung: ' + data.eventTitle
+  const body =
+    'Neue Anmeldung für ' +
+    data.eventTitle +
+    ' (' +
+    (data.eventDate || '') +
+    ', ' +
+    (data.eventTime || '') +
+    ')\n\n' +
+    data.firstName +
+    ' ' +
+    data.lastName +
+    '\n' +
+    'E-Mail: ' +
+    data.email +
+    '\n' +
+    (data.company ? 'Unternehmen: ' + data.company + '\n' : '') +
+    (data.phone ? 'Telefon: ' + data.phone + '\n' : '') +
+    'Newsletter: ' +
+    (data.newsletter ? 'Ja' : 'Nein')
+
+  GmailApp.sendEmail(NOTIFY_EMAIL, subject, body, {
+    name: SENDER_NAME,
+    from: SENDER_EMAIL,
   })
 }
 

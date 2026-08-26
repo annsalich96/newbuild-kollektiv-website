@@ -45,3 +45,9 @@ Sobald ich die URL habe, trage ich sie im Code ein und mache einen Testlauf (ein
 ## Falls du später den Code änderst
 
 Bei jeder Code-Änderung im Skript-Editor muss erneut **Bereitstellen → Bereitstellungen verwalten → Bearbeiten (Stift-Symbol) → Neue Version → Bereitstellen** gemacht werden, sonst nutzt die Web-App weiter die alte Version.
+
+## Update 2026-08-26: Benachrichtigungsmail bei neuer Anmeldung
+
+`Code.gs` verschickt jetzt zusätzlich zur Bestätigungsmail an die anmeldende Person eine Benachrichtigungsmail an `request@newbuild-kollektiv.com` (Konstante `NOTIFY_EMAIL`), sobald sich jemand für ein Event einträgt (`sendAdminNotificationEmail`, aufgerufen in `doPost`).
+
+Damit das live geht: den aktualisierten Inhalt von `Code.gs` im Apps-Script-Editor (script.google.com, eingeloggt als `newbuild kollektiv`-Account) einfügen und wie oben beschrieben neu bereitstellen (**Bereitstellen → Bereitstellungen verwalten → Bearbeiten → Neue Version → Bereitstellen**).
