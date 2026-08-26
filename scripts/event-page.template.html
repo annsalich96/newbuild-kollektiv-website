@@ -110,7 +110,13 @@
             </label>
             <label>
               <span>Telefonnummer</span>
-              <input type="tel" name="phone" />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="+49 151 23456789"
+                pattern="^\+?[0-9\s/()-]{6,20}$"
+                title="Bitte gib eine gültige Telefonnummer ein, z. B. +49 151 23456789"
+              />
             </label>
           </div>
           <label class="event-form__checkbox">

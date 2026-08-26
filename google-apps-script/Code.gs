@@ -49,6 +49,7 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents)
     validateRegistration(data)
+    data.phone = normalizePhone(data.phone)
 
     const sheet = getOrCreateEventSheet(data.eventNumber, data.eventTitle)
     appendRegistration(sheet, data)
@@ -68,6 +69,21 @@ function validateRegistration(data) {
   if (missing.length > 0) {
     throw new Error('Fehlende Felder: ' + missing.join(', '))
   }
+}
+
+// Vereinheitlicht Telefonnummern unabhaengig vom Eingabeformat: entfernt
+// Leerzeichen/Klammern/Bindestriche, wandelt "00" und fuehrende "0" (deutsche
+// Nummern) in die "+"-Landesvorwahl-Schreibweise um. Damit landet im Sheet
+// immer dasselbe Format, egal wie die Person es eingetippt hat.
+function normalizePhone(rawPhone) {
+  if (!rawPhone) return ''
+  let phone = String(rawPhone).trim().replace(/[\s\-/().]/g, '')
+  if (phone.startsWith('00')) {
+    phone = '+' + phone.slice(2)
+  } else if (phone.startsWith('0')) {
+    phone = '+49' + phone.slice(1)
+  }
+  return phone
 }
 
 function getOrCreateFolder() {
