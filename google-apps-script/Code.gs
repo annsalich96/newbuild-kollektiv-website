@@ -165,11 +165,13 @@ function doPost(e) {
   }
 }
 
-// GET-Router: nur fuer die Abmelde-Seite (ein Link im Mailclient reicht).
+// GET-Router: Abmelde-Seite + Referent:innen-Formular (Links in den Mails).
 function doGet(e) {
   const p = (e && e.parameter) || {}
   if (p.action === 'abmelden') return abmeldeFormular_(p)
   if (p.action === 'abmelden_ok') return abmeldenVerarbeiten_(p)
+  if (p.action === 'referent') return referentFormular_(p)
+  if (p.action === 'referent_ok') return referentVerarbeiten_(p)
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -512,13 +514,14 @@ function kurzTitel_(t) {
 // Link fuer eine Mail: fuehrt auf ein kleines Formular (Vor-/Nachname +
 // Newsletter-Haken). sid = ID der Event-Tabelle (aus getParent().getId()),
 // damit die Seite die richtige Tabelle sicher findet.
-function abmeldeLink_(sid, slug, titel, email) {
+function abmeldeLink_(sid, slug, titel, email, datum) {
   return (
     WEBAPP_URL +
     '?action=abmelden' +
     '&sid=' + encodeURIComponent(sid || '') +
     '&slug=' + encodeURIComponent(slug || '') +
     '&event=' + encodeURIComponent(kurzTitel_(titel) || 'das Event') +
+    '&datum=' + encodeURIComponent(datum || '') +
     '&email=' + encodeURIComponent(email || '')
   )
 }
@@ -526,7 +529,7 @@ function abmeldeLink_(sid, slug, titel, email) {
 function abmeldeSatz_(e) {
   return (
     '<p style="color:#666;font-size:13px;margin-top:20px">Du kannst doch nicht? ' +
-    '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email) +
+    '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email, e.datum) +
     '" style="color:#3d5a80">Hier abmelden.</a></p>'
   )
 }
@@ -545,9 +548,11 @@ function abmeldeSeite_(inhaltHtml, titel) {
     'p{margin:0 0 14px}' +
     'label{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;' +
     'color:rgba(17,17,17,.6);margin:22px 0 4px}' +
-    'input[type=text]{width:100%;background:transparent;border:0;border-bottom:2px solid #111;' +
-    'padding:9px 0;font-size:1rem;color:#111;border-radius:0}' +
-    'input[type=text]:focus{outline:none}' +
+    'input:not([type=checkbox]):not([type=hidden]),textarea{width:100%;background:transparent;' +
+    'border:0;border-bottom:2px solid #111;padding:9px 0;font-size:1rem;color:#111;border-radius:0;' +
+    "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}" +
+    'textarea{min-height:88px;resize:vertical;line-height:1.4}' +
+    'input:focus,textarea:focus{outline:none}' +
     '.cb{display:flex;gap:12px;align-items:flex-start;margin:26px 0 0;font-size:.95rem;' +
     'text-transform:none;letter-spacing:0;color:#111}' +
     '.cb input{margin-top:.2em;width:16px;height:16px;flex:none}' +
@@ -572,14 +577,16 @@ function abmeldeSeite_(inhaltHtml, titel) {
 
 function abmeldeFormular_(p) {
   const event = p.event || 'das Treffen'
+  const datum = p.datum || ''
   return abmeldeSeite_(
     '<h1>Vom Treffen abmelden</h1>' +
-      '<p class="ev">' + escapeHtml_(event) + '</p>' +
+      '<p class="ev">' + escapeHtml_(event) + (datum ? ' · ' + escapeHtml_(datum) : '') + '</p>' +
       '<form method="get" action="' + WEBAPP_URL + '">' +
       '<input type="hidden" name="action" value="abmelden_ok">' +
       '<input type="hidden" name="sid" value="' + escapeHtml_(p.sid || '') + '">' +
       '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
       '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
+      '<input type="hidden" name="datum" value="' + escapeHtml_(datum) + '">' +
       '<input type="hidden" name="email" value="' + escapeHtml_(p.email || '') + '">' +
       '<label>Vorname</label><input type="text" name="vorname" value="' + escapeHtml_(p.vorname || '') + '" required>' +
       '<label>Nachname</label><input type="text" name="nachname" value="' + escapeHtml_(p.nachname || '') + '" required>' +
@@ -637,7 +644,8 @@ function abmeldenVerarbeiten_(p) {
 
   return abmeldeSeite_(
     '<h1>Du bist abgemeldet</h1>' +
-      '<p>Schade, dass es diesmal nicht klappt – „' + escapeHtml_(p.event || 'das Event') + '".</p>' +
+      '<p>Schade, dass es diesmal nicht klappt – „' + escapeHtml_(p.event || 'das Event') + '"' +
+      (p.datum ? ' · ' + escapeHtml_(p.datum) : '') + '.</p>' +
       (p.newsletter
         ? '<p>Wir informieren dich über die nächsten Treffen.</p>'
         : '<p>Du bekommst keine weiteren Mails zu diesem Event.</p>'),
@@ -665,6 +673,92 @@ function findeEventSheetPerSlug_(slug) {
     } catch (e) {}
   }
   return null
+}
+
+// ── Referent:innen-Vorschläge ───────────────────────────────────────────────
+const REFERENTEN_SHEET_NAME = 'Referenten-Vorschläge'
+const REFERENTEN_HEADERS = [
+  'Datum',
+  'Vorname',
+  'Nachname',
+  'E-Mail',
+  'Telefonnummer',
+  'Unternehmen',
+  'Thema',
+]
+
+function getOrCreateReferentenSheet_() {
+  const folder = getOrCreateFolder()
+  const files = folder.getFilesByName(REFERENTEN_SHEET_NAME)
+  if (files.hasNext()) return SpreadsheetApp.open(files.next()).getSheets()[0]
+  const ss = SpreadsheetApp.create(REFERENTEN_SHEET_NAME)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), folder)
+  const sheet = ss.getSheets()[0]
+  sheet.appendRow(REFERENTEN_HEADERS)
+  sheet.setFrozenRows(1)
+  return sheet
+}
+
+function referentFormular_(p) {
+  return abmeldeSeite_(
+    '<h1>Als Referent:in melden</h1>' +
+      '<p class="ev">Du hast ein Thema aus der Praxis, das du in der Community vorstellen möchtest? Trag dich ein – wir melden uns.</p>' +
+      '<form method="get" action="' + WEBAPP_URL + '">' +
+      '<input type="hidden" name="action" value="referent_ok">' +
+      '<label>Vorname</label><input type="text" name="vorname" required>' +
+      '<label>Nachname</label><input type="text" name="nachname" required>' +
+      '<label>E-Mail</label><input type="email" name="email" required>' +
+      '<label>Telefonnummer</label><input type="tel" name="phone">' +
+      '<label>Unternehmen</label><input type="text" name="company">' +
+      '<label>Thema / was möchtest du vorstellen?</label>' +
+      '<textarea name="thema" required></textarea>' +
+      '<button type="submit">Absenden</button>' +
+      '</form>',
+    'Referent:in werden – NewBuild Kollektiv',
+  )
+}
+
+function referentVerarbeiten_(p) {
+  const vorname = String(p.vorname || '').trim()
+  const nachname = String(p.nachname || '').trim()
+  const email = String(p.email || '').trim()
+  const thema = String(p.thema || '').trim()
+  if (!vorname || !nachname || !email || !thema) {
+    return abmeldeSeite_(
+      '<h1>Fast geschafft</h1><p>Bitte fülle Vorname, Nachname, E-Mail und Thema aus.</p>',
+    )
+  }
+
+  getOrCreateReferentenSheet_().appendRow([
+    Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
+    vorname,
+    nachname,
+    email,
+    normalizePhone(p.phone),
+    String(p.company || '').trim(),
+    thema,
+  ])
+
+  try {
+    GmailApp.sendEmail(
+      NOTIFY_EMAIL,
+      'Referent:in-Vorschlag: ' + vorname + ' ' + nachname,
+      vorname + ' ' + nachname + '\n' + email + '\n\nThema:\n' + thema,
+      { name: SENDER_NAME, from: SENDER_EMAIL, replyTo: email },
+    )
+  } catch (err) {
+    Logger.log('Referent-Benachrichtigung fehlgeschlagen: ' + err)
+  }
+
+  return abmeldeSeite_(
+    '<h1>Danke!</h1>' +
+      '<p>Dein Vorschlag ist bei uns – wir melden uns bei dir.</p>',
+    'Danke – NewBuild Kollektiv',
+  )
+}
+
+function referentLink_() {
+  return WEBAPP_URL + '?action=referent'
 }
 
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
@@ -1016,7 +1110,7 @@ function mailEinTag_(e) {
         '<p>Bis morgen!</p>' +
         '<p style="color:#666;font-size:13px;margin-top:24px">P.S.: Falls sich in ' +
         'deinem Terminkalender doch etwas geändert hat – ' +
-        '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email) +
+        '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email, e.datum) +
         '" style="color:#3d5a80">hier abmelden</a>.</p>',
     ),
     attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort, e.slug)],
@@ -1050,16 +1144,19 @@ function mailDreiStunden_(e) {
 
 function mailNachfass_(e) {
   return {
-    subject: 'Danke fürs Kommen – NewBuild Kollektiv',
+    subject: 'Danke fürs Kommen – bis zum nächsten Mal',
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>danke, dass du gestern beim NewBuild Kollektiv Treffen dabei warst – ' +
-        'schön war es!</p>' +
-        '<p>Wenn du magst: Über kurzes Feedback freuen wir uns sehr – antworte ' +
-        'einfach auf diese Mail.</p>' +
-        '<p>Bis zum nächsten Mal!</p>',
+        '<p>schön, dass du gestern beim NewBuild Kollektiv Treffen dabei warst – danke dafür.</p>' +
+        '<p>In den nächsten Tagen bekommst du von mir <strong>Datum und Ort fürs nächste Treffen</strong>. ' +
+        'Ich hoffe, du bist wieder dabei.</p>' +
+        '<p>Und: Hast du selbst ein Thema, das du in der Community vorstellen möchtest? Wir suchen laufend ' +
+        'Referent:innen aus der Praxis. <a href="' + referentLink_() +
+        '" style="color:#3d5a80">Hier kannst du dich als Referent:in melden.</a></p>' +
+        '<p>Feedback oder ein Themenwunsch? Antworte einfach auf diese Mail.</p>' +
+        '<p>Lieben Gruß<br>Ann-Kathrin</p>',
     ),
   }
 }
