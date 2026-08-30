@@ -1503,10 +1503,9 @@ ul {
   --color-border: #111111;
   background: #ececea;
   color: var(--color-text);
-  /* Formular-Label sitzt laut Element-Tabelle direkt bei Balken 27, die
-     Sponsoren-Leiste davor ist genau 1 Balken hoch (Balken 26) - kaum
-     Abstand dazwischen, anders als vorher angenommen. */
-  padding-block: calc(0.5 * var(--balken)) calc(2 * var(--balken));
+  /* Anmelde-Bereich: 1 Balken Luft oben (zur Sponsoren-Leiste) und
+     1 Balken unten (zum Footer) — nach dem Grid-System (Absprache). */
+  padding-block: var(--balken);
 }
 
 .event-form-section__label {
