@@ -44,6 +44,10 @@ const SIGNATUR_TEXT =
 // verschickt diese Stufen aber fruehestens ab dieser Uhrzeit.
 const ERINNERUNG_SENDESTUNDE = 9
 
+// Vorlauf in Minuten fuer den "Zeit zum Aufbrechen"-Wecker in der
+// Kalenderdatei (.ics), die der "1 Tag vorher"-Mail anhaengt.
+const AUFBRUCH_VORLAUF_MIN = 90
+
 const SHEET_HEADERS = [
   'Vorname',
   'Nachname',
@@ -82,6 +86,7 @@ function doPost(e) {
 
     const sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
     appendRegistration(sheet, data)
+    schreibeZusatzfelder_(sheet, data)
     upsertHistoryEntry(data)
     sendConfirmationEmail(data)
     sendAdminNotificationEmail(data)
@@ -259,9 +264,9 @@ function appendRegistration(sheet, data) {
 function sendConfirmationEmail(data) {
   const subject = 'Anmeldebestätigung: ' + data.eventTitle
   const html = wrapMail_(
-    '<p>Hallo ' + escapeHtml_(data.firstName) + ',</p>' +
+    '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
       '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
-      eventBox_(data.eventTitle, data.eventDate, data.eventTime, data.eventLocation) +
+      eventBox_(data.eventTitle, data.eventSpeaker, data.eventDate, data.eventTime, data.eventLocation) +
       '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
       '<p>Bis bald,<br>NewBuild Kollektiv</p>',
   )
@@ -348,32 +353,74 @@ function wrapMail_(innerHtml) {
   )
 }
 
-function eventBox_(titel, datum, zeit, ort) {
+function eventBox_(titel, referent, datum, zeit, ort) {
   return (
     '<p style="margin:16px 0;padding:12px 16px;background:#f4f4f2;border-radius:8px">' +
     '<strong>' +
     escapeHtml_(titel) +
     '</strong><br>' +
+    (referent ? 'Referent:in: ' + escapeHtml_(referent) + '<br>' : '') +
     escapeHtml_(datum || '') +
     (zeit ? ' · ' + escapeHtml_(zeit) : '') +
     '<br>' +
     escapeHtml_(ort || '') +
+    (ort ? '<br><a href="' + mapsLink_(ort) + '" style="color:#3d5a80">In Google Maps öffnen</a>' : '') +
     '</p>'
   )
 }
 
+function mapsLink_(ort) {
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(ort || ''))
+}
+
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
 // "Senden als"-Alias (GmailApp, damit "from" gesetzt werden kann) und haengt
-// automatisch die Signatur an — HTML plus Text-Fallback. Setzt voraus, dass
-// SENDER_EMAIL in Gmail unter Einstellungen > Konten > "Senden als" als
-// verifizierter Alias hinterlegt ist (sonst "Invalid sender email").
-function sendeTeilnehmerMail_(to, subject, htmlBody) {
-  GmailApp.sendEmail(to, subject, htmlToPlain_(htmlBody) + SIGNATUR_TEXT, {
+// automatisch die Signatur an — HTML plus Text-Fallback. Optional: attachments
+// (Array von Blobs, z.B. die .ics-Datei). Setzt voraus, dass SENDER_EMAIL in
+// Gmail unter Einstellungen > Konten > "Senden als" als verifizierter Alias
+// hinterlegt ist (sonst "Invalid sender email").
+function sendeTeilnehmerMail_(to, subject, htmlBody, attachments) {
+  const opts = {
     name: SENDER_NAME,
     from: SENDER_EMAIL,
     replyTo: SENDER_EMAIL,
     htmlBody: htmlBody + SIGNATUR_HTML,
-  })
+  }
+  if (attachments && attachments.length) opts.attachments = attachments
+  GmailApp.sendEmail(to, subject, htmlToPlain_(htmlBody) + SIGNATUR_TEXT, opts)
+}
+
+// Kalenderdatei (.ics) fuer die "1 Tag vorher"-Mail. Enthaelt einen
+// DISPLAY-Wecker AUFBRUCH_VORLAUF_MIN Minuten vor Beginn ("Zeit zum
+// Aufbrechen"). Zeiten als UTC (Z) — Apps Script rechnet die Zeitzone korrekt.
+function icsDatei_(titel, start, ende, ort) {
+  const utc = function (d) { return Utilities.formatDate(d, 'UTC', "yyyyMMdd'T'HHmmss'Z'") }
+  const esc = function (s) {
+    return String(s || '').replace(/([,;\\])/g, '\\$1').replace(/\r?\n/g, '\\n')
+  }
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//NewBuild Kollektiv//Erinnerung//DE',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + Utilities.getUuid() + '@newbuild-kollektiv.com',
+    'DTSTAMP:' + utc(new Date()),
+    'DTSTART:' + utc(start),
+    'DTEND:' + utc(ende),
+    'SUMMARY:' + esc('NewBuild Kollektiv – ' + titel),
+    'LOCATION:' + esc(ort),
+    'DESCRIPTION:' + esc('NewBuild Kollektiv Treffen. Plane deine Anfahrt ein – der Wecker erinnert dich rechtzeitig ans Aufbrechen.'),
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:' + esc('Zeit zum Aufbrechen – NewBuild Kollektiv'),
+    'TRIGGER:-PT' + AUFBRUCH_VORLAUF_MIN + 'M',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ]
+  return Utilities.newBlob(lines.join('\r\n'), 'text/calendar; charset=utf-8; method=PUBLISH', 'newbuild-kollektiv.ics')
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -386,8 +433,10 @@ function sendeTeilnehmerMail_(to, subject, htmlBody) {
 //  Jede Stufe hat ihre eigene Status-Spalte in der Tabelle; keine Mail geht
 //  doppelt raus. Fehlt eine Status-Spalte, wird sie automatisch angelegt.
 //
-//  Offen: geschlechtsspezifische Anrede ("Liebe/Lieber"). Dafuer muesste das
-//  Anmeldeformular ein Anrede-Feld bekommen — bis dahin: "Hallo {Vorname}".
+//  Anrede: "Liebe/Lieber" kommt aus der Spalte "Anrede" (w/m) der Tabelle;
+//  ist sie leer, wird "Hallo {Vorname}" verwendet. Die Spalte fuellst du von
+//  Hand (Spalten einmalig anlegen mit zusatzspaltenJetztAnlegen) — oder spaeter
+//  automatisch, sobald das Anmeldeformular ein Anrede-Feld mitschickt.
 // ═══════════════════════════════════════════════════════════════════════════
 
 // EINMALIG im Editor ausfuehren: richtet den stuendlichen Trigger fuer
@@ -402,6 +451,22 @@ function erinnerungenTriggerEinrichten() {
     })
   ScriptApp.newTrigger('sendeErinnerungen').timeBased().everyHours(1).create()
   Logger.log('OK — "sendeErinnerungen" laeuft ab jetzt stuendlich.')
+}
+
+// EINMALIG im Editor ausfuehren: legt in jeder bestehenden Event-Tabelle die
+// Spalten "Anrede" und "Referent" an. "Anrede" fuellst du mit w / m (leer ->
+// "Hallo {Vorname}"), "Referent" mit dem Namen der Referentin / des Referenten
+// (ein Wert pro Tabelle genuegt).
+function zusatzspaltenJetztAnlegen() {
+  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  const namen = []
+  while (files.hasNext()) {
+    const ss = SpreadsheetApp.open(files.next())
+    ensureColumn_(ss.getSheets()[0], 'Anrede')
+    ensureColumn_(ss.getSheets()[0], 'Referent')
+    namen.push(ss.getName())
+  }
+  Logger.log('Spalten "Anrede" + "Referent" angelegt/geprueft: ' + namen.join(' · '))
 }
 
 function sendeErinnerungen() {
@@ -424,24 +489,34 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
   const werte = sheet.getDataRange().getValues()
   if (werte.length < 2) return
 
-  const kopf = werte[0]
+  // "Anrede" und "Referent" pflegst du von Hand — Spalten hier sicherstellen.
+  ensureColumn_(sheet, 'Anrede')
+  ensureColumn_(sheet, 'Referent')
+
+  const kopf = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
   const iVorname = kopf.indexOf('Vorname')
   const iEmail = kopf.indexOf('E-Mail')
   const iStatus = kopf.indexOf('Status')
   const iDatum = kopf.indexOf('Event-Datum')
   const iZeit = kopf.indexOf('Event-Zeit')
   const iOrt = kopf.indexOf('Event-Ort')
+  const iAnrede = kopf.indexOf('Anrede')
+  const iReferent = kopf.indexOf('Referent')
   if (iEmail < 0 || iDatum < 0) return
 
-  // Event-Datum/-Zeit/-Ort stehen in jeder Zeile gleich — aus Zeile 1 lesen.
-  const eventStart = parseEventDatum_(werte[1][iDatum], iZeit >= 0 ? werte[1][iZeit] : '')
+  // Event-Datum/-Zeit/-Ort/-Referent sind pro Tabelle gleich — ersten
+  // befuellten Wert der jeweiligen Spalte nehmen.
+  const eventDatum = ersterWert_(werte, iDatum)
+  const eventZeit = ersterWert_(werte, iZeit)
+  const eventOrt = ersterWert_(werte, iOrt)
+  const eventReferent = ersterWert_(werte, iReferent)
+
+  const eventStart = parseEventDatum_(eventDatum, eventZeit)
   if (!eventStart) return
+  const eventEnde = parseEventEnde_(eventStart, eventZeit)
 
   const m = String(sheetName).match(/^\s*.*?\s+—\s+(.+?)\s*$/)
   const eventTitel = m ? m[1] : String(sheetName).trim()
-  const eventDatum = String(werte[1][iDatum] || '')
-  const eventZeit = iZeit >= 0 ? String(werte[1][iZeit] || '') : ''
-  const eventOrt = iOrt >= 0 ? String(werte[1][iOrt] || '') : ''
 
   const tageBis = tagesDifferenz_(jetzt, eventStart)
   const stundenBis = (eventStart.getTime() - jetzt.getTime()) / 3600000
@@ -467,15 +542,21 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
       }
 
       const inhalt = stufe.bauen({
-        vorname: iVorname >= 0 ? String(zeile[iVorname] || '').trim() : '',
+        anrede: anrede_(
+          iAnrede >= 0 ? zeile[iAnrede] : '',
+          iVorname >= 0 ? zeile[iVorname] : '',
+        ),
         titel: eventTitel,
+        referent: eventReferent,
         datum: eventDatum,
         zeit: eventZeit,
         ort: eventOrt,
+        start: eventStart,
+        ende: eventEnde,
       })
 
       try {
-        sendeTeilnehmerMail_(email, inhalt.subject, inhalt.htmlBody)
+        sendeTeilnehmerMail_(email, inhalt.subject, inhalt.htmlBody, inhalt.attachments)
         sheet
           .getRange(r + 1, spalte)
           .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
@@ -517,6 +598,29 @@ function parseEventDatum_(datumText, zeitText) {
   )
 }
 
+// Endzeitpunkt: zweite HH:MM-Angabe in "18:30–20:00", sonst Start + 2 h.
+function parseEventEnde_(start, zeitText) {
+  const alle = String(zeitText || '').match(/(\d{1,2}):(\d{2})/g)
+  if (alle && alle.length >= 2) {
+    const p = alle[1].split(':')
+    const ende = new Date(start.getTime())
+    ende.setHours(Number(p[0]), Number(p[1]), 0, 0)
+    if (ende.getTime() <= start.getTime()) ende.setDate(ende.getDate() + 1)
+    return ende
+  }
+  return new Date(start.getTime() + 2 * 3600000)
+}
+
+// Erster nicht-leerer Wert einer Spalte (ueber alle Datenzeilen). -1 -> "".
+function ersterWert_(werte, col) {
+  if (col < 0) return ''
+  for (let r = 1; r < werte.length; r++) {
+    const v = String(werte[r][col] == null ? '' : werte[r][col]).trim()
+    if (v) return v
+  }
+  return ''
+}
+
 // Ganze Kalendertage zwischen heute und dem Zieltag. Laeuft in der
 // Skript-Zeitzone — die muss auf Europe/Berlin stehen (Projekteinstellungen).
 function tagesDifferenz_(jetzt, ziel) {
@@ -525,21 +629,50 @@ function tagesDifferenz_(jetzt, ziel) {
   return Math.round((b.getTime() - a.getTime()) / 86400000)
 }
 
+// ── Anrede ────────────────────────────────────────────────────────────────
+// Normalisiert den Wert der Spalte "Anrede" auf 'w' / 'm' / '' (leer).
+function anredeCode_(roh) {
+  const a = String(roh || '').trim().toLowerCase()
+  if (a === 'w' || a === 'f' || a === 'frau' || a === 'weiblich') return 'w'
+  if (a === 'm' || a === 'herr' || a === 'maennlich' || a === 'männlich') return 'm'
+  return ''
+}
+
+// "Liebe Maria" / "Lieber Markus" / "Hallo Alex" je nach Anrede-Code.
+function anrede_(roh, vorname) {
+  const v = String(vorname || '').trim()
+  const c = anredeCode_(roh)
+  if (c === 'w') return 'Liebe ' + v
+  if (c === 'm') return 'Lieber ' + v
+  return 'Hallo ' + v
+}
+
+// Schreibt Zusatzfelder (Anrede-Code, Referent) in die zuletzt angehaengte
+// Zeile. Beide Spalten werden bei Bedarf angelegt. Solange das Formular diese
+// Felder nicht mitsendet, bleiben die Zellen leer und werden von Hand gepflegt.
+function schreibeZusatzfelder_(sheet, data) {
+  const row = sheet.getLastRow()
+  sheet.getRange(row, ensureColumn_(sheet, 'Anrede')).setValue(anredeCode_(data.anrede))
+  if (data.eventSpeaker) {
+    sheet.getRange(row, ensureColumn_(sheet, 'Referent')).setValue(String(data.eventSpeaker))
+  }
+}
+
 // ── Mailtexte der einzelnen Stufen ────────────────────────────────────────
-// Jede Funktion bekommt { vorname, titel, datum, zeit, ort } und gibt
-// { subject, htmlBody } zurueck. Texte hier frei anpassbar; die Signatur
-// wird automatisch angehaengt.
+// Jede Funktion bekommt { anrede, titel, referent, datum, zeit, ort, start,
+// ende } und gibt { subject, htmlBody, attachments? } zurueck. Texte hier frei
+// anpassbar; die Signatur wird automatisch angehaengt.
 
 function mailEineWoche_(e) {
   return {
     subject: 'In einer Woche: NewBuild Kollektiv – ' + e.titel,
     htmlBody: wrapMail_(
-      '<p>Hallo ' +
-        escapeHtml_(e.vorname) +
+      '<p>' +
+        escapeHtml_(e.anrede) +
         ',</p>' +
         '<p>in einer Woche ist es soweit – unser NewBuild Kollektiv Treffen, ' +
         'für das du dich angemeldet hast.</p>' +
-        eventBox_(e.titel, e.datum, e.zeit, e.ort) +
+        eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
         '<p>Hast du vorab Fragen oder Wünsche zum Thema? Antworte einfach auf diese Mail.</p>' +
         '<p>Bis bald!</p>',
     ),
@@ -550,19 +683,23 @@ function mailEinTag_(e) {
   return {
     subject: 'Erinnerung NBK Treffen – ' + e.titel,
     htmlBody: wrapMail_(
-      '<p>Hallo ' +
-        escapeHtml_(e.vorname) +
+      '<p>' +
+        escapeHtml_(e.anrede) +
         ',</p>' +
         '<p>morgen Abend findet unser NewBuild Kollektiv Treffen statt, für das ' +
         'du dich angemeldet hast.</p>' +
         '<p>Hier nochmal die Eckdaten zu deiner Übersicht:</p>' +
-        eventBox_(e.titel, e.datum, e.zeit, e.ort) +
+        eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
+        '<p>Im Anhang findest du eine Kalenderdatei (.ics). Sie erinnert dich ' +
+        AUFBRUCH_VORLAUF_MIN +
+        ' Minuten vor Beginn ans Aufbrechen – Anfahrt bitte einplanen.</p>' +
         '<p>Ich freue mich sehr auf den gemeinsamen Austausch mit dir.</p>' +
         '<p>Bis morgen!</p>' +
         '<p style="color:#666;font-size:13px;margin-top:24px">P.S.: Falls sich in ' +
         'deinem Terminkalender doch etwas geändert hat, wären wir dir dankbar, ' +
         'wenn du dich kurz abmeldest.</p>',
     ),
+    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort)],
   }
 }
 
@@ -570,11 +707,18 @@ function mailDreiStunden_(e) {
   return {
     subject: 'Heute Abend: NewBuild Kollektiv – ' + e.titel,
     htmlBody: wrapMail_(
-      '<p>Hallo ' +
-        escapeHtml_(e.vorname) +
+      '<p>' +
+        escapeHtml_(e.anrede) +
         ',</p>' +
         '<p>in wenigen Stunden geht es los. Kurz das Wichtigste:</p>' +
-        eventBox_(e.titel, e.datum, e.zeit, e.ort) +
+        eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
+        (e.ort
+          ? '<p>Standort direkt in Google Maps: <a href="' +
+            mapsLink_(e.ort) +
+            '" style="color:#3d5a80">' +
+            escapeHtml_(e.ort) +
+            '</a></p>'
+          : '') +
         '<p>Bis später!</p>',
     ),
   }
@@ -584,8 +728,8 @@ function mailNachfass_(e) {
   return {
     subject: 'Danke fürs Kommen – NewBuild Kollektiv',
     htmlBody: wrapMail_(
-      '<p>Hallo ' +
-        escapeHtml_(e.vorname) +
+      '<p>' +
+        escapeHtml_(e.anrede) +
         ',</p>' +
         '<p>danke, dass du gestern beim NewBuild Kollektiv Treffen dabei warst – ' +
         'schön war es!</p>' +

@@ -44,6 +44,7 @@ if (form instanceof HTMLFormElement && status) {
       eventDate: form.dataset.eventDate ?? '',
       eventTime: form.dataset.eventTime ?? '',
       eventLocation: form.dataset.eventLocation ?? '',
+      eventSpeaker: form.dataset.eventSpeaker ?? '',
       firstName: formData.get('firstName'),
       lastName: formData.get('lastName'),
       email: formData.get('email'),
