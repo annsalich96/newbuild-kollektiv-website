@@ -176,6 +176,9 @@ function doGet(e) {
   if (p.action === 'feedback_ok') return feedbackVerarbeiten_(p)
   if (p.action === 'fotowiderspruch') return fotoWiderspruchFormular_(p)
   if (p.action === 'fotowiderspruch_ok') return fotoWiderspruchVerarbeiten_(p)
+  if (p.action === 'fotoinfo') return fotoInfoSeite_(p)
+  if (p.action === 'checkin') return checkinFormular_(p)
+  if (p.action === 'checkin_ok') return checkinVerarbeiten_(p)
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -907,6 +910,96 @@ function fotoWiderspruchLink_(slug) {
   return WEBAPP_URL + '?action=fotowiderspruch&slug=' + encodeURIComponent(slug || '')
 }
 
+// Info-Seite Foto/Video (Ziel des kleinen QR/Links auf dem Aufsteller).
+function fotoInfoSeite_(p) {
+  const slug = String((p && p.slug) || '')
+  return abmeldeSeite_(
+    '<h1>Foto- und Videoaufnahmen</h1>' +
+      '<p>Bei Veranstaltungen des NewBuild Kollektiv werden Fotos und Videos aufgenommen. Wir nutzen sie für unsere Öffentlichkeitsarbeit – auf newbuild-kollektiv.com, in sozialen Netzwerken (Instagram, LinkedIn), im Newsletter und in der Presse. Das Material kann außerdem an unsere Sponsoren und Partner der Veranstaltung weitergegeben werden, die es für ihre eigene Berichterstattung nutzen.</p>' +
+      '<p>Rechtsgrundlage: unser berechtigtes Interesse an einer aussagekräftigen Darstellung unserer Veranstaltungen (Art. 6 Abs. 1 lit. f DSGVO) und § 23 KUG für Übersichts- und Stimmungsaufnahmen; für erkennbare Einzelaufnahmen deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 22 KUG). Du kannst jederzeit widersprechen bzw. widerrufen (Art. 21 DSGVO).</p>' +
+      '<p><strong>Du möchtest nicht erkennbar aufgenommen werden?</strong> Sag am Empfang Bescheid' +
+      (slug
+        ? ' – oder <a href="' + fotoWiderspruchLink_(slug) + '" style="color:#111">hier eintragen</a>.'
+        : '.') +
+      '</p>' +
+      '<p style="margin-top:24px;font-size:.9rem"><a href="https://newbuild-kollektiv.com/datenschutzerklaerung.html" style="color:#111">Vollständige Datenschutzerklärung</a></p>',
+    'Foto & Video – NewBuild Kollektiv',
+  )
+}
+
+// ── Check-in am Eingang (nur Vor-/Nachname → "Anwesend" in der Event-Tabelle)
+function checkinFormular_(p) {
+  const event = p.event || 'unser Treffen'
+  return abmeldeSeite_(
+    '<h1>Herzlich willkommen</h1>' +
+      '<p class="ev">' + escapeHtml_(event) + ' — schön, dass du da bist. Trag dich kurz ein.</p>' +
+      '<form method="get" action="' + WEBAPP_URL + '">' +
+      '<input type="hidden" name="action" value="checkin_ok">' +
+      '<input type="hidden" name="sid" value="' + escapeHtml_(p.sid || '') + '">' +
+      '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
+      '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
+      '<label>Vorname</label><input type="text" name="vorname" required>' +
+      '<label>Nachname</label><input type="text" name="nachname" required>' +
+      '<button type="submit">Ich bin da</button>' +
+      '</form>' +
+      '<p style="margin-top:30px;font-size:.9rem"><a href="' + WEBAPP_URL +
+      '?action=fotoinfo&slug=' + encodeURIComponent(p.slug || '') +
+      '" style="color:#111">Infos zu Foto- und Videoaufnahmen</a></p>',
+    'Check-in – NewBuild Kollektiv',
+  )
+}
+
+function checkinVerarbeiten_(p) {
+  let sheet = null
+  try {
+    if (p.sid) sheet = SpreadsheetApp.openById(p.sid).getSheets()[0]
+  } catch (err) {}
+  if (!sheet) sheet = findeEventSheetPerSlug_(p.slug)
+  if (!sheet) {
+    return abmeldeSeite_(
+      '<h1>Ups</h1><p>Wir konnten die Veranstaltung nicht zuordnen. Bitte gib am Empfang Bescheid.</p>',
+    )
+  }
+
+  const vn = String(p.vorname || '').trim()
+  const nn = String(p.nachname || '').trim()
+  if (!vn || !nn) {
+    return abmeldeSeite_('<h1>Fast</h1><p>Bitte Vor- und Nachname eintragen.</p>')
+  }
+
+  const werte = sheet.getDataRange().getValues()
+  const kopf = werte[0]
+  const iVorname = kopf.indexOf('Vorname')
+  const iNachname = kopf.indexOf('Nachname')
+  const iStatus = kopf.indexOf('Status')
+  const spalte = ensureColumn_(sheet, 'Anwesend')
+  const stamp = Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm')
+
+  let treffer = 0
+  for (let r = 1; r < werte.length; r++) {
+    const rVn = iVorname >= 0 ? String(werte[r][iVorname] || '').trim().toLowerCase() : ''
+    const rNn = iNachname >= 0 ? String(werte[r][iNachname] || '').trim().toLowerCase() : ''
+    if (rVn === vn.toLowerCase() && rNn === nn.toLowerCase()) {
+      sheet.getRange(r + 1, spalte).setValue(stamp)
+      treffer++
+    }
+  }
+  if (!treffer) {
+    const neu = new Array(sheet.getLastColumn()).fill('')
+    if (iVorname >= 0) neu[iVorname] = vn
+    if (iNachname >= 0) neu[iNachname] = nn
+    if (iStatus >= 0) neu[iStatus] = 'vor Ort'
+    neu[spalte - 1] = stamp
+    sheet.appendRow(neu)
+  }
+  SpreadsheetApp.flush()
+
+  return abmeldeSeite_(
+    '<h1>Danke, ' + escapeHtml_(vn) + '!</h1><p>Du bist eingecheckt. Viel Spaß beim Treffen.</p>',
+    'Eingecheckt – NewBuild Kollektiv',
+  )
+}
+
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
 // "Senden als"-Alias (GmailApp, damit "from" gesetzt werden kann) und haengt
 // automatisch die Signatur an — HTML plus Text-Fallback. Optional: attachments
@@ -1007,9 +1100,10 @@ function zusatzspaltenJetztAnlegen() {
     ensureColumn_(ss.getSheets()[0], 'Referent')
     ensureColumn_(ss.getSheets()[0], 'Slug')
     ensureColumn_(ss.getSheets()[0], 'Foto-Widerspruch')
+    ensureColumn_(ss.getSheets()[0], 'Anwesend')
     namen.push(ss.getName())
   }
-  Logger.log('Spalten "Anrede" + "Referent" + "Slug" + "Foto-Widerspruch" angelegt/geprueft: ' + namen.join(' · '))
+  Logger.log('Zusatzspalten angelegt/geprueft (Anrede, Referent, Slug, Foto-Widerspruch, Anwesend): ' + namen.join(' · '))
 }
 
 function sendeErinnerungen() {
