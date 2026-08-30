@@ -15,7 +15,7 @@
     min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 22px;
   }
   .card{width:100%;max-width:520px}
-  h1{font-weight:500;font-size:1.6rem;line-height:1.2;margin:0 0 6px}
+  h1{font-weight:500;font-size:1.6rem;line-height:1.2;margin:0 0 6px;text-wrap:balance}
   .ev{color:rgba(17,17,17,.6);margin:0 0 30px}
   p{margin:0 0 14px}
   label{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;
@@ -73,8 +73,8 @@
       ]
     },
     checkin: {
-      title: 'Herzlich willkommen',
-      sub: (q.get('event') || 'unser Treffen') + ' — schön, dass du da bist. Trag dich kurz ein.',
+      title: 'Herzlich willkommen bei unserem NewBuild Kollektiv Treffen.',
+      sub: 'Schön, dass du da bist. Trag dich bitte kurz ein.',
       btn: 'Ich bin da',
       fields: [
         { t:'text', n:'vorname', l:'Vorname', req:true },
