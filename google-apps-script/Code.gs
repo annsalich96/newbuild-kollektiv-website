@@ -321,10 +321,16 @@ function appendRegistration(sheet, data) {
 function sendConfirmationEmail(data) {
   const subject = 'Anmeldebestätigung: ' + kurzTitel_(data.eventTitle)
   const html = wrapMail_(
-    grafikBlock_(data.eventSlug, 'erinnerung') +
-      '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
+    '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
       '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
-      eventBox_(data.eventTitle, data.eventSpeaker, data.eventDate, data.eventTime, data.eventLocation) +
+      eckdatenBlock_({
+        slug: data.eventSlug,
+        titel: data.eventTitle,
+        referent: data.eventSpeaker,
+        datum: data.eventDate,
+        zeit: data.eventTime,
+        ort: data.eventLocation,
+      }) +
       '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
       '<p>Bis bald,<br>NewBuild Kollektiv</p>',
   )
@@ -443,17 +449,33 @@ const GRAFIKEN = {
   },
 }
 
-// Klickbarer Grafikblock (ganzes Bild -> href) fuer eine Mailstufe.
-// Leerer String, wenn fuer slug/variant keine Grafik hinterlegt ist.
+// Klickbarer, zentrierter Grafikblock (ganzes Bild -> href) fuer eine
+// Mailstufe. Leerer String, wenn fuer slug/variant keine Grafik hinterlegt ist.
 function grafikBlock_(slug, variant) {
   const g = GRAFIKEN[String(slug || '')] && GRAFIKEN[String(slug || '')][variant]
   if (!g || !g.url) return ''
   const img =
-    '<img src="' + g.url + '" width="600" alt="Eventgrafik" ' +
-    'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:12px">'
+    '<img src="' + g.url + '" width="440" alt="Eventgrafik" ' +
+    'style="display:block;width:100%;max-width:440px;height:auto;border:0;border-radius:12px;margin:0 auto">'
   return (
-    '<p style="margin:0 0 18px">' +
+    '<div style="text-align:center;margin:16px 0 8px">' +
     (g.href ? '<a href="' + g.href + '" target="_blank">' + img + '</a>' : img) +
+    '</div>'
+  )
+}
+
+// Eckdaten-Block einer Mail: die zentrierte Eventgrafik (wenn vorhanden),
+// sonst der graue Text-Kasten. Nach der Grafik eine kleine Zeile mit
+// Datum/Ort/Maps als Fallback, falls Bilder im Client blockiert sind.
+function eckdatenBlock_(e) {
+  const g = grafikBlock_(e.slug, 'erinnerung')
+  if (!g) return eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort)
+  return (
+    g +
+    '<p style="text-align:center;color:#888;font-size:12px;margin:0 0 16px">' +
+    escapeHtml_(e.datum || '') +
+    (e.ort ? ' · ' + escapeHtml_(e.ort) : '') +
+    (e.ort ? ' · <a href="' + mapsLink_(e.ort) + '" style="color:#3d5a80">Google Maps</a>' : '') +
     '</p>'
   )
 }
@@ -790,14 +812,13 @@ function mailEinTag_(e) {
   return {
     subject: 'Erinnerung NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
-      grafikBlock_(e.slug, 'erinnerung') +
-        '<p>' +
+      '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
         '<p>morgen Abend findet unser NewBuild Kollektiv Treffen statt, für das ' +
         'du dich angemeldet hast.</p>' +
         '<p>Hier nochmal die Eckdaten zu deiner Übersicht:</p>' +
-        eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
+        eckdatenBlock_(e) +
         '<p>Im Anhang findest du eine Kalenderdatei (.ics). Sie erinnert dich ' +
         AUFBRUCH_VORLAUF_MIN +
         ' Minuten vor Beginn ans Aufbrechen – Anfahrt bitte einplanen.</p>' +
@@ -881,10 +902,9 @@ function testErinnerungsmails() {
   }
 
   const bestHtml = wrapMail_(
-    grafikBlock_(e.slug, 'erinnerung') +
-      '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+    '<p>' + escapeHtml_(e.anrede) + ',</p>' +
       '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
-      eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
+      eckdatenBlock_(e) +
       '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
       '<p>Bis bald,<br>NewBuild Kollektiv</p>',
   )
