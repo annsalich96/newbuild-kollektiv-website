@@ -174,6 +174,8 @@ function doGet(e) {
   if (p.action === 'referent_ok') return referentVerarbeiten_(p)
   if (p.action === 'feedback') return feedbackFormular_(p)
   if (p.action === 'feedback_ok') return feedbackVerarbeiten_(p)
+  if (p.action === 'fotowiderspruch') return fotoWiderspruchFormular_(p)
+  if (p.action === 'fotowiderspruch_ok') return fotoWiderspruchVerarbeiten_(p)
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -770,19 +772,15 @@ function referentLink_() {
   return WEBAPP_URL + '?action=referent'
 }
 
-// ── Feedback-Umfrage ────────────────────────────────────────────────────────
+// ── Feedback-Umfrage (nur Freitext) ────────────────────────────────────────
 const FEEDBACK_SHEET_NAME = 'Feedback'
 const FEEDBACK_HEADERS = [
   'Datum',
   'Event',
-  'Gesamt',
-  'Thema & Vortrag',
-  'Ort & Organisation',
   'Gefallen / gefehlt',
   'Themenwünsche',
   'E-Mail (optional)',
 ]
-const FEEDBACK_SKALA = ['Sehr gut', 'Gut', 'Okay', 'Weniger gut']
 
 function getOrCreateFeedbackSheet_() {
   const folder = getOrCreateFolder()
@@ -805,33 +803,17 @@ function feedbackLink_(slug, titel) {
   )
 }
 
-function skalaFrage_(name, frage, pflicht) {
-  let opts = ''
-  FEEDBACK_SKALA.forEach(function (o) {
-    opts +=
-      '<label><input type="radio" name="' + name + '" value="' + escapeHtml_(o) + '"' +
-      (pflicht ? ' required' : '') + '>' + escapeHtml_(o) + '</label>'
-  })
-  return (
-    '<div class="q"><span class="qt">' + escapeHtml_(frage) + '</span>' +
-    '<div class="opts">' + opts + '</div></div>'
-  )
-}
-
 function feedbackFormular_(p) {
   const event = p.event || ''
   return abmeldeSeite_(
     '<h1>Wie war’s?</h1>' +
       '<p class="ev">' + (event ? escapeHtml_(event) + ' — ' : '') +
-      'Dein kurzes Feedback hilft uns fürs nächste Treffen. Dauert eine Minute.</p>' +
+      'Zwei Fragen, dauert eine Minute.</p>' +
       '<form method="get" action="' + WEBAPP_URL + '">' +
       '<input type="hidden" name="action" value="feedback_ok">' +
       '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
       '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
-      skalaFrage_('gesamt', 'Wie war das Treffen insgesamt?', true) +
-      skalaFrage_('inhalt', 'Wie fandest du Thema & Vortrag?', false) +
-      skalaFrage_('orga', 'Wie war Ort & Organisation?', false) +
-      '<label>Was hat dir gefallen oder gefehlt?</label><textarea name="frei"></textarea>' +
+      '<label>Was hat dir gefallen oder gefehlt?</label><textarea name="frei" required></textarea>' +
       '<label>Themenwünsche fürs nächste Mal?</label><textarea name="themen"></textarea>' +
       '<label>E-Mail (nur, falls wir nachfragen dürfen)</label><input type="email" name="email">' +
       '<button type="submit">Feedback senden</button>' +
@@ -841,17 +823,14 @@ function feedbackFormular_(p) {
 }
 
 function feedbackVerarbeiten_(p) {
-  if (!String(p.gesamt || '').trim()) {
+  if (!String(p.frei || '').trim() && !String(p.themen || '').trim()) {
     return abmeldeSeite_(
-      '<h1>Fast</h1><p>Bitte beantworte wenigstens die erste Frage.</p>',
+      '<h1>Fast</h1><p>Bitte schreib uns wenigstens einen Satz.</p>',
     )
   }
   getOrCreateFeedbackSheet_().appendRow([
     Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
     String(p.event || ''),
-    String(p.gesamt || ''),
-    String(p.inhalt || ''),
-    String(p.orga || ''),
     String(p.frei || '').trim(),
     String(p.themen || '').trim(),
     String(p.email || '').trim(),
@@ -860,6 +839,72 @@ function feedbackVerarbeiten_(p) {
     '<h1>Danke!</h1><p>Dein Feedback ist bei uns. Bis zum nächsten Mal.</p>',
     'Danke – NewBuild Kollektiv',
   )
+}
+
+// ── Foto-Widerspruch (nur Vor-/Nachname → Häkchen in der Event-Tabelle) ─────
+function fotoWiderspruchFormular_(p) {
+  const event = p.event || 'die Veranstaltung'
+  return abmeldeSeite_(
+    '<h1>Keine Fotos von mir</h1>' +
+      '<p class="ev">' + escapeHtml_(event) +
+      ' — trag deinen Namen ein, dann vermerken wir, dass keine erkennbaren Aufnahmen von dir veröffentlicht oder weitergegeben werden.</p>' +
+      '<form method="get" action="' + WEBAPP_URL + '">' +
+      '<input type="hidden" name="action" value="fotowiderspruch_ok">' +
+      '<input type="hidden" name="sid" value="' + escapeHtml_(p.sid || '') + '">' +
+      '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
+      '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
+      '<label>Vorname</label><input type="text" name="vorname" required>' +
+      '<label>Nachname</label><input type="text" name="nachname" required>' +
+      '<button type="submit">Widerspruch eintragen</button>' +
+      '</form>',
+    'Foto-Widerspruch – NewBuild Kollektiv',
+  )
+}
+
+function fotoWiderspruchVerarbeiten_(p) {
+  let sheet = null
+  try {
+    if (p.sid) sheet = SpreadsheetApp.openById(p.sid).getSheets()[0]
+  } catch (err) {}
+  if (!sheet) sheet = findeEventSheetPerSlug_(p.slug)
+  if (!sheet) {
+    return abmeldeSeite_(
+      '<h1>Ups</h1><p>Wir konnten die Veranstaltung nicht zuordnen. Bitte gib am Empfang Bescheid.</p>',
+    )
+  }
+
+  const werte = sheet.getDataRange().getValues()
+  const kopf = werte[0]
+  const iVorname = kopf.indexOf('Vorname')
+  const iNachname = kopf.indexOf('Nachname')
+  const vn = String(p.vorname || '').trim().toLowerCase()
+  const nn = String(p.nachname || '').trim().toLowerCase()
+  const spalte = ensureColumn_(sheet, 'Foto-Widerspruch')
+
+  let treffer = 0
+  for (let r = 1; r < werte.length; r++) {
+    const rVn = iVorname >= 0 ? String(werte[r][iVorname] || '').trim().toLowerCase() : ''
+    const rNn = iNachname >= 0 ? String(werte[r][iNachname] || '').trim().toLowerCase() : ''
+    if (vn && nn && rVn === vn && rNn === nn) {
+      sheet.getRange(r + 1, spalte).setValue('Ja')
+      treffer++
+    }
+  }
+  SpreadsheetApp.flush()
+
+  if (!treffer) {
+    return abmeldeSeite_(
+      '<h1>Nicht gefunden</h1><p>Wir haben dich nicht in der Anmeldeliste gefunden. Bitte gib am Empfang kurz Bescheid, dann tragen wir es von Hand ein.</p>',
+    )
+  }
+  return abmeldeSeite_(
+    '<h1>Eingetragen</h1><p>Danke. Wir achten darauf, dass keine erkennbaren Aufnahmen von dir veröffentlicht oder an Dritte weitergegeben werden.</p>',
+    'Eingetragen – NewBuild Kollektiv',
+  )
+}
+
+function fotoWiderspruchLink_(slug) {
+  return WEBAPP_URL + '?action=fotowiderspruch&slug=' + encodeURIComponent(slug || '')
 }
 
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
@@ -961,9 +1006,10 @@ function zusatzspaltenJetztAnlegen() {
     ensureColumn_(ss.getSheets()[0], 'Anrede')
     ensureColumn_(ss.getSheets()[0], 'Referent')
     ensureColumn_(ss.getSheets()[0], 'Slug')
+    ensureColumn_(ss.getSheets()[0], 'Foto-Widerspruch')
     namen.push(ss.getName())
   }
-  Logger.log('Spalten "Anrede" + "Referent" + "Slug" angelegt/geprueft: ' + namen.join(' · '))
+  Logger.log('Spalten "Anrede" + "Referent" + "Slug" + "Foto-Widerspruch" angelegt/geprueft: ' + namen.join(' · '))
 }
 
 function sendeErinnerungen() {
