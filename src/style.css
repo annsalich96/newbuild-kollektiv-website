@@ -1634,3 +1634,10 @@ ul {
   font-size: var(--font-size-sm);
   min-height: 1.2em;
 }
+
+/* Solange keine Statusmeldung da ist, kein Platz reservieren (sonst kommt
+   zur 2-Balken-Sektions-Unterkante noch das leere Feld + Flex-Gap dazu und
+   der Abstand zum Footer wirkt groesser als 2 Balken). */
+.event-form__status:empty {
+  display: none;
+}
