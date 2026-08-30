@@ -105,6 +105,12 @@ const ERINNERUNG_SENDESTUNDE = 9
 // Kalenderdatei (.ics), die der "1 Tag vorher"-Mail anhaengt.
 const AUFBRUCH_VORLAUF_MIN = 90
 
+// Web-App-URL (endet auf /exec) — dieselbe, die das Anmeldeformular nutzt.
+// Wird fuer die Abmelde-Links in den Mails gebraucht. Bleibt stabil, solange
+// dieselbe Bereitstellung aktualisiert wird (nicht neu angelegt).
+const WEBAPP_URL =
+  'https://script.google.com/macros/s/AKfycbwEgvSlfjMQSsWu04p6r2lz8Pw4i-F3GOQPjqQGjoAPSDbXjuIGU5ei2I5voMJMBHNzUw/exec'
+
 const SHEET_HEADERS = [
   'Vorname',
   'Nachname',
@@ -152,6 +158,16 @@ function doPost(e) {
   } catch (error) {
     return jsonResponse({ ok: false, error: String(error) })
   }
+}
+
+// GET-Router: nur fuer die Abmelde-Seite (ein Link im Mailclient reicht).
+function doGet(e) {
+  const p = (e && e.parameter) || {}
+  if (p.action === 'abmelden') return abmeldeFormular_(p)
+  if (p.action === 'abmelden_ok') return abmeldenVerarbeiten_(p)
+  return HtmlService.createHtmlOutput(
+    '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
+  ).setTitle('NewBuild Kollektiv')
 }
 
 function validateRegistration(data) {
@@ -487,6 +503,144 @@ function kurzTitel_(t) {
   return (i > 0 ? s.slice(0, i) : s).trim()
 }
 
+// ── Abmelde-Link / -Seite ───────────────────────────────────────────────────
+// Link fuer eine Mail: fuehrt auf ein kleines Formular (Vor-/Nachname +
+// Newsletter-Haken). sid = ID der Event-Tabelle (aus getParent().getId()),
+// damit die Seite die richtige Tabelle sicher findet.
+function abmeldeLink_(sid, slug, titel, email) {
+  return (
+    WEBAPP_URL +
+    '?action=abmelden' +
+    '&sid=' + encodeURIComponent(sid || '') +
+    '&slug=' + encodeURIComponent(slug || '') +
+    '&event=' + encodeURIComponent(kurzTitel_(titel) || 'das Event') +
+    '&email=' + encodeURIComponent(email || '')
+  )
+}
+
+function abmeldeSatz_(e) {
+  return (
+    '<p style="color:#666;font-size:13px;margin-top:20px">Du kannst doch nicht? ' +
+    '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email) +
+    '" style="color:#3d5a80">Hier abmelden.</a></p>'
+  )
+}
+
+function abmeldeSeite_(inhaltHtml, titel) {
+  return HtmlService.createHtmlOutput(
+    '<!doctype html><html><head><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<style>body{font-family:Arial,Helvetica,sans-serif;max-width:460px;margin:48px auto;' +
+      'padding:0 20px;color:#111;line-height:1.55}h1{font-size:20px;margin:0 0 4px}' +
+      'p.ev{color:#555;margin:0 0 8px}label{display:block;margin:16px 0 2px;font-size:12px;' +
+      'text-transform:uppercase;letter-spacing:.06em;color:#777}' +
+      'input[type=text]{width:100%;padding:8px 0;border:0;border-bottom:1px solid #bbb;font-size:15px}' +
+      'input[type=text]:focus{outline:none;border-bottom-color:#111}' +
+      '.cb{display:flex;gap:9px;align-items:flex-start;margin-top:20px;font-size:14px;color:#111}' +
+      'button{margin-top:26px;padding:11px 22px;background:#111;color:#fff;border:0;' +
+      'border-radius:999px;font-size:14px;cursor:pointer}.muted{color:#888;font-size:13px;margin-top:28px}</style>' +
+      '</head><body>' + inhaltHtml +
+      '<p class="muted">NewBuild Kollektiv</p></body></html>',
+  ).setTitle(titel || 'NewBuild Kollektiv')
+}
+
+function abmeldeFormular_(p) {
+  const event = p.event || 'das Event'
+  return abmeldeSeite_(
+    '<h1>Vom Treffen abmelden</h1>' +
+      '<p class="ev">' + escapeHtml_(event) + '</p>' +
+      '<form method="get" action="' + WEBAPP_URL + '">' +
+      '<input type="hidden" name="action" value="abmelden_ok">' +
+      '<input type="hidden" name="sid" value="' + escapeHtml_(p.sid || '') + '">' +
+      '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
+      '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
+      '<input type="hidden" name="email" value="' + escapeHtml_(p.email || '') + '">' +
+      '<label>Vorname</label><input type="text" name="vorname" value="' + escapeHtml_(p.vorname || '') + '" required>' +
+      '<label>Nachname</label><input type="text" name="nachname" value="' + escapeHtml_(p.nachname || '') + '" required>' +
+      '<label class="cb"><input type="checkbox" name="newsletter" value="1"> ' +
+      'Bitte informiere mich über die nächsten Events.</label>' +
+      '<button type="submit">Jetzt abmelden</button>' +
+      '</form>',
+    'Abmelden – NewBuild Kollektiv',
+  )
+}
+
+function abmeldenVerarbeiten_(p) {
+  let sheet = null
+  try {
+    if (p.sid) sheet = SpreadsheetApp.openById(p.sid).getSheets()[0]
+  } catch (err) {}
+  if (!sheet) sheet = findeEventSheetPerSlug_(p.slug)
+  if (!sheet) {
+    return abmeldeSeite_(
+      '<h1>Ups</h1><p>Wir konnten das Event nicht zuordnen. Bitte antworte kurz auf die E-Mail, dann melden wir dich manuell ab.</p>',
+    )
+  }
+
+  const werte = sheet.getDataRange().getValues()
+  const kopf = werte[0]
+  const iVorname = kopf.indexOf('Vorname')
+  const iNachname = kopf.indexOf('Nachname')
+  const iEmail = kopf.indexOf('E-Mail')
+  const iStatus = kopf.indexOf('Status')
+
+  const email = String(p.email || '').trim().toLowerCase()
+  const vn = String(p.vorname || '').trim().toLowerCase()
+  const nn = String(p.nachname || '').trim().toLowerCase()
+
+  let treffer = -1
+  for (let r = 1; r < werte.length; r++) {
+    const rEmail = iEmail >= 0 ? String(werte[r][iEmail] || '').trim().toLowerCase() : ''
+    const rVn = iVorname >= 0 ? String(werte[r][iVorname] || '').trim().toLowerCase() : ''
+    const rNn = iNachname >= 0 ? String(werte[r][iNachname] || '').trim().toLowerCase() : ''
+    if ((email && rEmail === email) || (vn && nn && rVn === vn && rNn === nn)) {
+      treffer = r
+      break
+    }
+  }
+  if (treffer < 0) {
+    return abmeldeSeite_(
+      '<h1>Nicht gefunden</h1><p>Wir haben deine Anmeldung nicht gefunden. Bitte prüfe Vor- und Nachname – oder antworte kurz auf die E-Mail.</p>',
+    )
+  }
+
+  const zeile = treffer + 1
+  if (iStatus >= 0) sheet.getRange(zeile, iStatus + 1).setValue('abgemeldet')
+  sheet.getRange(zeile, ensureColumn_(sheet, 'Newsletter')).setValue(p.newsletter ? 'Ja' : 'Nein')
+  SpreadsheetApp.flush()
+
+  return abmeldeSeite_(
+    '<h1>Du bist abgemeldet</h1>' +
+      '<p>Schade, dass es diesmal nicht klappt – „' + escapeHtml_(p.event || 'das Event') + '".</p>' +
+      (p.newsletter
+        ? '<p>Wir informieren dich über die nächsten Treffen.</p>'
+        : '<p>Du bekommst keine weiteren Mails zu diesem Event.</p>'),
+    'Abgemeldet – NewBuild Kollektiv',
+  )
+}
+
+// Findet eine Event-Tabelle nur lesend anhand des Slugs (kein Anlegen):
+// erst ueber die gemerkte Datei-ID, sonst ueber die Spalte "Slug".
+function findeEventSheetPerSlug_(slug) {
+  if (!slug) return null
+  const id = PropertiesService.getScriptProperties().getProperty('sheetId_' + slug)
+  if (id) {
+    try {
+      return SpreadsheetApp.openById(id).getSheets()[0]
+    } catch (e) {}
+  }
+  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  while (files.hasNext()) {
+    try {
+      const sh = SpreadsheetApp.open(files.next()).getSheets()[0]
+      const werte = sh.getDataRange().getValues()
+      const iSlug = werte[0].indexOf('Slug')
+      if (iSlug >= 0 && ersterWert_(werte, iSlug) === slug) return sh
+    } catch (e) {}
+  }
+  return null
+}
+
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
 // "Senden als"-Alias (GmailApp, damit "from" gesetzt werden kann) und haengt
 // automatisch die Signatur an — HTML plus Text-Fallback. Optional: attachments
@@ -665,6 +819,8 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
           iVorname >= 0 ? zeile[iVorname] : '',
         ),
         slug: eventSlug,
+        sid: sheet.getParent().getId(),
+        email: email,
         titel: eventTitel,
         referent: eventReferent,
         datum: eventDatum,
@@ -803,7 +959,8 @@ function mailEineWoche_(e) {
         '<p>Die vollständigen Eckdaten und einen Kalendereintrag bekommst du ' +
         'am Vortag. Falls du vorab Fragen oder Wünsche zum Thema hast: ' +
         'antworte einfach auf diese Mail.</p>' +
-        '<p>Bis bald!</p>',
+        '<p>Bis bald!</p>' +
+        abmeldeSatz_(e),
     ),
   }
 }
@@ -821,12 +978,13 @@ function mailEinTag_(e) {
         eckdatenBlock_(e) +
         '<p>Im Anhang findest du eine Kalenderdatei (.ics). Sie erinnert dich ' +
         AUFBRUCH_VORLAUF_MIN +
-        ' Minuten vor Beginn ans Aufbrechen – Anfahrt bitte einplanen.</p>' +
+        ' Minuten vor Beginn ans Aufbrechen.</p>' +
         '<p>Ich freue mich sehr auf den gemeinsamen Austausch mit dir.</p>' +
         '<p>Bis morgen!</p>' +
         '<p style="color:#666;font-size:13px;margin-top:24px">P.S.: Falls sich in ' +
-        'deinem Terminkalender doch etwas geändert hat, wären wir dir dankbar, ' +
-        'wenn du dich kurz abmeldest.</p>',
+        'deinem Terminkalender doch etwas geändert hat – ' +
+        '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email) +
+        '" style="color:#3d5a80">hier abmelden</a>.</p>',
     ),
     attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort)],
   }
@@ -892,6 +1050,8 @@ function testErinnerungsmails() {
   const e = {
     anrede: anrede_('w', 'Ann-Kathrin'),
     slug: 'session-01-ki-belohnt-ordnung',
+    sid: '',
+    email: TEST_EMPFAENGER,
     titel: 'KI belohnt Ordnung: Wie Menschen und KI-Agenten in Planungsbüros zusammenarbeiten',
     referent: 'Markus Kolb, Bräunlin Kolb Architekten',
     datum: 'Di., 01.09.2026',
