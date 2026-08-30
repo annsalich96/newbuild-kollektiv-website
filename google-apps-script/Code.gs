@@ -557,13 +557,17 @@ function abmeldeSeite_(inhaltHtml, titel) {
     'button:hover{background:#111;color:#ececea}' +
     '.foot{margin-top:40px;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;' +
     'color:rgba(17,17,17,.45)}'
-  return HtmlService.createHtmlOutput(
-    '<!doctype html><html lang="de"><head><meta charset="utf-8">' +
-      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-      '<style>' + css + '</style></head><body><div class="card">' +
+  // Fragment (kein <!doctype>/<html>/<head>) — HtmlService wickelt selbst ein
+  // Dokument darum; ein komplettes Dokument kann in der Sandbox leer rendern.
+  const out = HtmlService.createHtmlOutput(
+    '<style>' + css + '</style><div class="card">' +
       inhaltHtml +
-      '<p class="foot">NewBuild Kollektiv</p></div></body></html>',
-  ).setTitle(titel || 'NewBuild Kollektiv')
+      '<p class="foot">NewBuild Kollektiv</p></div>',
+  )
+    .setTitle(titel || 'NewBuild Kollektiv')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+  out.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+  return out
 }
 
 function abmeldeFormular_(p) {
