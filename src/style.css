@@ -1329,7 +1329,8 @@ ul {
 }
 
 .event-hero .divider {
-  margin-block: calc(1.5 * var(--balken));
+  /* 1 Balken Luft zur Linie ober- und unterhalb (Grid-System). */
+  margin-block: var(--balken);
 }
 
 .event-hero .divider-row--before-sponsoring .divider {
@@ -1382,7 +1383,9 @@ ul {
 }
 
 .event-detail__speaker {
-  margin-block-start: calc(1.5 * var(--balken));
+  /* Abstand zur Linie darueber kommt allein aus .event-hero .divider
+     (1 Balken) — kein zusaetzlicher margin hier. */
+  margin-block-start: 0;
   /* War "center": Name/Bio (als eigene Grid-Items in Spalte 2-3 bzw. 2-7)
      und das sehr hohe Foto (aspect-ratio) landeten durch Grid-Auto-
      Placement in unterschiedlichen impliziten Zeilen, und egal wie die

@@ -882,14 +882,14 @@ function fotoWiderspruchVerarbeiten_(p) {
   const iNachname = kopf.indexOf('Nachname')
   const vn = String(p.vorname || '').trim().toLowerCase()
   const nn = String(p.nachname || '').trim().toLowerCase()
-  const spalte = ensureColumn_(sheet, 'Foto-Widerspruch')
+  const spalte = ensureColumn_(sheet, 'Foto-Einwilligung')
 
   let treffer = 0
   for (let r = 1; r < werte.length; r++) {
     const rVn = iVorname >= 0 ? String(werte[r][iVorname] || '').trim().toLowerCase() : ''
     const rNn = iNachname >= 0 ? String(werte[r][iNachname] || '').trim().toLowerCase() : ''
     if (vn && nn && rVn === vn && rNn === nn) {
-      sheet.getRange(r + 1, spalte).setValue('Ja')
+      sheet.getRange(r + 1, spalte).setValue('Nein')
       treffer++
     }
   }
@@ -930,21 +930,30 @@ function fotoInfoSeite_(p) {
 // ── Check-in am Eingang (nur Vor-/Nachname → "Anwesend" in der Event-Tabelle)
 function checkinFormular_(p) {
   const event = p.event || 'unser Treffen'
+  const slug = String(p.slug || '')
   return abmeldeSeite_(
     '<h1>Herzlich willkommen</h1>' +
       '<p class="ev">' + escapeHtml_(event) + ' — schön, dass du da bist. Trag dich kurz ein.</p>' +
       '<form method="get" action="' + WEBAPP_URL + '">' +
       '<input type="hidden" name="action" value="checkin_ok">' +
       '<input type="hidden" name="sid" value="' + escapeHtml_(p.sid || '') + '">' +
-      '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
+      '<input type="hidden" name="slug" value="' + escapeHtml_(slug) + '">' +
       '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
       '<label>Vorname</label><input type="text" name="vorname" required>' +
       '<label>Nachname</label><input type="text" name="nachname" required>' +
+      '<label class="cb"><input type="checkbox" name="foto" value="1">' +
+      '<span>Ich bin einverstanden, dass bei dieser Veranstaltung Foto- und Videoaufnahmen von mir ' +
+      'gemacht und für die Öffentlichkeitsarbeit des NewBuild Kollektiv (Website, Social Media, ' +
+      'Newsletter, Presse) verwendet sowie an Sponsoren und Partner der Veranstaltung weitergegeben werden. ' +
+      '<a href="' + WEBAPP_URL + '?action=fotoinfo&slug=' + encodeURIComponent(slug) +
+      '" style="color:#111">Mehr dazu</a> · ' +
+      '<a href="https://newbuild-kollektiv.com/datenschutzerklaerung.html" style="color:#111">Datenschutz</a>' +
+      '</span></label>' +
       '<button type="submit">Ich bin da</button>' +
       '</form>' +
-      '<p style="margin-top:30px;font-size:.9rem"><a href="' + WEBAPP_URL +
-      '?action=fotoinfo&slug=' + encodeURIComponent(p.slug || '') +
-      '" style="color:#111">Infos zu Foto- und Videoaufnahmen</a></p>',
+      '<p style="margin-top:22px;font-size:.85rem;color:rgba(17,17,17,.55)">Ohne Häkchen checkst du ' +
+      'trotzdem ein — wir vermerken dann, dass keine erkennbaren Aufnahmen von dir veröffentlicht ' +
+      'oder weitergegeben werden.</p>',
     'Check-in – NewBuild Kollektiv',
   )
 }
@@ -972,15 +981,18 @@ function checkinVerarbeiten_(p) {
   const iVorname = kopf.indexOf('Vorname')
   const iNachname = kopf.indexOf('Nachname')
   const iStatus = kopf.indexOf('Status')
-  const spalte = ensureColumn_(sheet, 'Anwesend')
+  const spAnwesend = ensureColumn_(sheet, 'Anwesend')
+  const spFoto = ensureColumn_(sheet, 'Foto-Einwilligung')
   const stamp = Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm')
+  const fotoWert = p.foto ? 'Ja' : 'Nein'
 
   let treffer = 0
   for (let r = 1; r < werte.length; r++) {
     const rVn = iVorname >= 0 ? String(werte[r][iVorname] || '').trim().toLowerCase() : ''
     const rNn = iNachname >= 0 ? String(werte[r][iNachname] || '').trim().toLowerCase() : ''
     if (rVn === vn.toLowerCase() && rNn === nn.toLowerCase()) {
-      sheet.getRange(r + 1, spalte).setValue(stamp)
+      sheet.getRange(r + 1, spAnwesend).setValue(stamp)
+      sheet.getRange(r + 1, spFoto).setValue(fotoWert)
       treffer++
     }
   }
@@ -989,13 +1001,17 @@ function checkinVerarbeiten_(p) {
     if (iVorname >= 0) neu[iVorname] = vn
     if (iNachname >= 0) neu[iNachname] = nn
     if (iStatus >= 0) neu[iStatus] = 'vor Ort'
-    neu[spalte - 1] = stamp
+    neu[spAnwesend - 1] = stamp
+    neu[spFoto - 1] = fotoWert
     sheet.appendRow(neu)
   }
   SpreadsheetApp.flush()
 
   return abmeldeSeite_(
-    '<h1>Danke, ' + escapeHtml_(vn) + '!</h1><p>Du bist eingecheckt. Viel Spaß beim Treffen.</p>',
+    '<h1>Danke, ' + escapeHtml_(vn) + '!</h1><p>Du bist eingecheckt. Viel Spaß beim Treffen.</p>' +
+      (p.foto
+        ? ''
+        : '<p style="font-size:.9rem;color:rgba(17,17,17,.6)">Wir achten darauf, dass keine erkennbaren Aufnahmen von dir veröffentlicht oder weitergegeben werden.</p>'),
     'Eingecheckt – NewBuild Kollektiv',
   )
 }
@@ -1099,11 +1115,11 @@ function zusatzspaltenJetztAnlegen() {
     ensureColumn_(ss.getSheets()[0], 'Anrede')
     ensureColumn_(ss.getSheets()[0], 'Referent')
     ensureColumn_(ss.getSheets()[0], 'Slug')
-    ensureColumn_(ss.getSheets()[0], 'Foto-Widerspruch')
     ensureColumn_(ss.getSheets()[0], 'Anwesend')
+    ensureColumn_(ss.getSheets()[0], 'Foto-Einwilligung')
     namen.push(ss.getName())
   }
-  Logger.log('Zusatzspalten angelegt/geprueft (Anrede, Referent, Slug, Foto-Widerspruch, Anwesend): ' + namen.join(' · '))
+  Logger.log('Zusatzspalten angelegt/geprueft (Anrede, Referent, Slug, Anwesend, Foto-Einwilligung): ' + namen.join(' · '))
 }
 
 function sendeErinnerungen() {
