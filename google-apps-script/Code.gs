@@ -814,3 +814,42 @@ const ERINNERUNG_STUFEN = [
   { spalte: 'Erinnerung 3 Std', modus: 'stunden', wert: 3, bauen: mailDreiStunden_ },
   { spalte: 'Nachfass E-Mail', modus: 'tage', wert: -1, bauen: mailNachfass_ },
 ]
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  TEST: schickt alle 5 Mails (Bestaetigung + 4 Erinnerungen) einmal an
+//  TEST_EMPFAENGER. Aendert NICHTS an Tabellen oder Triggern. Betreff mit
+//  "[TEST]" markiert. Funktion im Editor auswaehlen -> Ausfuehren.
+// ─────────────────────────────────────────────────────────────────────────────
+const TEST_EMPFAENGER = 'salich@annarchitecture-studio.com'
+
+function testErinnerungsmails() {
+  const start = new Date(2026, 8, 1, 18, 30, 0) // 01.09.2026, 18:30
+  const e = {
+    anrede: anrede_('w', 'Ann-Kathrin'),
+    titel: 'KI belohnt Ordnung: Wie Menschen und KI-Agenten in Planungsbüros zusammenarbeiten',
+    referent: 'Markus Kolb, Bräunlin Kolb Architekten',
+    datum: 'Di., 01.09.2026',
+    zeit: '18:30–20:00',
+    ort: 'Projo Berlin, Chausseestraße 123, 10115 Berlin',
+    start: start,
+    ende: new Date(start.getTime() + 90 * 60000),
+  }
+
+  const bestHtml = wrapMail_(
+    '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+      '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
+      eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
+      '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
+      '<p>Bis bald,<br>NewBuild Kollektiv</p>',
+  )
+  sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] Anmeldebestätigung: ' + e.titel, bestHtml)
+  Utilities.sleep(600)
+
+  ERINNERUNG_STUFEN.forEach(function (stufe) {
+    const m = stufe.bauen(e)
+    sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] ' + m.subject, m.htmlBody, m.attachments)
+    Utilities.sleep(600)
+  })
+
+  Logger.log('5 Test-Mails an ' + TEST_EMPFAENGER + ' verschickt.')
+}
