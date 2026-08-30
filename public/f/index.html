@@ -56,6 +56,7 @@
   var q = new URLSearchParams(location.search);
   var doo = (q.get('do') || '').toLowerCase();
   var slug = q.get('slug') || '';
+  var ort = q.get('ort') || '';
   var esc = function (s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   };
@@ -73,7 +74,7 @@
       ]
     },
     checkin: {
-      title: 'Herzlich willkommen bei unserem NewBuild Kollektiv Treffen.',
+      title: 'Herzlich Willkommen, zu unserem NewBuild Kollektiv Treffen' + (ort ? ' bei ' + esc(ort) : '') + '.',
       sub: 'Schön, dass du da bist. Trag dich bitte kurz ein.',
       btn: 'Ich bin da',
       fields: [
