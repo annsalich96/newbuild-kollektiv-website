@@ -319,7 +319,7 @@ function appendRegistration(sheet, data) {
 }
 
 function sendConfirmationEmail(data) {
-  const subject = 'Anmeldebestätigung: ' + data.eventTitle
+  const subject = 'Anmeldebestätigung: ' + kurzTitel_(data.eventTitle)
   const html = wrapMail_(
     '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
       '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
@@ -428,6 +428,13 @@ function eventBox_(titel, referent, datum, zeit, ort) {
 
 function mapsLink_(ort) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(ort || ''))
+}
+
+// Kurzform des Titels fuer Betreffzeilen: alles vor dem ersten ":".
+function kurzTitel_(t) {
+  const s = String(t || '')
+  const i = s.indexOf(':')
+  return (i > 0 ? s.slice(0, i) : s).trim()
 }
 
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
@@ -723,7 +730,7 @@ function schreibeZusatzfelder_(sheet, data) {
 // 1 Woche vorher — bewusst schlank: nur Terminzeile, keine volle Eckdaten-Box.
 function mailEineWoche_(e) {
   return {
-    subject: 'In einer Woche: NewBuild Kollektiv – ' + e.titel,
+    subject: 'In einer Woche: NewBuild Kollektiv – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
@@ -745,7 +752,7 @@ function mailEineWoche_(e) {
 
 function mailEinTag_(e) {
   return {
-    subject: 'Erinnerung NBK Treffen – ' + e.titel,
+    subject: 'Erinnerung NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
@@ -770,7 +777,7 @@ function mailEinTag_(e) {
 // ~3 h vorher — kurzer Absprung: Termin, Ort + Maps, Kalenderdatei.
 function mailDreiStunden_(e) {
   return {
-    subject: 'Gleich geht’s los: NewBuild Kollektiv – ' + e.titel,
+    subject: 'Gleich geht’s los: NewBuild Kollektiv – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
@@ -842,7 +849,7 @@ function testErinnerungsmails() {
       '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
       '<p>Bis bald,<br>NewBuild Kollektiv</p>',
   )
-  sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] Anmeldebestätigung: ' + e.titel, bestHtml)
+  sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] Anmeldebestätigung: ' + kurzTitel_(e.titel), bestHtml)
   Utilities.sleep(600)
 
   ERINNERUNG_STUFEN.forEach(function (stufe) {
