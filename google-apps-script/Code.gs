@@ -1390,16 +1390,19 @@ function mailNachfass_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>schön, dass du gestern beim NewBuild Kollektiv Treffen dabei warst – danke dafür.</p>' +
-        '<p>In den nächsten Tagen bekommst du von mir <strong>Datum und Ort fürs nächste Treffen</strong>. ' +
-        'Ich hoffe, du bist wieder dabei.</p>' +
-        '<p>Und: Hast du selbst ein Thema, das du in der Community vorstellen möchtest? Wir suchen laufend ' +
-        'Referent:innen aus der Praxis. <a href="' + referentLink_() +
-        '" style="color:#3d5a80">Hier kannst du dich als Referent:in melden.</a></p>' +
-        '<p>Und magst du uns kurz sagen, wie es war? <a href="' + feedbackLink_(e.slug, e.titel) +
-        '" style="color:#3d5a80">Hier geht’s zur kurzen Feedback-Umfrage</a> (eine Minute). ' +
-        'Oder antworte einfach auf diese Mail.</p>' +
-        '<p>Lieben Gruß<br>Ann-Kathrin</p>',
+        '<p>ich habe mich sehr gefreut, dich bei unserem gestrigen NewBuild Kollektiv Abend gesehen zu haben.</p>' +
+        '<p>Ich hoffe, du hast ' +
+        (e.referent
+          ? 'den Austausch und das Vorgetragene von ' + escapeHtml_(e.referent) + ' '
+          : 'den Austausch und die Impulse des Abends ') +
+        'genauso genossen wie ich. Lass mich gerne wissen, falls du noch ' +
+        '<a href="' + feedbackLink_(e.slug, e.titel) +
+        '" style="color:#3d5a80">Hinweise für unsere Treffen</a> hast.</p>' +
+        '<p>Und falls du selbst einmal ein Thema oder deine Erfahrungen mit dem Kollektiv teilen ' +
+        'möchtest, <a href="' + referentLink_() +
+        '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
+        '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.</p>' +
+        '<p>Bis bald und liebe Grüße<br>Ann-Kathrin</p>',
     ),
   }
 }
