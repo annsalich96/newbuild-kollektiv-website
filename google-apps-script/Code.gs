@@ -459,7 +459,7 @@ function mapsLink_(ort) {
 const GRAFIKEN = {
   'session-01-ki-belohnt-ordnung': {
     erinnerung: {
-      url: 'https://newbuild-kollektiv.com/mail/session-01-ki-belohnt-ordnung-erinnerung-maps-email-600.png',
+      url: 'https://newbuild-kollektiv.com/mail/session-01-ki-belohnt-ordnung-erinnerung-maps-email-large-600.png',
       href: 'https://www.google.com/maps/search/?api=1&query=Projo%20Berlin%2C%20Chausseestra%C3%9Fe%20123%2C%2010115%20Berlin',
     },
   },
