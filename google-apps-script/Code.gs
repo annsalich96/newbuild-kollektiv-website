@@ -20,24 +20,59 @@ const SENDER_NAME = 'NewBuild Kollektiv'
 const NOTIFY_EMAIL = 'request@newbuild-kollektiv.com'
 
 // ── Signatur ────────────────────────────────────────────────────────────────
-// Haengt automatisch unter JEDE Mail an Teilnehmer:innen (Bestaetigung + alle
-// Erinnerungen). NUR HIER anpassen. Fuer eine Signatur mit Logo muss das Bild
-// online liegen (z.B. https://newbuild-kollektiv.com/…png) und als
-// <img src="…"> eingebunden werden — Anhaenge gehen bei Automatik-Mails nicht.
-const SIGNATUR_HTML =
+// Die Signatur wird NICHT hier gepflegt, sondern direkt aus Gmail gelesen:
+// die "Senden als"-Signatur des Absenders (SENDER_EMAIL) im Konto, unter dem
+// das Skript laeuft.
+//
+// WICHTIG bei mehreren Signaturen: Die Gmail-API kann Signaturen nicht per
+// Name abrufen — nur die, die fuer die Adresse request@newbuild-kollektiv.com
+// als Standard gesetzt ist. Also in Gmail > Einstellungen > Allgemein >
+// Signatur > "Standardeinstellungen" fuer diese Adresse "CEO" auswaehlen
+// (neue Mails UND Antworten/Weiterleitungen).
+//
+// Voraussetzung: erweiterter Dienst "Gmail API" im Apps-Script-Editor
+// hinzufuegen (Services + -> Gmail API). Beim naechsten Deploy fragt Google
+// zusaetzlich die Berechtigung "Gmail-Einstellungen lesen" ab.
+//
+// Falls das Auslesen fehlschlaegt/leer ist, greift dieser Fallback — hier am
+// besten einmal die echte CEO-Signatur als HTML einsetzen:
+const SIGNATUR_HTML_FALLBACK =
   '<br><br>' +
   '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#555">' +
-  '<strong>Ann-Kathrin Salich</strong><br>' +
-  'NewBuild Kollektiv<br>' +
-  '<a href="mailto:request@newbuild-kollektiv.com" style="color:#555">request@newbuild-kollektiv.com</a><br>' +
+  'NewBuild Kollektiv · ' +
   '<a href="https://newbuild-kollektiv.com" style="color:#555">newbuild-kollektiv.com</a>' +
   '</div>'
+const SIGNATUR_TEXT_FALLBACK = '\n\n--\nNewBuild Kollektiv · newbuild-kollektiv.com'
 
-const SIGNATUR_TEXT =
-  '\n\n--\n' +
-  'Ann-Kathrin Salich\n' +
-  'NewBuild Kollektiv\n' +
-  'request@newbuild-kollektiv.com · newbuild-kollektiv.com'
+// Liest die in Gmail hinterlegte Signatur des Absender-Alias. Ergebnis wird
+// 1 h gecacht. Leerer String = keine Signatur / Lesen nicht moeglich.
+function gmailSignaturRoh_() {
+  const cache = CacheService.getScriptCache()
+  const cached = cache.get('sendAsSignature')
+  if (cached) return cached
+  try {
+    const eintraege = (Gmail.Users.Settings.SendAs.list('me').sendAs) || []
+    const treffer =
+      eintraege.filter(function (s) { return s.sendAsEmail === SENDER_EMAIL })[0] ||
+      eintraege.filter(function (s) { return s.isDefault })[0]
+    const sig = (treffer && treffer.signature) || ''
+    if (sig) cache.put('sendAsSignature', sig, 3600)
+    return sig
+  } catch (err) {
+    Logger.log('Gmail-Signatur nicht lesbar (Gmail-API-Dienst aktiviert?): ' + err)
+    return ''
+  }
+}
+
+function signaturHtml_() {
+  const g = gmailSignaturRoh_()
+  return g ? '<br><br>' + g : SIGNATUR_HTML_FALLBACK
+}
+
+function signaturText_() {
+  const g = gmailSignaturRoh_()
+  return g ? '\n\n--\n' + htmlToPlain_(g) : SIGNATUR_TEXT_FALLBACK
+}
 
 // Stunde (0–23, Europe/Berlin), ab der die tagesbasierten Erinnerungen
 // (1 Woche / 1 Tag / Nachfass) rausgehen. Der Trigger laeuft stuendlich,
@@ -384,10 +419,10 @@ function sendeTeilnehmerMail_(to, subject, htmlBody, attachments) {
     name: SENDER_NAME,
     from: SENDER_EMAIL,
     replyTo: SENDER_EMAIL,
-    htmlBody: htmlBody + SIGNATUR_HTML,
+    htmlBody: htmlBody + signaturHtml_(),
   }
   if (attachments && attachments.length) opts.attachments = attachments
-  GmailApp.sendEmail(to, subject, htmlToPlain_(htmlBody) + SIGNATUR_TEXT, opts)
+  GmailApp.sendEmail(to, subject, htmlToPlain_(htmlBody) + signaturText_(), opts)
 }
 
 // Kalenderdatei (.ics) fuer die "1 Tag vorher"-Mail. Enthaelt einen
@@ -663,6 +698,7 @@ function schreibeZusatzfelder_(sheet, data) {
 // ende } und gibt { subject, htmlBody, attachments? } zurueck. Texte hier frei
 // anpassbar; die Signatur wird automatisch angehaengt.
 
+// 1 Woche vorher — bewusst schlank: nur Terminzeile, keine volle Eckdaten-Box.
 function mailEineWoche_(e) {
   return {
     subject: 'In einer Woche: NewBuild Kollektiv – ' + e.titel,
@@ -670,10 +706,16 @@ function mailEineWoche_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>in einer Woche ist es soweit – unser NewBuild Kollektiv Treffen, ' +
-        'für das du dich angemeldet hast.</p>' +
-        eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
-        '<p>Hast du vorab Fragen oder Wünsche zum Thema? Antworte einfach auf diese Mail.</p>' +
+        '<p>in einer Woche ist es soweit – unser NewBuild Kollektiv Treffen ' +
+        '<strong>„' +
+        escapeHtml_(e.titel) +
+        '“</strong>' +
+        (e.datum ? ', am ' + escapeHtml_(e.datum) : '') +
+        (e.zeit ? ' um ' + escapeHtml_(e.zeit) + ' Uhr' : '') +
+        '.</p>' +
+        '<p>Die vollständigen Eckdaten und einen Kalendereintrag bekommst du ' +
+        'am Vortag. Falls du vorab Fragen oder Wünsche zum Thema hast: ' +
+        'antworte einfach auf diese Mail.</p>' +
         '<p>Bis bald!</p>',
     ),
   }
@@ -703,24 +745,28 @@ function mailEinTag_(e) {
   }
 }
 
+// ~3 h vorher — kurzer Absprung: Termin, Ort + Maps, Kalenderdatei.
 function mailDreiStunden_(e) {
   return {
-    subject: 'Heute Abend: NewBuild Kollektiv – ' + e.titel,
+    subject: 'Gleich geht’s los: NewBuild Kollektiv – ' + e.titel,
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>in wenigen Stunden geht es los. Kurz das Wichtigste:</p>' +
-        eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
+        '<p>in wenigen Stunden geht es los' +
+        (e.zeit ? ' – heute um ' + escapeHtml_(e.zeit) + ' Uhr' : '') +
+        '.</p>' +
         (e.ort
-          ? '<p>Standort direkt in Google Maps: <a href="' +
-            mapsLink_(e.ort) +
-            '" style="color:#3d5a80">' +
+          ? '<p><strong>' +
             escapeHtml_(e.ort) +
-            '</a></p>'
+            '</strong><br>' +
+            '<a href="' +
+            mapsLink_(e.ort) +
+            '" style="color:#3d5a80">In Google Maps öffnen</a></p>'
           : '') +
-        '<p>Bis später!</p>',
+        '<p>Der Kalendereintrag hängt nochmal an. Bis gleich!</p>',
     ),
+    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort)],
   }
 }
 

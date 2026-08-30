@@ -75,22 +75,50 @@ Neue Funktion `sendeErinnerungen()` + stündlicher Zeit-Trigger. Verschickt pro 
 | ~3 Stunden vorher | Eventtag, < 3 h bis Beginn | `Erinnerung 3 Std` |
 | 1 Tag danach (Nachfass) | Tag `Event+1`, ab 9 Uhr | `Nachfass E-Mail` |
 
-Die vier Status-Spalten legt das Skript in jeder Event-Tabelle bei Bedarf selbst an. Eine Mail geht nie doppelt raus (Spalte bekommt einen Zeitstempel, sobald verschickt). Datum/Zeit/Ort zieht das Skript aus den Spalten `Event-Datum` / `Event-Zeit` / `Event-Ort`, die bei jeder Anmeldung ohnehin gefüllt werden. `Status`-Werte mit „abgemeldet" / „storniert" / „abgesagt" werden übersprungen.
+Die Status-Spalten legt das Skript in jeder Event-Tabelle bei Bedarf selbst an. Eine Mail geht nie doppelt raus (Spalte bekommt einen Zeitstempel, sobald verschickt). Datum/Zeit/Ort/Referent zieht das Skript aus den jeweiligen Spalten (erster befüllter Wert). `Status`-Werte mit „abgemeldet" / „storniert" / „abgesagt" werden übersprungen.
 
-**Nach dem Deploy einmalig:** im Editor die Funktion **`erinnerungenTriggerEinrichten`** auswählen → **Ausführen** → Berechtigungen bestätigen. Damit läuft der stündliche Trigger. Kontrolle: **Trigger**-Menü (Wecker-Symbol links) — dort steht dann `sendeErinnerungen`, „Zeitgesteuert", „Stundentimer".
+**Inhalt je Stufe** (bewusst unterschiedlich, nicht überall dasselbe):
 
-Projekt-Zeitzone muss auf **Europe/Berlin** stehen (Projekteinstellungen → Zahnrad), sonst rechnet die Tages-Logik daneben.
+| Stufe | Was drin ist |
+| --- | --- |
+| Bestätigung (sofort) | volle Eckdaten-Box (Titel, Referent:in, Datum/Zeit, Ort + „In Google Maps öffnen") |
+| 1 Woche vorher | nur Terminzeile (Titel + Datum/Zeit), kein Ort, keine Box |
+| 1 Tag vorher | volle Eckdaten-Box **+ `.ics`-Anhang** mit „Aufbrechen"-Wecker |
+| ~3 Std vorher | Termin + Ort + Maps-Link **+ `.ics`-Anhang**, keine volle Box |
+| 1 Tag danach | nur Danke + Feedback-Hinweis |
 
-Sendelimit beachten: Consumer-Gmail 100 Mails/Tag, Workspace 1500/Tag. Bei sehr großen Events kann eine Stufe über mehrere stündliche Läufe verteilt rausgehen — das Skript macht beim nächsten Lauf automatisch weiter.
+Die `.ics`-Datei enthält einen DISPLAY-Wecker `AUFBRUCH_VORLAUF_MIN` Minuten vor Beginn (Standard **90**, Konstante oben in `Code.gs`).
 
-### 3. Signatur unter jeder Teilnehmer-Mail
+**Nach dem Deploy einmalig:**
 
-Konstanten `SIGNATUR_HTML` (HTML) und `SIGNATUR_TEXT` (Text-Fallback) ganz oben in `Code.gs`. Wird automatisch unter Bestätigungsmail **und** alle Erinnerungen gehängt. Nur dort anpassen. Logo nur als `<img src="https://…">` mit öffentlicher URL möglich, kein Datei-Anhang.
+1. Funktion **`zusatzspaltenJetztAnlegen`** ausführen — legt in jeder Event-Tabelle die Spalten **`Anrede`** (w/m, sonst „Hallo {Vorname}") und **`Referent`** (Name; ein Wert pro Tabelle reicht) an. Diese füllst du von Hand, bis das Formular sie mitschickt.
+2. Funktion **`erinnerungenTriggerEinrichten`** ausführen — stündlicher Trigger. Kontrolle: **Trigger**-Menü (Wecker-Symbol links) → `sendeErinnerungen`, „Zeitgesteuert", „Stundentimer".
 
-### Offen
+Projekt-Zeitzone muss auf **Europe/Berlin** stehen (Projekteinstellungen → Zahnrad).
 
-Geschlechtsspezifische Anrede („Liebe/Lieber" statt „Hallo") — braucht ein Anrede-Feld im Anmeldeformular (`src/event-form.ts` + Template + `events.json` + `.pages.yml`). Noch nicht umgesetzt.
+Sendelimit: Consumer-Gmail 100 Mails/Tag, Workspace 1500/Tag. Bei großen Events verteilt sich eine Stufe automatisch über mehrere stündliche Läufe.
+
+### 3. Signatur — kommt automatisch aus Gmail
+
+Das Skript liest die **„Senden als"-Signatur** des Alias `request@newbuild-kollektiv.com` direkt aus den Gmail-Einstellungen des Kontos, unter dem es läuft (`gmailSignaturRoh_`, 1 h gecacht).
+
+> [!important] Mehrere Signaturen angelegt → CEO muss die **Standard-Signatur für diese Adresse** sein
+> Die Gmail-API kann Signaturen **nicht per Name** abrufen — sie liefert nur die eine, die für den Alias `request@newbuild-kollektiv.com` als Standard gesetzt ist. Also in **Gmail → Einstellungen → Allgemein → Signatur → „Standardeinstellungen für Signatur"**: für die Adresse `request@newbuild-kollektiv.com` unter *„FÜR NEUE E-MAILS VERWENDEN"* **und** *„BEI ANTWORTEN/WEITERLEITUNGEN VERWENDEN"* jeweils **CEO** auswählen. Dann liefert die API die CEO-Signatur.
+
+**Dafür nötig:** im Apps-Script-Editor den erweiterten Dienst **Gmail API** hinzufügen — linke Leiste **Services** (`+`) → **Gmail API** → Hinzufügen (Kennung `Gmail`). Beim nächsten Deploy fragt Google zusätzlich die Berechtigung „Gmail-Einstellungen lesen" ab.
+
+**Absicherung:** Falls die API nichts/das Falsche liefert, greift `SIGNATUR_HTML_FALLBACK` / `SIGNATUR_TEXT_FALLBACK` oben in `Code.gs`. Am besten dort einmal die echte CEO-Signatur als HTML einsetzen (eine NBK-Mail mit CEO-Signatur an sich selbst schicken und den Quelltext übernehmen).
+
+Logo in der Signatur: nur als `<img src="https://…">` mit stabiler öffentlicher URL (Google-interne mail-sig-URLs laden extern teils nicht).
+
+### Anrede
+
+„Liebe/Lieber" statt „Hallo" kommt aus der Spalte **`Anrede`** (`w` / `m`), sonst „Hallo {Vorname}". Für bestehende Events von Hand füllen (Spalte via `zusatzspaltenJetztAnlegen`). Automatisch würde ein **Anrede-Feld im Anmeldeformular** gehen (`src/event-form.ts` + Template) — noch nicht gebaut.
+
+### Website-Seite (mitgeliefert im selben Commit)
+
+`src/event-form.ts` + `scripts/event-page.template.html` schicken jetzt auch **`eventSpeaker`** mit → ab dem nächsten Deploy landet der Referent bei jeder neuen Anmeldung automatisch in der Spalte `Referent`.
 
 ### Deploy
 
-`Code.gs` komplett in den Editor kopieren → **Bereitstellen → Bereitstellungen verwalten → Bearbeiten → Neue Version → Bereitstellen**. Beim ersten Lauf fragt Google nach zusätzlichen Berechtigungen (Trigger anlegen, Tabellen schreiben) — bestätigen.
+`Code.gs` komplett in den Editor kopieren → Gmail-API-Dienst hinzufügen (s. o.) → **Bereitstellen → Bereitstellungen verwalten → Bearbeiten → Neue Version → Bereitstellen**. Beim ersten Lauf fragt Google nach zusätzlichen Berechtigungen (Trigger anlegen, Tabellen schreiben, Gmail-Einstellungen lesen) — bestätigen. Danach `zusatzspaltenJetztAnlegen` und `erinnerungenTriggerEinrichten` je einmal ausführen.
