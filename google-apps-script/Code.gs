@@ -172,6 +172,8 @@ function doGet(e) {
   if (p.action === 'abmelden_ok') return abmeldenVerarbeiten_(p)
   if (p.action === 'referent') return referentFormular_(p)
   if (p.action === 'referent_ok') return referentVerarbeiten_(p)
+  if (p.action === 'feedback') return feedbackFormular_(p)
+  if (p.action === 'feedback_ok') return feedbackVerarbeiten_(p)
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -548,11 +550,18 @@ function abmeldeSeite_(inhaltHtml, titel) {
     'p{margin:0 0 14px}' +
     'label{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;' +
     'color:rgba(17,17,17,.6);margin:22px 0 4px}' +
-    'input:not([type=checkbox]):not([type=hidden]),textarea{width:100%;background:transparent;' +
-    'border:0;border-bottom:2px solid #111;padding:9px 0;font-size:1rem;color:#111;border-radius:0;' +
-    "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}" +
+    'input:not([type=checkbox]):not([type=radio]):not([type=hidden]),textarea{width:100%;' +
+    'background:transparent;border:0;border-bottom:2px solid #111;padding:9px 0;font-size:1rem;' +
+    "color:#111;border-radius:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}" +
     'textarea{min-height:88px;resize:vertical;line-height:1.4}' +
     'input:focus,textarea:focus{outline:none}' +
+    '.q{margin-top:26px}' +
+    '.q>.qt{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;' +
+    'color:rgba(17,17,17,.6);margin-bottom:9px}' +
+    '.opts{display:flex;flex-wrap:wrap;gap:9px 20px}' +
+    '.opts label{display:flex;align-items:center;gap:7px;margin:0;text-transform:none;' +
+    'letter-spacing:0;font-size:.95rem;color:#111;cursor:pointer}' +
+    '.opts input{width:16px;height:16px;flex:none}' +
     '.cb{display:flex;gap:12px;align-items:flex-start;margin:26px 0 0;font-size:.95rem;' +
     'text-transform:none;letter-spacing:0;color:#111}' +
     '.cb input{margin-top:.2em;width:16px;height:16px;flex:none}' +
@@ -759,6 +768,98 @@ function referentVerarbeiten_(p) {
 
 function referentLink_() {
   return WEBAPP_URL + '?action=referent'
+}
+
+// ── Feedback-Umfrage ────────────────────────────────────────────────────────
+const FEEDBACK_SHEET_NAME = 'Feedback'
+const FEEDBACK_HEADERS = [
+  'Datum',
+  'Event',
+  'Gesamt',
+  'Thema & Vortrag',
+  'Ort & Organisation',
+  'Gefallen / gefehlt',
+  'Themenwünsche',
+  'E-Mail (optional)',
+]
+const FEEDBACK_SKALA = ['Sehr gut', 'Gut', 'Okay', 'Weniger gut']
+
+function getOrCreateFeedbackSheet_() {
+  const folder = getOrCreateFolder()
+  const files = folder.getFilesByName(FEEDBACK_SHEET_NAME)
+  if (files.hasNext()) return SpreadsheetApp.open(files.next()).getSheets()[0]
+  const ss = SpreadsheetApp.create(FEEDBACK_SHEET_NAME)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), folder)
+  const sheet = ss.getSheets()[0]
+  sheet.appendRow(FEEDBACK_HEADERS)
+  sheet.setFrozenRows(1)
+  return sheet
+}
+
+function feedbackLink_(slug, titel) {
+  return (
+    WEBAPP_URL +
+    '?action=feedback' +
+    '&slug=' + encodeURIComponent(slug || '') +
+    '&event=' + encodeURIComponent(kurzTitel_(titel) || '')
+  )
+}
+
+function skalaFrage_(name, frage, pflicht) {
+  let opts = ''
+  FEEDBACK_SKALA.forEach(function (o) {
+    opts +=
+      '<label><input type="radio" name="' + name + '" value="' + escapeHtml_(o) + '"' +
+      (pflicht ? ' required' : '') + '>' + escapeHtml_(o) + '</label>'
+  })
+  return (
+    '<div class="q"><span class="qt">' + escapeHtml_(frage) + '</span>' +
+    '<div class="opts">' + opts + '</div></div>'
+  )
+}
+
+function feedbackFormular_(p) {
+  const event = p.event || ''
+  return abmeldeSeite_(
+    '<h1>Wie war’s?</h1>' +
+      '<p class="ev">' + (event ? escapeHtml_(event) + ' — ' : '') +
+      'Dein kurzes Feedback hilft uns fürs nächste Treffen. Dauert eine Minute.</p>' +
+      '<form method="get" action="' + WEBAPP_URL + '">' +
+      '<input type="hidden" name="action" value="feedback_ok">' +
+      '<input type="hidden" name="event" value="' + escapeHtml_(event) + '">' +
+      '<input type="hidden" name="slug" value="' + escapeHtml_(p.slug || '') + '">' +
+      skalaFrage_('gesamt', 'Wie war das Treffen insgesamt?', true) +
+      skalaFrage_('inhalt', 'Wie fandest du Thema & Vortrag?', false) +
+      skalaFrage_('orga', 'Wie war Ort & Organisation?', false) +
+      '<label>Was hat dir gefallen oder gefehlt?</label><textarea name="frei"></textarea>' +
+      '<label>Themenwünsche fürs nächste Mal?</label><textarea name="themen"></textarea>' +
+      '<label>E-Mail (nur, falls wir nachfragen dürfen)</label><input type="email" name="email">' +
+      '<button type="submit">Feedback senden</button>' +
+      '</form>',
+    'Feedback – NewBuild Kollektiv',
+  )
+}
+
+function feedbackVerarbeiten_(p) {
+  if (!String(p.gesamt || '').trim()) {
+    return abmeldeSeite_(
+      '<h1>Fast</h1><p>Bitte beantworte wenigstens die erste Frage.</p>',
+    )
+  }
+  getOrCreateFeedbackSheet_().appendRow([
+    Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
+    String(p.event || ''),
+    String(p.gesamt || ''),
+    String(p.inhalt || ''),
+    String(p.orga || ''),
+    String(p.frei || '').trim(),
+    String(p.themen || '').trim(),
+    String(p.email || '').trim(),
+  ])
+  return abmeldeSeite_(
+    '<h1>Danke!</h1><p>Dein Feedback ist bei uns. Bis zum nächsten Mal.</p>',
+    'Danke – NewBuild Kollektiv',
+  )
 }
 
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
@@ -1155,7 +1256,9 @@ function mailNachfass_(e) {
         '<p>Und: Hast du selbst ein Thema, das du in der Community vorstellen möchtest? Wir suchen laufend ' +
         'Referent:innen aus der Praxis. <a href="' + referentLink_() +
         '" style="color:#3d5a80">Hier kannst du dich als Referent:in melden.</a></p>' +
-        '<p>Feedback oder ein Themenwunsch? Antworte einfach auf diese Mail.</p>' +
+        '<p>Und magst du uns kurz sagen, wie es war? <a href="' + feedbackLink_(e.slug, e.titel) +
+        '" style="color:#3d5a80">Hier geht’s zur kurzen Feedback-Umfrage</a> (eine Minute). ' +
+        'Oder antworte einfach auf diese Mail.</p>' +
         '<p>Lieben Gruß<br>Ann-Kathrin</p>',
     ),
   }
