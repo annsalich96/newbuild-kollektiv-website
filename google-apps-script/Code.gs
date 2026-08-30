@@ -526,26 +526,43 @@ function abmeldeSatz_(e) {
   )
 }
 
+// Rahmen im NewBuild-Kollektiv-Look (hellgrauer Formular-Bereich der Website:
+// #ececea, Helvetica, schwarze 2px-Linien, Versal-Labels, Pillen-Button).
 function abmeldeSeite_(inhaltHtml, titel) {
+  const css =
+    '*{box-sizing:border-box}html,body{margin:0}' +
+    "body{background:#ececea;color:#111;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;" +
+    'font-weight:400;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;' +
+    'display:flex;align-items:center;justify-content:center;padding:40px 22px}' +
+    '.card{width:100%;max-width:520px}' +
+    'h1{font-weight:500;font-size:1.6rem;line-height:1.2;margin:0 0 6px}' +
+    '.ev{color:rgba(17,17,17,.6);margin:0 0 30px}' +
+    'p{margin:0 0 14px}' +
+    'label{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;' +
+    'color:rgba(17,17,17,.6);margin:22px 0 4px}' +
+    'input[type=text]{width:100%;background:transparent;border:0;border-bottom:2px solid #111;' +
+    'padding:9px 0;font-size:1rem;color:#111;border-radius:0}' +
+    'input[type=text]:focus{outline:none}' +
+    '.cb{display:flex;gap:12px;align-items:flex-start;margin:26px 0 0;font-size:.95rem;' +
+    'text-transform:none;letter-spacing:0;color:#111}' +
+    '.cb input{margin-top:.2em;width:16px;height:16px;flex:none}' +
+    'button{margin-top:32px;background:transparent;border:2px solid #111;border-radius:999px;' +
+    'padding:13px 32px;font:inherit;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;' +
+    'color:#111;cursor:pointer;transition:background .12s,color .12s}' +
+    'button:hover{background:#111;color:#ececea}' +
+    '.foot{margin-top:40px;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;' +
+    'color:rgba(17,17,17,.45)}'
   return HtmlService.createHtmlOutput(
-    '<!doctype html><html><head><meta charset="utf-8">' +
+    '<!doctype html><html lang="de"><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-      '<style>body{font-family:Arial,Helvetica,sans-serif;max-width:460px;margin:48px auto;' +
-      'padding:0 20px;color:#111;line-height:1.55}h1{font-size:20px;margin:0 0 4px}' +
-      'p.ev{color:#555;margin:0 0 8px}label{display:block;margin:16px 0 2px;font-size:12px;' +
-      'text-transform:uppercase;letter-spacing:.06em;color:#777}' +
-      'input[type=text]{width:100%;padding:8px 0;border:0;border-bottom:1px solid #bbb;font-size:15px}' +
-      'input[type=text]:focus{outline:none;border-bottom-color:#111}' +
-      '.cb{display:flex;gap:9px;align-items:flex-start;margin-top:20px;font-size:14px;color:#111}' +
-      'button{margin-top:26px;padding:11px 22px;background:#111;color:#fff;border:0;' +
-      'border-radius:999px;font-size:14px;cursor:pointer}.muted{color:#888;font-size:13px;margin-top:28px}</style>' +
-      '</head><body>' + inhaltHtml +
-      '<p class="muted">NewBuild Kollektiv</p></body></html>',
+      '<style>' + css + '</style></head><body><div class="card">' +
+      inhaltHtml +
+      '<p class="foot">NewBuild Kollektiv</p></div></body></html>',
   ).setTitle(titel || 'NewBuild Kollektiv')
 }
 
 function abmeldeFormular_(p) {
-  const event = p.event || 'das Event'
+  const event = p.event || 'das Treffen'
   return abmeldeSeite_(
     '<h1>Vom Treffen abmelden</h1>' +
       '<p class="ev">' + escapeHtml_(event) + '</p>' +
@@ -557,9 +574,9 @@ function abmeldeFormular_(p) {
       '<input type="hidden" name="email" value="' + escapeHtml_(p.email || '') + '">' +
       '<label>Vorname</label><input type="text" name="vorname" value="' + escapeHtml_(p.vorname || '') + '" required>' +
       '<label>Nachname</label><input type="text" name="nachname" value="' + escapeHtml_(p.nachname || '') + '" required>' +
-      '<label class="cb"><input type="checkbox" name="newsletter" value="1"> ' +
-      'Bitte informiere mich über die nächsten Events.</label>' +
-      '<button type="submit">Jetzt abmelden</button>' +
+      '<label class="cb"><input type="checkbox" name="newsletter" value="1">' +
+      '<span>Bitte informiere mich über die nächsten Events.</span></label>' +
+      '<button type="submit">Abmelden</button>' +
       '</form>',
     'Abmelden – NewBuild Kollektiv',
   )
