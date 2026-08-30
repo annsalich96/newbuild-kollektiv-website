@@ -443,7 +443,7 @@ function mapsLink_(ort) {
 const GRAFIKEN = {
   'session-01-ki-belohnt-ordnung': {
     erinnerung: {
-      url: 'https://newbuild-kollektiv.com/mail/session-01-ki-belohnt-ordnung-erinnerung-maps.png',
+      url: 'https://newbuild-kollektiv.com/mail/session-01-ki-belohnt-ordnung-erinnerung-maps-email-600.png',
       href: 'https://www.google.com/maps/search/?api=1&query=Projo%20Berlin%2C%20Chausseestra%C3%9Fe%20123%2C%2010115%20Berlin',
     },
   },
@@ -455,8 +455,8 @@ function grafikBlock_(slug, variant) {
   const g = GRAFIKEN[String(slug || '')] && GRAFIKEN[String(slug || '')][variant]
   if (!g || !g.url) return ''
   const img =
-    '<img src="' + g.url + '" width="440" alt="Eventgrafik" ' +
-    'style="display:block;width:100%;max-width:440px;height:auto;border:0;border-radius:12px;margin:0 auto">'
+    '<img src="' + g.url + '" width="520" alt="Eventgrafik" ' +
+    'style="display:block;width:100%;max-width:520px;height:auto;border:0;border-radius:12px;margin:0 auto">'
   return (
     '<div style="text-align:center;margin:16px 0 8px">' +
     (g.href ? '<a href="' + g.href + '" target="_blank">' + img + '</a>' : img) +
