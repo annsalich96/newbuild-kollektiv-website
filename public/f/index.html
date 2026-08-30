@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>NewBuild Kollektiv</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:#ececea;color:#111;
+    font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 22px;
+  }
+  .card{width:100%;max-width:520px}
+  h1{font-weight:500;font-size:1.6rem;line-height:1.2;margin:0 0 6px}
+  .ev{color:rgba(17,17,17,.6);margin:0 0 30px}
+  p{margin:0 0 14px}
+  label{display:block;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;
+    color:rgba(17,17,17,.6);margin:22px 0 4px}
+  input:not([type=checkbox]),textarea{
+    width:100%;background:transparent;border:0;border-bottom:2px solid #111;
+    padding:9px 0;font-size:1rem;color:#111;border-radius:0;
+    font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  }
+  textarea{min-height:88px;resize:vertical;line-height:1.4}
+  input:focus,textarea:focus{outline:none}
+  .cb{display:flex;gap:12px;align-items:flex-start;margin:26px 0 0;font-size:.95rem;
+    text-transform:none;letter-spacing:0;color:#111}
+  .cb input{margin-top:.2em;width:16px;height:16px;flex:none}
+  .hint{margin-top:22px;font-size:.85rem;color:rgba(17,17,17,.55)}
+  a{color:#111}
+  button{margin-top:32px;background:transparent;border:2px solid #111;border-radius:999px;
+    padding:13px 32px;font:inherit;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;
+    color:#111;cursor:pointer;transition:background .12s,color .12s}
+  button:hover:not(:disabled){background:#111;color:#ececea}
+  button:disabled{opacity:.4;cursor:default}
+  .foot{margin-top:40px;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;
+    color:rgba(17,17,17,.45)}
+  .err{color:#9d4a26}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <p>Wird geladen …</p>
+  <p class="foot">NewBuild Kollektiv</p>
+</div>
+
+<script>
+(function () {
+  var EXEC = 'https://script.google.com/macros/s/AKfycbwEgvSlfjMQSsWu04p6r2lz8Pw4i-F3GOQPjqQGjoAPSDbXjuIGU5ei2I5voMJMBHNzUw/exec';
+  var DS = 'https://newbuild-kollektiv.com/datenschutzerklaerung.html';
+  var card = document.getElementById('card');
+  var q = new URLSearchParams(location.search);
+  var doo = (q.get('do') || '').toLowerCase();
+  var slug = q.get('slug') || '';
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  };
+  var foot = '<p class="foot">NewBuild Kollektiv</p>';
+
+  var CFG = {
+    abmelden: {
+      title: 'Vom Treffen abmelden',
+      sub: [q.get('event'), q.get('datum')].filter(Boolean).join(' · '),
+      btn: 'Abmelden',
+      fields: [
+        { t:'text', n:'vorname', l:'Vorname', req:true },
+        { t:'text', n:'nachname', l:'Nachname', req:true },
+        { t:'check', n:'newsletter', l:'Bitte informiere mich über die nächsten Events.' }
+      ]
+    },
+    checkin: {
+      title: 'Herzlich willkommen',
+      sub: (q.get('event') || 'unser Treffen') + ' — schön, dass du da bist. Trag dich kurz ein.',
+      btn: 'Ich bin da',
+      fields: [
+        { t:'text', n:'vorname', l:'Vorname', req:true },
+        { t:'text', n:'nachname', l:'Nachname', req:true },
+        { t:'check', n:'foto', l:'Ich bin einverstanden, dass bei dieser Veranstaltung Foto- und Videoaufnahmen von mir gemacht und für die Öffentlichkeitsarbeit des NewBuild Kollektiv (Website, Social Media, Newsletter, Presse) verwendet sowie an Sponsoren und Partner der Veranstaltung weitergegeben werden. <a href="' + DS + '">Datenschutz</a>' }
+      ],
+      hint: 'Ohne Häkchen checkst du trotzdem ein — wir vermerken dann, dass keine erkennbaren Aufnahmen von dir veröffentlicht oder weitergegeben werden.'
+    },
+    feedback: {
+      title: 'Wie war’s?',
+      sub: (q.get('event') ? esc(q.get('event')) + ' — ' : '') + 'Zwei Fragen, dauert eine Minute.',
+      btn: 'Feedback senden',
+      fields: [
+        { t:'area', n:'frei', l:'Was hat dir gefallen oder gefehlt?', req:true },
+        { t:'area', n:'themen', l:'Themenwünsche fürs nächste Mal?' },
+        { t:'email', n:'email', l:'E-Mail (nur, falls wir nachfragen dürfen)' }
+      ]
+    },
+    referent: {
+      title: 'Als Referent:in melden',
+      sub: 'Du hast ein Thema aus der Praxis, das du in der Community vorstellen möchtest? Trag dich ein – wir melden uns.',
+      btn: 'Absenden',
+      fields: [
+        { t:'text', n:'vorname', l:'Vorname', req:true },
+        { t:'text', n:'nachname', l:'Nachname', req:true },
+        { t:'email', n:'email', l:'E-Mail', req:true },
+        { t:'tel', n:'phone', l:'Telefonnummer' },
+        { t:'text', n:'company', l:'Unternehmen' },
+        { t:'area', n:'thema', l:'Thema / was möchtest du vorstellen?', req:true }
+      ]
+    },
+    fotowiderspruch: {
+      title: 'Keine Fotos von mir',
+      sub: (q.get('event') || 'die Veranstaltung') + ' — trag deinen Namen ein, dann vermerken wir, dass keine erkennbaren Aufnahmen von dir veröffentlicht oder weitergegeben werden.',
+      btn: 'Widerspruch eintragen',
+      fields: [
+        { t:'text', n:'vorname', l:'Vorname', req:true },
+        { t:'text', n:'nachname', l:'Nachname', req:true }
+      ]
+    }
+  };
+
+  function showInfo() {
+    card.innerHTML =
+      '<h1>Foto- und Videoaufnahmen</h1>' +
+      '<p>Bei Veranstaltungen des NewBuild Kollektiv werden Fotos und Videos aufgenommen. Wir nutzen sie für unsere Öffentlichkeitsarbeit – auf newbuild-kollektiv.com, in sozialen Netzwerken (Instagram, LinkedIn), im Newsletter und in der Presse. Das Material kann außerdem an unsere Sponsoren und Partner der Veranstaltung weitergegeben werden, die es für ihre eigene Berichterstattung nutzen.</p>' +
+      '<p>Rechtsgrundlage: unser berechtigtes Interesse an einer aussagekräftigen Darstellung unserer Veranstaltungen (Art. 6 Abs. 1 lit. f DSGVO) und § 23 KUG für Übersichts- und Stimmungsaufnahmen; für erkennbare Einzelaufnahmen deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 22 KUG). Du kannst jederzeit widersprechen bzw. widerrufen (Art. 21 DSGVO).</p>' +
+      '<p><strong>Du möchtest nicht erkennbar aufgenommen werden?</strong> Sag am Empfang Bescheid' +
+      (slug ? ' – oder <a href="?do=fotowiderspruch&slug=' + encodeURIComponent(slug) + '&event=' + encodeURIComponent(q.get('event') || '') + '">hier eintragen</a>.' : '.') +
+      '</p>' +
+      '<p style="margin-top:24px;font-size:.9rem"><a href="' + DS + '">Vollständige Datenschutzerklärung</a></p>' +
+      foot;
+  }
+
+  function renderForm(cfg) {
+    var html = '<h1>' + esc(cfg.title) + '</h1>';
+    if (cfg.sub) html += '<p class="ev">' + cfg.sub + '</p>';
+    html += '<form id="f">';
+    cfg.fields.forEach(function (fl) {
+      if (fl.t === 'check') {
+        html += '<label class="cb"><input type="checkbox" name="' + fl.n + '"><span>' + fl.l + '</span></label>';
+      } else if (fl.t === 'area') {
+        html += '<label>' + esc(fl.l) + '</label><textarea name="' + fl.n + '"' + (fl.req ? ' required' : '') + '></textarea>';
+      } else {
+        html += '<label>' + esc(fl.l) + '</label><input type="' + fl.t + '" name="' + fl.n + '"' + (fl.req ? ' required' : '') + '>';
+      }
+    });
+    html += '<button type="submit">' + esc(cfg.btn) + '</button>';
+    html += '<p class="err" id="err" hidden></p>';
+    html += '</form>';
+    if (cfg.hint) html += '<p class="hint">' + cfg.hint + '</p>';
+    html += foot;
+    card.innerHTML = html;
+
+    var form = document.getElementById('f');
+    var err = document.getElementById('err');
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      err.hidden = true;
+      var btn = form.querySelector('button');
+      btn.disabled = true; btn.textContent = 'Wird gesendet …';
+      var payload = { action: doo, slug: slug, sid: q.get('sid') || '', event: q.get('event') || '', datum: q.get('datum') || '', email: q.get('email') || '' };
+      cfg.fields.forEach(function (fl) {
+        var el = form.elements[fl.n];
+        payload[fl.n] = fl.t === 'check' ? el.checked : (el.value || '');
+      });
+      fetch(EXEC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res && res.html) {
+            card.innerHTML = res.html + foot;
+          } else {
+            throw new Error('Unerwartete Antwort');
+          }
+        })
+        .catch(function () {
+          btn.disabled = false; btn.textContent = cfg.btn;
+          err.hidden = false;
+          err.textContent = 'Konnte nicht gesendet werden. Bitte versuch es nochmal oder wende dich an request@newbuild-kollektiv.com.';
+        });
+    });
+  }
+
+  if (doo === 'fotoinfo') {
+    showInfo();
+  } else if (CFG[doo]) {
+    renderForm(CFG[doo]);
+  } else {
+    card.innerHTML = '<h1>NewBuild Kollektiv</h1><p>Kein gültiges Formular aufgerufen.</p>' + foot;
+  }
+})();
+</script>
+</body>
+</html>

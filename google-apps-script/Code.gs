@@ -116,6 +116,11 @@ function eventSeiteUrl_(slug) {
   return slug ? 'https://newbuild-kollektiv.com/events/' + String(slug) + '/' : ''
 }
 
+// Formularseite auf der Website (funktioniert unabhaengig vom Google-Login,
+// sendet im Hintergrund an dieses Skript). do = abmelden | checkin | feedback
+// | referent | fotowiderspruch | fotoinfo
+const SITE_FORM_URL = 'https://newbuild-kollektiv.com/f/'
+
 const SHEET_HEADERS = [
   'Vorname',
   'Nachname',
@@ -149,6 +154,23 @@ const HISTORY_HEADERS = [
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents)
+
+    // Formulare von der Website (newbuild-kollektiv.com) — per fetch, damit
+    // sie unabhaengig vom Google-Login funktionieren.
+    if (data.action) {
+      FORM_JSON = true
+      try {
+        if (data.action === 'abmelden') return jsonResponse(abmeldenVerarbeiten_(data))
+        if (data.action === 'checkin') return jsonResponse(checkinVerarbeiten_(data))
+        if (data.action === 'feedback') return jsonResponse(feedbackVerarbeiten_(data))
+        if (data.action === 'referent') return jsonResponse(referentVerarbeiten_(data))
+        if (data.action === 'fotowiderspruch') return jsonResponse(fotoWiderspruchVerarbeiten_(data))
+        return jsonResponse({ ok: false, html: '<h1>Unbekannt</h1><p>Aktion nicht erkannt.</p>' })
+      } finally {
+        FORM_JSON = false
+      }
+    }
+
     validateRegistration(data)
     data.phone = normalizePhone(data.phone)
 
@@ -523,8 +545,8 @@ function kurzTitel_(t) {
 // damit die Seite die richtige Tabelle sicher findet.
 function abmeldeLink_(sid, slug, titel, email, datum) {
   return (
-    WEBAPP_URL +
-    '?action=abmelden' +
+    SITE_FORM_URL +
+    '?do=abmelden' +
     '&sid=' + encodeURIComponent(sid || '') +
     '&slug=' + encodeURIComponent(slug || '') +
     '&event=' + encodeURIComponent(kurzTitel_(titel) || 'das Event') +
@@ -541,9 +563,14 @@ function abmeldeSatz_(e) {
   )
 }
 
+// Wenn true, geben die Verarbeiten-Funktionen ihr Ergebnis als Datenobjekt
+// zurueck (fuer POST von der Website) statt als HtmlOutput (fuer doGet).
+let FORM_JSON = false
+
 // Rahmen im NewBuild-Kollektiv-Look (hellgrauer Formular-Bereich der Website:
 // #ececea, Helvetica, schwarze 2px-Linien, Versal-Labels, Pillen-Button).
 function abmeldeSeite_(inhaltHtml, titel) {
+  if (FORM_JSON) return { ok: true, html: inhaltHtml, titel: titel || 'NewBuild Kollektiv' }
   const css =
     '*{box-sizing:border-box}html,body{margin:0}' +
     "body{background:#ececea;color:#111;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;" +
@@ -772,7 +799,7 @@ function referentVerarbeiten_(p) {
 }
 
 function referentLink_() {
-  return WEBAPP_URL + '?action=referent'
+  return SITE_FORM_URL + '?do=referent'
 }
 
 // ── Feedback-Umfrage (nur Freitext) ────────────────────────────────────────
@@ -799,8 +826,8 @@ function getOrCreateFeedbackSheet_() {
 
 function feedbackLink_(slug, titel) {
   return (
-    WEBAPP_URL +
-    '?action=feedback' +
+    SITE_FORM_URL +
+    '?do=feedback' +
     '&slug=' + encodeURIComponent(slug || '') +
     '&event=' + encodeURIComponent(kurzTitel_(titel) || '')
   )
@@ -907,7 +934,7 @@ function fotoWiderspruchVerarbeiten_(p) {
 }
 
 function fotoWiderspruchLink_(slug) {
-  return WEBAPP_URL + '?action=fotowiderspruch&slug=' + encodeURIComponent(slug || '')
+  return SITE_FORM_URL + '?do=fotowiderspruch&slug=' + encodeURIComponent(slug || '')
 }
 
 // Info-Seite Foto/Video (Ziel des kleinen QR/Links auf dem Aufsteller).
