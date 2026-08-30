@@ -321,7 +321,8 @@ function appendRegistration(sheet, data) {
 function sendConfirmationEmail(data) {
   const subject = 'Anmeldebestätigung: ' + kurzTitel_(data.eventTitle)
   const html = wrapMail_(
-    '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
+    grafikBlock_(data.eventSlug, 'erinnerung') +
+      '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
       '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
       eventBox_(data.eventTitle, data.eventSpeaker, data.eventDate, data.eventTime, data.eventLocation) +
       '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
@@ -430,6 +431,33 @@ function mapsLink_(ort) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(ort || ''))
 }
 
+// ── Eventgrafiken (von Codex, Quelle: assets/mail/manifest.json) ──────────────
+// Beim Veroeffentlichen einer neuen Grafik hier den Eintrag ergaenzen:
+//   slug -> variant -> { url: oeffentliche PNG-URL, href: Klickziel (z.B. Maps) }
+const GRAFIKEN = {
+  'session-01-ki-belohnt-ordnung': {
+    erinnerung: {
+      url: 'https://newbuild-kollektiv.com/mail/session-01-ki-belohnt-ordnung-erinnerung-maps.png',
+      href: 'https://www.google.com/maps/search/?api=1&query=Projo%20Berlin%2C%20Chausseestra%C3%9Fe%20123%2C%2010115%20Berlin',
+    },
+  },
+}
+
+// Klickbarer Grafikblock (ganzes Bild -> href) fuer eine Mailstufe.
+// Leerer String, wenn fuer slug/variant keine Grafik hinterlegt ist.
+function grafikBlock_(slug, variant) {
+  const g = GRAFIKEN[String(slug || '')] && GRAFIKEN[String(slug || '')][variant]
+  if (!g || !g.url) return ''
+  const img =
+    '<img src="' + g.url + '" width="600" alt="Eventgrafik" ' +
+    'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:12px">'
+  return (
+    '<p style="margin:0 0 18px">' +
+    (g.href ? '<a href="' + g.href + '" target="_blank">' + img + '</a>' : img) +
+    '</p>'
+  )
+}
+
 // Kurzform des Titels fuer Betreffzeilen: alles vor dem ersten ":".
 function kurzTitel_(t) {
   const s = String(t || '')
@@ -528,9 +556,10 @@ function zusatzspaltenJetztAnlegen() {
     const ss = SpreadsheetApp.open(files.next())
     ensureColumn_(ss.getSheets()[0], 'Anrede')
     ensureColumn_(ss.getSheets()[0], 'Referent')
+    ensureColumn_(ss.getSheets()[0], 'Slug')
     namen.push(ss.getName())
   }
-  Logger.log('Spalten "Anrede" + "Referent" angelegt/geprueft: ' + namen.join(' · '))
+  Logger.log('Spalten "Anrede" + "Referent" + "Slug" angelegt/geprueft: ' + namen.join(' · '))
 }
 
 function sendeErinnerungen() {
@@ -553,9 +582,10 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
   const werte = sheet.getDataRange().getValues()
   if (werte.length < 2) return
 
-  // "Anrede" und "Referent" pflegst du von Hand — Spalten hier sicherstellen.
+  // "Anrede", "Referent", "Slug" pflegst du von Hand — Spalten hier sicherstellen.
   ensureColumn_(sheet, 'Anrede')
   ensureColumn_(sheet, 'Referent')
+  ensureColumn_(sheet, 'Slug')
 
   const kopf = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
   const iVorname = kopf.indexOf('Vorname')
@@ -566,14 +596,16 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
   const iOrt = kopf.indexOf('Event-Ort')
   const iAnrede = kopf.indexOf('Anrede')
   const iReferent = kopf.indexOf('Referent')
+  const iSlug = kopf.indexOf('Slug')
   if (iEmail < 0 || iDatum < 0) return
 
-  // Event-Datum/-Zeit/-Ort/-Referent sind pro Tabelle gleich — ersten
+  // Event-Datum/-Zeit/-Ort/-Referent/-Slug sind pro Tabelle gleich — ersten
   // befuellten Wert der jeweiligen Spalte nehmen.
   const eventDatum = ersterWert_(werte, iDatum)
   const eventZeit = ersterWert_(werte, iZeit)
   const eventOrt = ersterWert_(werte, iOrt)
   const eventReferent = ersterWert_(werte, iReferent)
+  const eventSlug = ersterWert_(werte, iSlug)
 
   const eventStart = parseEventDatum_(eventDatum, eventZeit)
   if (!eventStart) return
@@ -610,6 +642,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
           iAnrede >= 0 ? zeile[iAnrede] : '',
           iVorname >= 0 ? zeile[iVorname] : '',
         ),
+        slug: eventSlug,
         titel: eventTitel,
         referent: eventReferent,
         datum: eventDatum,
@@ -720,6 +753,9 @@ function schreibeZusatzfelder_(sheet, data) {
   if (data.eventSpeaker) {
     sheet.getRange(row, ensureColumn_(sheet, 'Referent')).setValue(String(data.eventSpeaker))
   }
+  if (data.eventSlug) {
+    sheet.getRange(row, ensureColumn_(sheet, 'Slug')).setValue(String(data.eventSlug))
+  }
 }
 
 // ── Mailtexte der einzelnen Stufen ────────────────────────────────────────
@@ -754,7 +790,8 @@ function mailEinTag_(e) {
   return {
     subject: 'Erinnerung NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
-      '<p>' +
+      grafikBlock_(e.slug, 'erinnerung') +
+        '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
         '<p>morgen Abend findet unser NewBuild Kollektiv Treffen statt, für das ' +
@@ -833,6 +870,7 @@ function testErinnerungsmails() {
   const start = new Date(2026, 8, 1, 18, 30, 0) // 01.09.2026, 18:30
   const e = {
     anrede: anrede_('w', 'Ann-Kathrin'),
+    slug: 'session-01-ki-belohnt-ordnung',
     titel: 'KI belohnt Ordnung: Wie Menschen und KI-Agenten in Planungsbüros zusammenarbeiten',
     referent: 'Markus Kolb, Bräunlin Kolb Architekten',
     datum: 'Di., 01.09.2026',
@@ -843,7 +881,8 @@ function testErinnerungsmails() {
   }
 
   const bestHtml = wrapMail_(
-    '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+    grafikBlock_(e.slug, 'erinnerung') +
+      '<p>' + escapeHtml_(e.anrede) + ',</p>' +
       '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
       eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort) +
       '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
