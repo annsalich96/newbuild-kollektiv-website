@@ -1402,6 +1402,7 @@ function mailNachfass_(e) {
         'möchtest, <a href="' + referentLink_() +
         '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
         '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.</p>' +
+        '<p>Ich freue mich schon auf das nächste Mal. Bald kommen die Infos zum nächsten Event.</p>' +
         '<p>Bis bald und liebe Grüße<br>Ann-Kathrin</p>',
     ),
   }
