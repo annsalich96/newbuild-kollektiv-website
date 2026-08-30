@@ -111,6 +111,11 @@ const AUFBRUCH_VORLAUF_MIN = 90
 const WEBAPP_URL =
   'https://script.google.com/macros/s/AKfycbwEgvSlfjMQSsWu04p6r2lz8Pw4i-F3GOQPjqQGjoAPSDbXjuIGU5ei2I5voMJMBHNzUw/exec'
 
+// Info-/Anmeldeseite eines Events auf der Website.
+function eventSeiteUrl_(slug) {
+  return slug ? 'https://newbuild-kollektiv.com/events/' + String(slug) + '/' : ''
+}
+
 const SHEET_HEADERS = [
   'Vorname',
   'Nachname',
@@ -678,11 +683,12 @@ function sendeTeilnehmerMail_(to, subject, htmlBody, attachments) {
 // Kalenderdatei (.ics) fuer die "1 Tag vorher"-Mail. Enthaelt einen
 // DISPLAY-Wecker AUFBRUCH_VORLAUF_MIN Minuten vor Beginn ("Zeit zum
 // Aufbrechen"). Zeiten als UTC (Z) — Apps Script rechnet die Zeitzone korrekt.
-function icsDatei_(titel, start, ende, ort) {
+function icsDatei_(titel, start, ende, ort, slug) {
   const utc = function (d) { return Utilities.formatDate(d, 'UTC', "yyyyMMdd'T'HHmmss'Z'") }
   const esc = function (s) {
     return String(s || '').replace(/([,;\\])/g, '\\$1').replace(/\r?\n/g, '\\n')
   }
+  const seite = eventSeiteUrl_(slug)
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -694,9 +700,15 @@ function icsDatei_(titel, start, ende, ort) {
     'DTSTAMP:' + utc(new Date()),
     'DTSTART:' + utc(start),
     'DTEND:' + utc(ende),
-    'SUMMARY:' + esc('NewBuild Kollektiv – ' + titel),
+    'SUMMARY:' + esc('NewBuild Kollektiv Treffen – ' + kurzTitel_(titel)),
     'LOCATION:' + esc(ort),
-    'DESCRIPTION:' + esc('NewBuild Kollektiv Treffen. Plane deine Anfahrt ein – der Wecker erinnert dich rechtzeitig ans Aufbrechen.'),
+    'DESCRIPTION:' + esc(
+      'NewBuild Kollektiv Treffen. Plane deine Anfahrt ein – der Wecker erinnert dich rechtzeitig ans Aufbrechen.' +
+      (seite ? '\nInfos & Anmeldung: ' + seite : ''),
+    ),
+  ]
+  if (seite) lines.push('URL:' + seite)
+  lines.push(
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
     'DESCRIPTION:' + esc('Zeit zum Aufbrechen – NewBuild Kollektiv'),
@@ -704,7 +716,7 @@ function icsDatei_(titel, start, ende, ort) {
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
-  ]
+  )
   return Utilities.newBlob(lines.join('\r\n'), 'text/calendar; charset=utf-8; method=PUBLISH', 'newbuild-kollektiv.ics')
 }
 
@@ -1003,7 +1015,7 @@ function mailEinTag_(e) {
         '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email) +
         '" style="color:#3d5a80">hier abmelden</a>.</p>',
     ),
-    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort)],
+    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort, e.slug)],
   }
 }
 
@@ -1028,7 +1040,7 @@ function mailDreiStunden_(e) {
           : '') +
         '<p>Der Kalendereintrag hängt nochmal an. Bis gleich!</p>',
     ),
-    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort)],
+    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort, e.slug)],
   }
 }
 
