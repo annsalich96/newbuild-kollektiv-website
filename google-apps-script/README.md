@@ -55,3 +55,42 @@ Damit das live geht: den aktualisierten Inhalt von `Code.gs` im Apps-Script-Edit
 ## Update 2026-08-26: Alle Anmeldungen pro Event in einem Mail-Thread
 
 Alle Benachrichtigungsmails zu einem Event landen jetzt in einem einzigen Gmail-Thread (Antwort statt neue Mail), damit sich Anmeldungen nicht in vielen Einzelmails verteilen. Dafür braucht das Skript jetzt `GmailApp.search()`, also einen größeren Berechtigungs-Scope als vorher (nicht mehr nur "E-Mails senden", sondern auch Mails lesen/durchsuchen). Beim nächsten Deploy erscheint deshalb voraussichtlich noch einmal die Google-Berechtigungsabfrage — normal bestätigen (ggf. wieder über "Erweitert" → "Zu [Projektname] (unsicher) wechseln", falls die Warnung erscheint).
+
+## Update 2026-08-30: Slug-basierte Tabellen · Erinnerungsmails · Signatur
+
+Drei Änderungen an `Code.gs`:
+
+### 1. Event-Tabelle wird über den Slug gefunden, nicht mehr über den Titel
+
+Bisher hieß die Tabelle `"Session 01 — <Titel>"` und wurde über diesen Namen gesucht. Sobald der Titel im CMS geändert wurde, fand das Skript die alte Tabelle nicht mehr und legte eine **zweite** an. Jetzt merkt sich das Skript pro `eventSlug` die Datei-ID (in den Skript-Eigenschaften). Der Titel darf sich beliebig ändern — die Datei wird dann nur **umbenannt**, nie neu angelegt. Bestehende Tabellen werden beim nächsten Eingang automatisch übernommen (Fallback über den bisherigen Namen). Das Formular schickt `eventSlug` bereits mit — keine Website-Änderung nötig.
+
+### 2. Automatische Erinnerungs-E-Mails
+
+Neue Funktion `sendeErinnerungen()` + stündlicher Zeit-Trigger. Verschickt pro Anmeldung:
+
+| Stufe | Zeitpunkt | Status-Spalte in der Tabelle |
+| --- | --- | --- |
+| 1 Woche vorher | Tag `Event−7`, ab 9 Uhr | `Erinnerung 1 Woche` |
+| 1 Tag vorher | Tag `Event−1`, ab 9 Uhr | `Erinnerung 1 Tag` |
+| ~3 Stunden vorher | Eventtag, < 3 h bis Beginn | `Erinnerung 3 Std` |
+| 1 Tag danach (Nachfass) | Tag `Event+1`, ab 9 Uhr | `Nachfass E-Mail` |
+
+Die vier Status-Spalten legt das Skript in jeder Event-Tabelle bei Bedarf selbst an. Eine Mail geht nie doppelt raus (Spalte bekommt einen Zeitstempel, sobald verschickt). Datum/Zeit/Ort zieht das Skript aus den Spalten `Event-Datum` / `Event-Zeit` / `Event-Ort`, die bei jeder Anmeldung ohnehin gefüllt werden. `Status`-Werte mit „abgemeldet" / „storniert" / „abgesagt" werden übersprungen.
+
+**Nach dem Deploy einmalig:** im Editor die Funktion **`erinnerungenTriggerEinrichten`** auswählen → **Ausführen** → Berechtigungen bestätigen. Damit läuft der stündliche Trigger. Kontrolle: **Trigger**-Menü (Wecker-Symbol links) — dort steht dann `sendeErinnerungen`, „Zeitgesteuert", „Stundentimer".
+
+Projekt-Zeitzone muss auf **Europe/Berlin** stehen (Projekteinstellungen → Zahnrad), sonst rechnet die Tages-Logik daneben.
+
+Sendelimit beachten: Consumer-Gmail 100 Mails/Tag, Workspace 1500/Tag. Bei sehr großen Events kann eine Stufe über mehrere stündliche Läufe verteilt rausgehen — das Skript macht beim nächsten Lauf automatisch weiter.
+
+### 3. Signatur unter jeder Teilnehmer-Mail
+
+Konstanten `SIGNATUR_HTML` (HTML) und `SIGNATUR_TEXT` (Text-Fallback) ganz oben in `Code.gs`. Wird automatisch unter Bestätigungsmail **und** alle Erinnerungen gehängt. Nur dort anpassen. Logo nur als `<img src="https://…">` mit öffentlicher URL möglich, kein Datei-Anhang.
+
+### Offen
+
+Geschlechtsspezifische Anrede („Liebe/Lieber" statt „Hallo") — braucht ein Anrede-Feld im Anmeldeformular (`src/event-form.ts` + Template + `events.json` + `.pages.yml`). Noch nicht umgesetzt.
+
+### Deploy
+
+`Code.gs` komplett in den Editor kopieren → **Bereitstellen → Bereitstellungen verwalten → Bearbeiten → Neue Version → Bereitstellen**. Beim ersten Lauf fragt Google nach zusätzlichen Berechtigungen (Trigger anlegen, Tabellen schreiben) — bestätigen.

@@ -64,7 +64,10 @@ Jeder HTML-Entry-Point (`index.html`, `scripts/event-page.template.html`, `impre
 - Das Frontend-Formular (`src/event-form.ts`) sendet an die Web-App-URL (endet auf `/exec`) mit `Content-Type: text/plain` statt `application/json` — bewusst so, weil Apps-Script-Web-Apps den CORS-Preflight nicht beantworten, den JSON auslöst (das Skript liest den Body trotzdem als JSON).
 - **Ordnerstruktur in Google Drive:** Hauptordner "NewBuild Kollektiv — Event-Anmeldungen" → darin Unterordner **"Events"** (ein Sheet pro Event) und die Datei **"History Anmeldungen"** (alle Personen, die sich je angemeldet haben, dedupliziert per E-Mail-Adresse — bei erneuter Anmeldung wird nur "Letztes Event"/Zähler aktualisiert statt einer neuen Zeile).
 - **Wichtig:** Bei jeder Code-Änderung an `Code.gs` im Apps-Script-Editor muss erneut **Bereitstellen → Bereitstellungen verwalten → Bearbeiten (Stift) → Neue Version → Bereitstellen** gemacht werden — sonst läuft die Web-App weiter mit der alten Version.
-- Noch nicht gebaut: automatisierte Erinnerungs-E-Mail vor dem Event-Datum.
+- Event-Tabelle wird über den **Slug** (`eventSlug`) gefunden, nicht über den Titel — Titeländerung im CMS legt keine zweite Tabelle mehr an (Slug→Datei-ID in den Script-Properties gemerkt).
+- **Automatische Erinnerungs-E-Mails** (`sendeErinnerungen`, stündlicher Trigger): 1 Woche / 1 Tag / ~3 h vorher + 1 Tag danach. Je Stufe eine Status-Spalte in der Event-Tabelle, keine Doppelversände. Trigger einmalig per `erinnerungenTriggerEinrichten` im Editor anlegen. Details in `google-apps-script/README.md` (Update 2026-08-30).
+- **Signatur** unter allen Teilnehmer-Mails: Konstanten `SIGNATUR_HTML` / `SIGNATUR_TEXT` oben in `Code.gs`.
+- Noch offen: geschlechtsspezifische Anrede („Liebe/Lieber") — braucht ein Anrede-Feld im Anmeldeformular.
 
 ## Struktur
 
