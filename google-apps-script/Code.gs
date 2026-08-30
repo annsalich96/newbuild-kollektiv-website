@@ -34,15 +34,37 @@ const NOTIFY_EMAIL = 'request@newbuild-kollektiv.com'
 // hinzufuegen (Services + -> Gmail API). Beim naechsten Deploy fragt Google
 // zusaetzlich die Berechtigung "Gmail-Einstellungen lesen" ab.
 //
-// Falls das Auslesen fehlschlaegt/leer ist, greift dieser Fallback — hier am
-// besten einmal die echte CEO-Signatur als HTML einsetzen:
+// Falls das Auslesen fehlschlaegt/leer ist, greift dieser Fallback. Er ist die
+// CEO-Signatur aus dem NBK-Postfach (Stand 30.08.2026) — bei Aenderung dort
+// bitte auch hier nachziehen.
 const SIGNATUR_HTML_FALLBACK =
   '<br><br>' +
-  '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#555">' +
-  'NewBuild Kollektiv · ' +
-  '<a href="https://newbuild-kollektiv.com" style="color:#555">newbuild-kollektiv.com</a>' +
+  '<div style="font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#222222">' +
+  '<p style="margin:0;font-size:20px"><b>Ann-Kathrin Salich</b></p>' +
+  '<p style="margin:0;font-size:13px">Architektin - Berlin</p>' +
+  '<p style="margin:0;font-size:13px">Inhaberin An(n) Architecture Solution</p>' +
+  '<p style="margin:0;font-size:13px">Geschäftsführerin NewBuild Kollektiv</p>' +
+  '<p style="margin:0;font-size:13px">&nbsp;</p>' +
+  '<p style="margin:0;font-size:13px"><b>NewBuild Kollektiv</b></p>' +
+  '<p style="margin:0;font-size:13px">Wilmersdorfer Str. 108-111</p>' +
+  '<p style="margin:0;font-size:13px">10627 Berlin</p>' +
+  '<p style="margin:0;font-size:13px">&nbsp;</p>' +
+  '<p style="margin:0;font-size:13px"><a href="mailto:request@newbuild-kollektiv.com" style="color:#1155cc">request@newbuild-kollektiv.com</a></p>' +
+  '<p style="margin:0;font-size:13px"><a href="https://newbuild-kollektiv.com" style="color:#1155cc">newbuild-kollektiv.com</a></p>' +
+  '<p style="margin:0;font-size:13px"><a href="https://www.linkedin.com/company/newbuild-kollektiv/" style="color:#1155cc">LinkedIn</a></p>' +
   '</div>'
-const SIGNATUR_TEXT_FALLBACK = '\n\n--\nNewBuild Kollektiv · newbuild-kollektiv.com'
+const SIGNATUR_TEXT_FALLBACK =
+  '\n\n--\n' +
+  'Ann-Kathrin Salich\n' +
+  'Architektin - Berlin\n' +
+  'Inhaberin An(n) Architecture Solution\n' +
+  'Geschäftsführerin NewBuild Kollektiv\n\n' +
+  'NewBuild Kollektiv\n' +
+  'Wilmersdorfer Str. 108-111\n' +
+  '10627 Berlin\n\n' +
+  'request@newbuild-kollektiv.com\n' +
+  'newbuild-kollektiv.com\n' +
+  'https://www.linkedin.com/company/newbuild-kollektiv/'
 
 // Liest die in Gmail hinterlegte Signatur des Absender-Alias. Ergebnis wird
 // 1 h gecacht. Leerer String = keine Signatur / Lesen nicht moeglich.
