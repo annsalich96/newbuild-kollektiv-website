@@ -290,6 +290,14 @@ function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
   const sheet = spreadsheet.getSheets()[0]
   sheet.appendRow(SHEET_HEADERS)
   sheet.setFrozenRows(1)
+  // "Event-Datum"/-Zeit fest als Text formatieren. Sonst macht Sheets aus
+  // z. B. "01.09.2026" einen echten Datumswert und der Erinnerungs-Parser
+  // (parseEventDatum_) bekam ihn frueher nicht zu fassen -> Tabelle wurde
+  // still uebersprungen, keine Erinnerungsmail.
+  ;['Event-Datum', 'Event-Zeit'].forEach(function (name) {
+    const c = SHEET_HEADERS.indexOf(name) + 1
+    if (c > 0) sheet.getRange(1, c, sheet.getMaxRows(), 1).setNumberFormat('@')
+  })
   if (propKey) props.setProperty(propKey, spreadsheet.getId())
   return sheet
 }
