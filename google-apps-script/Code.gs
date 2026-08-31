@@ -99,7 +99,7 @@ function signaturText_() {
 // Stunde (0–23, Europe/Berlin), ab der die tagesbasierten Erinnerungen
 // (1 Woche / 1 Tag / Nachfass) rausgehen. Der Trigger laeuft stuendlich,
 // verschickt diese Stufen aber fruehestens ab dieser Uhrzeit.
-const ERINNERUNG_SENDESTUNDE = 9
+const ERINNERUNG_SENDESTUNDE = 8
 
 // Vorlauf in Minuten fuer den "Zeit zum Aufbrechen"-Wecker in der
 // Kalenderdatei (.ics), die der "1 Tag vorher"-Mail anhaengt.
