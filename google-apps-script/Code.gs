@@ -1116,8 +1116,10 @@ function icsDatei_(titel, start, ende, ort, slug) {
 //  automatisch, sobald das Anmeldeformular ein Anrede-Feld mitschickt.
 // ═══════════════════════════════════════════════════════════════════════════
 
-// EINMALIG im Editor ausfuehren: richtet den stuendlichen Trigger fuer
+// EINMALIG im Editor ausfuehren: richtet den Zeit-Trigger fuer
 // sendeErinnerungen ein (ein evtl. vorhandener gleicher Trigger wird ersetzt).
+// Alle 15 Minuten, damit die tagesbasierten Mails zuverlaessig kurz nach
+// ERINNERUNG_SENDESTUNDE rausgehen, nicht irgendwann in der Stunde.
 function erinnerungenTriggerEinrichten() {
   ScriptApp.getProjectTriggers()
     .filter(function (t) {
@@ -1126,8 +1128,8 @@ function erinnerungenTriggerEinrichten() {
     .forEach(function (t) {
       ScriptApp.deleteTrigger(t)
     })
-  ScriptApp.newTrigger('sendeErinnerungen').timeBased().everyHours(1).create()
-  Logger.log('OK — "sendeErinnerungen" laeuft ab jetzt stuendlich.')
+  ScriptApp.newTrigger('sendeErinnerungen').timeBased().everyMinutes(15).create()
+  Logger.log('OK — "sendeErinnerungen" laeuft ab jetzt alle 15 Minuten.')
 }
 
 // EINMALIG im Editor ausfuehren: legt in jeder bestehenden Event-Tabelle die
