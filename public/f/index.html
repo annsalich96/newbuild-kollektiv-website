@@ -171,6 +171,9 @@
         .then(function (res) {
           if (res && res.html) {
             card.innerHTML = res.html + foot;
+            if (res.redirect) {
+              setTimeout(function () { location.href = res.redirect; }, 2500);
+            }
           } else {
             throw new Error('Unerwartete Antwort');
           }

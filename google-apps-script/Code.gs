@@ -177,6 +177,7 @@ function doPost(e) {
     const sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
     appendRegistration(sheet, data)
     schreibeZusatzfelder_(sheet, data)
+    if (data.checkin) markiereAnwesend_(sheet, data)
     upsertHistoryEntry(data)
     sendConfirmationEmail(data)
     sendAdminNotificationEmail(data)
@@ -1032,6 +1033,32 @@ function checkinVerarbeiten_(p) {
     }
   }
   if (!treffer) {
+    // Name nicht auf der Anmeldeliste -> weiter zur normalen Anmeldung, dort
+    // fuellt die Person ihre Daten wie alle anderen aus. Vorname/Nachname/Foto
+    // wandern als Parameter mit; die Anmeldung markiert die Person dann auch
+    // gleich als anwesend (checkin=1).
+    const seite = eventSeiteUrl_(p.slug || '')
+    if (seite) {
+      const ziel =
+        seite + '?checkin=1' +
+        '&vorname=' + encodeURIComponent(vn) +
+        '&nachname=' + encodeURIComponent(nn) +
+        '&foto=' + (p.foto ? '1' : '0') +
+        '#event-form'
+      return {
+        ok: true,
+        redirect: ziel,
+        html:
+          '<h1>Fast geschafft, ' + escapeHtml_(vn) + '</h1>' +
+          '<p>Dich haben wir noch nicht auf der Anmeldeliste. Wir leiten dich ' +
+          'kurz zur Anmeldung weiter – dort trägst du deine Daten wie alle ' +
+          'anderen ein, dann bist du eingecheckt.</p>' +
+          '<p style="margin-top:18px"><a href="' + ziel +
+          '" style="font-weight:600">Jetzt anmelden →</a></p>',
+        titel: 'Weiter zur Anmeldung – NewBuild Kollektiv',
+      }
+    }
+    // Kein Slug bekannt (Notfall): wie bisher als "vor Ort" erfassen.
     const neu = new Array(sheet.getLastColumn()).fill('')
     if (iVorname >= 0) neu[iVorname] = vn
     if (iNachname >= 0) neu[iNachname] = nn
@@ -1393,6 +1420,20 @@ function anrede_(roh, vorname) {
 // Schreibt Zusatzfelder (Anrede-Code, Referent) in die zuletzt angehaengte
 // Zeile. Beide Spalten werden bei Bedarf angelegt. Solange das Formular diese
 // Felder nicht mitsendet, bleiben die Zellen leer und werden von Hand gepflegt.
+// Anmeldung kam vom Check-in-Aufsteller (Person stand nicht auf der Liste):
+// die gerade angehaengte Zeile zusaetzlich als anwesend markieren + Foto-Angabe
+// aus dem Check-in uebernehmen. So ist der Walk-in in einem Rutsch angemeldet
+// UND eingecheckt.
+function markiereAnwesend_(sheet, data) {
+  const row = sheet.getLastRow()
+  sheet
+    .getRange(row, ensureColumn_(sheet, 'Anwesend'))
+    .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+  sheet
+    .getRange(row, ensureColumn_(sheet, 'Foto-Einwilligung'))
+    .setValue(data.foto ? 'Ja' : 'Nein')
+}
+
 function schreibeZusatzfelder_(sheet, data) {
   const row = sheet.getLastRow()
   sheet.getRange(row, ensureColumn_(sheet, 'Anrede')).setValue(anredeCode_(data.anrede))

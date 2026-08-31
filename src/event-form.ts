@@ -28,7 +28,29 @@ const REGISTRATION_ENDPOINT =
 const form = document.getElementById('event-form')
 const status = form?.querySelector<HTMLParagraphElement>('.event-form__status')
 
+// Kommt die Person vom Check-in-Aufsteller (Name war nicht auf der Liste),
+// leitet das Skript hierher weiter: ?checkin=1&vorname=…&nachname=…&foto=1
+const params = new URLSearchParams(window.location.search)
+const fromCheckin = params.get('checkin') === '1'
+
 if (form instanceof HTMLFormElement && status) {
+  const prefill = (name: string, value: string | null) => {
+    if (!value) return
+    const field = form.elements.namedItem(name)
+    if (field instanceof HTMLInputElement) field.value = value
+  }
+  prefill('firstName', params.get('vorname'))
+  prefill('lastName', params.get('nachname'))
+
+  if (fromCheckin) {
+    const note = document.getElementById('event-form-note')
+    if (note) {
+      note.textContent =
+        'Schön, dass du da bist! Trag hier kurz deine Daten ein – damit bist du automatisch eingecheckt.'
+      note.hidden = false
+    }
+  }
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault()
 
@@ -53,6 +75,8 @@ if (form instanceof HTMLFormElement && status) {
       companyAddress: formData.get('companyAddress'),
       phone: formData.get('phone'),
       newsletter: formData.get('newsletter') === 'on',
+      checkin: fromCheckin,
+      foto: params.get('foto') === '1',
     }
 
     try {
