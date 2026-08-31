@@ -1197,14 +1197,26 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
   const eventSlug = ersterWert_(werte, iSlug)
 
   const eventStart = parseEventDatum_(eventDatum, eventZeit)
-  if (!eventStart) return
+  if (!eventStart) {
+    Logger.log(
+      'Erinnerung — "' + sheetName + '": Event-Datum unlesbar (' +
+      JSON.stringify(eventDatum) + '), Tabelle uebersprungen.',
+    )
+    return
+  }
   const eventEnde = parseEventEnde_(eventStart, eventZeit)
+  const eventDatumText = datumAnzeige_(eventDatum)
 
   const m = String(sheetName).match(/^\s*.*?\s+—\s+(.+?)\s*$/)
   const eventTitel = m ? m[1] : String(sheetName).trim()
 
   const tageBis = tagesDifferenz_(jetzt, eventStart)
   const stundenBis = (eventStart.getTime() - jetzt.getTime()) / 3600000
+  Logger.log(
+    'Erinnerung — "' + sheetName + '": start=' + eventStart +
+    ', tageBis=' + tageBis + ', stundenBis=' + stundenBis.toFixed(1) +
+    ', stunde=' + stunde,
+  )
 
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     const faellig =
@@ -1212,6 +1224,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
         ? tageBis === stufe.wert && stunde >= ERINNERUNG_SENDESTUNDE
         : stundenBis > 0 && stundenBis <= stufe.wert
     if (!faellig) return
+    Logger.log('Erinnerung — "' + sheetName + '": Stufe "' + stufe.spalte + '" faellig.')
 
     const spalte = ensureColumn_(sheet, stufe.spalte)
 
@@ -1226,22 +1239,29 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
         return
       }
 
-      const inhalt = stufe.bauen({
-        anrede: anrede_(
-          iAnrede >= 0 ? zeile[iAnrede] : '',
-          iVorname >= 0 ? zeile[iVorname] : '',
-        ),
-        slug: eventSlug,
-        sid: sheet.getParent().getId(),
-        email: email,
-        titel: eventTitel,
-        referent: eventReferent,
-        datum: eventDatum,
-        zeit: eventZeit,
-        ort: eventOrt,
-        start: eventStart,
-        ende: eventEnde,
-      })
+      let inhalt
+      try {
+        inhalt = stufe.bauen({
+          anrede: anrede_(
+            iAnrede >= 0 ? zeile[iAnrede] : '',
+            iVorname >= 0 ? zeile[iVorname] : '',
+          ),
+          slug: eventSlug,
+          sid: sheet.getParent().getId(),
+          email: email,
+          titel: eventTitel,
+          referent: eventReferent,
+          datum: eventDatumText,
+          zeit: eventZeit,
+          ort: eventOrt,
+          start: eventStart,
+          ende: eventEnde,
+        })
+      } catch (err) {
+        Logger.log('Erinnerung — Mailaufbau "' + stufe.spalte + '" fehlgeschlagen: ' + err)
+        sheet.getRange(r + 1, spalte).setValue('FEHLER (Aufbau): ' + err)
+        continue
+      }
 
       try {
         sendeTeilnehmerMail_(email, inhalt.subject, inhalt.htmlBody, inhalt.attachments)
@@ -1250,7 +1270,9 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
           .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
         SpreadsheetApp.flush()
         Utilities.sleep(300)
+        Logger.log('Erinnerung — "' + stufe.spalte + '" an ' + email + ' verschickt.')
       } catch (err) {
+        Logger.log('Erinnerung — Versand "' + stufe.spalte + '" an ' + email + ' fehlgeschlagen: ' + err)
         sheet.getRange(r + 1, spalte).setValue('FEHLER: ' + err)
       }
     }
@@ -1270,20 +1292,45 @@ function ensureColumn_(sheet, headerName) {
   return neu
 }
 
-// Baut aus "Di., 04.03.2026" + "18:30–20:00" ein Date-Objekt: nimmt die erste
-// TT.MM.JJJJ- und die erste HH:MM-Angabe. Ohne Uhrzeit: 18:00 Uhr.
+// true, wenn v ein echtes Date-Objekt ist (aus getValues() bei Datums-Zellen).
+function istDate_(v) {
+  return Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v.getTime())
+}
+
+// Anzeige-Text fuers Datum. Echte Datums-Zelle -> "Di., 01.09.2026",
+// sonst der vorhandene Text unveraendert.
+function datumAnzeige_(v) {
+  if (istDate_(v)) {
+    const wt = ['So.', 'Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.'][v.getDay()]
+    return wt + ', ' + Utilities.formatDate(v, 'Europe/Berlin', 'dd.MM.yyyy')
+  }
+  return String(v == null ? '' : v).trim()
+}
+
+// Baut aus dem Event-Datum + "18:30–20:00" ein Date-Objekt. Akzeptiert ein
+// echtes Date (Datums-Zelle im Sheet), "TT.MM.JJJJ", "JJJJ-MM-TT" oder zur Not
+// alles, was new Date() versteht. Uhrzeit: erste HH:MM-Angabe, sonst 18:00.
 function parseEventDatum_(datumText, zeitText) {
-  const d = String(datumText || '').match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
-  if (!d) return null
+  let jahr, monat, tag
+  if (istDate_(datumText)) {
+    jahr = datumText.getFullYear()
+    monat = datumText.getMonth()
+    tag = datumText.getDate()
+  } else {
+    const s = String(datumText || '')
+    let d = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
+    if (d) {
+      jahr = Number(d[3]); monat = Number(d[2]) - 1; tag = Number(d[1])
+    } else if ((d = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/))) {
+      jahr = Number(d[1]); monat = Number(d[2]) - 1; tag = Number(d[3])
+    } else {
+      const dt = new Date(s)
+      if (isNaN(dt.getTime())) return null
+      jahr = dt.getFullYear(); monat = dt.getMonth(); tag = dt.getDate()
+    }
+  }
   const t = String(zeitText || '').match(/(\d{1,2}):(\d{2})/)
-  return new Date(
-    Number(d[3]),
-    Number(d[2]) - 1,
-    Number(d[1]),
-    t ? Number(t[1]) : 18,
-    t ? Number(t[2]) : 0,
-    0,
-  )
+  return new Date(jahr, monat, tag, t ? Number(t[1]) : 18, t ? Number(t[2]) : 0, 0)
 }
 
 // Endzeitpunkt: zweite HH:MM-Angabe in "18:30–20:00", sonst Start + 2 h.
