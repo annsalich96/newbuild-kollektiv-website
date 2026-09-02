@@ -1661,7 +1661,7 @@ function nachfassNichtDaMail_(e) {
         ',</p>' +
         '<p>schade, dass du es gestern nicht zum NewBuild Kollektiv Treffen geschafft ' +
         'hast. Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass ich ' +
-        'dich dann bei unserem Treffen begrüßen darf.</p>' +
+        'dich dann begrüßen darf.</p>' +
         '<p style="margin:0 0 18px;padding:14px 16px;background:#f4f4f2;border-radius:8px">' +
         'Du warst <strong>doch da</strong>, hast dich nur vergessen am Eingang ' +
         'einzuchecken?<br>' +
@@ -1719,10 +1719,20 @@ const TEST_EMPFAENGER = 'salich@annarchitecture-studio.com'
 
 function testErinnerungsmails() {
   const start = new Date(2026, 8, 1, 18, 30, 0) // 01.09.2026, 18:30
+
+  // Echte Tabellen-ID von Session 01 holen, damit der "Ich war doch da"-Link
+  // in der Test-Mail wirklich funktioniert (setzt dann auch Anwesend + schickt
+  // die Rueckblick-Mail — also bewusst ein echter Klick-Test).
+  let sid = ''
+  try {
+    const s = findeEventSheetPerSlug_('session-01-ki-belohnt-ordnung')
+    if (s) sid = s.getParent().getId()
+  } catch (err) {}
+
   const e = {
     anrede: anrede_('w', 'Ann-Kathrin'),
     slug: 'session-01-ki-belohnt-ordnung',
-    sid: '',
+    sid: sid,
     email: TEST_EMPFAENGER,
     titel: 'KI belohnt Ordnung: Wie Menschen und KI-Agenten in Planungsbüros zusammenarbeiten',
     referent: 'Markus Kolb, Bräunlin Kolb Architekten',
@@ -1749,5 +1759,10 @@ function testErinnerungsmails() {
     Utilities.sleep(600)
   })
 
-  Logger.log('5 Test-Mails an ' + TEST_EMPFAENGER + ' verschickt.')
+  // Die Schleife oben liefert die Nachfass-Variante "war da". Zusaetzlich die
+  // "nicht da"-Variante schicken, damit beide sichtbar sind.
+  const nd = nachfassNichtDaMail_(e)
+  sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] (nicht da) ' + nd.subject, nd.htmlBody)
+
+  Logger.log('Test-Mails an ' + TEST_EMPFAENGER + ' verschickt (Bestaetigung + 4 Stufen + Nachfass "nicht da").')
 }
