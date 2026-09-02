@@ -1735,7 +1735,7 @@ function testErinnerungsmails() {
     sid: sid,
     email: TEST_EMPFAENGER,
     titel: 'KI belohnt Ordnung: Wie Menschen und KI-Agenten in Planungsbüros zusammenarbeiten',
-    referent: 'Markus Kolb, Bräunlin Kolb Architekten',
+    referent: 'Markus Kolb, Geschäftsführer Bräunlin Kolb Architekten',
     datum: 'Di., 01.09.2026',
     zeit: '18:30–20:00',
     ort: 'Projo Berlin, Chausseestraße 123, 10115 Berlin',
