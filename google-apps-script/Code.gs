@@ -1640,7 +1640,7 @@ const NACHFASS_ZUSATZ = {
     '<p>Übrigens: ' +
     '<a href="https://oblik.media/events/architecture-intelligence" style="color:#3d5a80">Hier findest du alle Infos und die Anmeldung</a> ' +
     'zum großen Event <strong>„Architecture Intelligence"</strong> am <strong>24. September</strong> – ' +
-    'zu dem ihr gerne alle eure Teammitglieder mit einladen dürft, um auch sie bei der ' +
+    'zu dem du gerne alle deine Teamkolleg:innen mit einladen darfst, um auch sie bei der ' +
     'KI-Entwicklung mitzunehmen.</p>',
 }
 
@@ -1695,8 +1695,8 @@ function nachfassDaMail_(e) {
         '<p>Und falls du selbst einmal ein Thema oder deine Erfahrungen mit dem Kollektiv teilen ' +
         'möchtest, <a href="' + referentLink_() +
         '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
-        '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.</p>' +
-        '<p>Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen folgen in Kürze.</p>' +
+        '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.<br>' +
+        'Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen folgen in Kürze.</p>' +
         (NACHFASS_ZUSATZ[e.slug] || '') +
         '<p>Bis bald und liebe Grüße,</p>',
     ),
