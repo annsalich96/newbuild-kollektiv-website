@@ -1633,6 +1633,15 @@ function mailDreiStunden_(e) {
   }
 }
 
+// Optionaler Zusatz-Absatz in der "war da"-Nachfassmail, pro Event.
+// slug -> fertiges <p>…</p> (z. B. Hinweis aufs naechste Treffen).
+const NACHFASS_ZUSATZ = {
+  'session-01-ki-belohnt-ordnung':
+    '<p>Übrigens: Unser nächstes Treffen <strong>„Architecture Intelligence"</strong> ' +
+    'findet am <strong>24. September</strong> statt. Alle Infos und die Anmeldung findest du ' +
+    '<a href="https://oblik.media/events/architecture-intelligence" style="color:#3d5a80">hier</a>.</p>',
+}
+
 // Am Tag danach: zwei Varianten. Wer eingecheckt war (oder wo die Check-in-
 // Liste gar nicht genutzt wurde) bekommt den warmen Rueckblick; wer als
 // abwesend gilt, bekommt "schade" + einen Ich-war-doch-da-Link, der die
@@ -1648,12 +1657,11 @@ function nachfassNichtDaMail_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>schade, dass es gestern beim NewBuild Kollektiv nicht geklappt hat – ' +
-        'wir haben dich vermisst.</p>' +
-        '<p>Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass du dann ' +
-        'wieder dabei bist.</p>' +
+        '<p>schade, dass du es gestern nicht zum NewBuild Kollektiv Treffen geschafft ' +
+        'hast. Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass ich ' +
+        'dich dann bei unserem Treffen begrüßen darf.</p>' +
         '<p style="margin:0 0 18px;padding:14px 16px;background:#f4f4f2;border-radius:8px">' +
-        'Warst du <strong>doch da</strong> und hast nur vergessen, dich am Eingang ' +
+        'Du warst <strong>doch da</strong>, hast dich nur vergessen am Eingang ' +
         'einzuchecken?<br>' +
         '<a href="' + wardaLink_(e.sid, e.slug, e.email) +
         '" style="color:#3d5a80">Ja, ich war da →</a><br>' +
@@ -1671,24 +1679,23 @@ function nachfassDaMail_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>was für ein schöner Abend gestern! Ich habe mich sehr gefreut, dass du ' +
-        'bei unserem NewBuild Kollektiv Abend dabei gewesen bist. Ich denke heute noch ' +
-        'an die vielen Gespräche, die gestern entstanden sind.</p>' +
+        '<p>was für ein schöner Abend gestern!<br>' +
+        'Ich habe mich sehr gefreut, dass du bei unserem gestrigen NewBuild Kollektiv ' +
+        'Abend dabei gewesen bist.</p>' +
         '<p>Ich hoffe, du hast ' +
         (e.referent
           ? 'den Austausch und das Vorgetragene von ' + escapeHtml_(e.referent) + ' '
           : 'den Austausch und die Impulse des Abends ') +
-        'genauso genossen wie ich. Ich habe wieder gemerkt, wie viel Energie entsteht, ' +
-        'wenn Menschen aus der Planungswelt offen teilen, was sie umtreibt. Das hat mich ' +
-        'bestärkt, wie wichtig es ist, dass wir genau diesen Austausch jetzt zu KI-Themen führen.</p>' +
+        'genauso genossen wie ich und nimmst Infos für deine eigene Praxis mit.</p>' +
         '<p>Lass mich gerne wissen, falls du noch ' +
         '<a href="' + feedbackLink_(e.slug, e.titel) +
-        '" style="color:#3d5a80">Hinweise für unsere Treffen</a> hast.</p>' +
+        '" style="color:#3d5a80">Hinweise für unsere nächsten Treffen</a> hast.</p>' +
         '<p>Und falls du selbst einmal ein Thema oder deine Erfahrungen mit dem Kollektiv teilen ' +
         'möchtest, <a href="' + referentLink_() +
         '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
         '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.</p>' +
-        '<p>Ich freue mich schon auf das nächste Mal. Bald kommen die Infos zum nächsten Event.</p>' +
+        '<p>Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen folgen in Kürze.</p>' +
+        (NACHFASS_ZUSATZ[e.slug] || '') +
         '<p>Bis bald und liebe Grüße,</p>',
     ),
   }
