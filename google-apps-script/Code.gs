@@ -1664,10 +1664,10 @@ function nachfassNichtDaMail_(e) {
         'dich dann begrüßen darf.</p>' +
         '<p style="margin:0 0 18px;padding:14px 16px;background:#f4f4f2;border-radius:8px">' +
         'Du warst <strong>doch da</strong>, hast dich nur vergessen am Eingang ' +
-        'einzuchecken?<br>' +
+        'einzuchecken? Dann vermerken wir das und du bekommst gleich die ' +
+        'Rückblick-Mail zum Abend.<br>' +
         '<a href="' + wardaLink_(e.sid, e.slug, e.email) +
-        '" style="color:#3d5a80">Ja, ich war da →</a><br>' +
-        'Dann vermerken wir das und du bekommst gleich die Rückblick-Mail zum Abend.' +
+        '" style="color:#3d5a80">Ja, ich war da →</a>' +
         '</p>' +
         '<p>Bis bald und liebe Grüße,</p>',
     ),
