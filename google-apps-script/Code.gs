@@ -1688,14 +1688,14 @@ function nachfassDaMail_(e) {
         (e.referent
           ? 'den Austausch und das Vorgetragene von ' + escapeHtml_(e.referent) + ' '
           : 'den Austausch und die Impulse des Abends ') +
-        'genauso genossen wie ich und nimmst Infos für deine eigene Praxis mit.</p>' +
-        '<p>Lass mich gerne wissen, falls du noch ' +
+        'genauso genossen wie ich und nimmst Infos für deine eigene Praxis mit. ' +
+        'Lass mich bitte wissen, falls du noch ' +
         '<a href="' + feedbackLink_(e.slug, e.titel) +
         '" style="color:#3d5a80">Hinweise für unsere nächsten Treffen</a> hast.</p>' +
         '<p>Und falls du selbst einmal ein Thema oder deine Erfahrungen mit dem Kollektiv teilen ' +
         'möchtest, <a href="' + referentLink_() +
         '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
-        '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.<br>' +
+        '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast. ' +
         'Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen folgen in Kürze.</p>' +
         (NACHFASS_ZUSATZ[e.slug] || '') +
         '<p>Bis bald und liebe Grüße,</p>',
