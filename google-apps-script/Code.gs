@@ -470,10 +470,12 @@ function htmlToPlain_(html) {
 }
 
 function wrapMail_(innerHtml) {
+  // Jeder schlichte <p> bekommt sichtbaren Abstand nach unten (Leerzeile
+  // zwischen Absaetzen). Bereits inline gestylte <p style="…"> bleiben unberuehrt.
   return (
     '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;' +
     'line-height:1.6;color:#111">' +
-    innerHtml +
+    String(innerHtml).replace(/<p>/g, '<p style="margin:0 0 18px">') +
     '</div>'
   )
 }
