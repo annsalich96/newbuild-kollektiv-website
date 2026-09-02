@@ -1654,7 +1654,7 @@ function mailNachfass_(e) {
 
 function nachfassNichtDaMail_(e) {
   return {
-    subject: 'Schade – bis zum nächsten Mal',
+    subject: 'Schade, dass du nicht dabei warst – NBK Treffen ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
