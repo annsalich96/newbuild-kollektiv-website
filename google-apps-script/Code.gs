@@ -162,6 +162,7 @@ function doPost(e) {
       try {
         if (data.action === 'abmelden') return jsonResponse(abmeldenVerarbeiten_(data))
         if (data.action === 'checkin') return jsonResponse(checkinVerarbeiten_(data))
+        if (data.action === 'warda') return jsonResponse(wardaVerarbeiten_(data))
         if (data.action === 'feedback') return jsonResponse(feedbackVerarbeiten_(data))
         if (data.action === 'referent') return jsonResponse(referentVerarbeiten_(data))
         if (data.action === 'fotowiderspruch') return jsonResponse(fotoWiderspruchVerarbeiten_(data))
@@ -202,6 +203,7 @@ function doGet(e) {
   if (p.action === 'fotoinfo') return fotoInfoSeite_(p)
   if (p.action === 'checkin') return checkinFormular_(p)
   if (p.action === 'checkin_ok') return checkinVerarbeiten_(p)
+  if (p.action === 'warda') return wardaVerarbeiten_(p)
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -562,6 +564,19 @@ function abmeldeLink_(sid, slug, titel, email, datum) {
     '&slug=' + encodeURIComponent(slug || '') +
     '&event=' + encodeURIComponent(kurzTitel_(titel) || 'das Event') +
     '&datum=' + encodeURIComponent(datum || '') +
+    '&email=' + encodeURIComponent(email || '')
+  )
+}
+
+// Link in der "Schade, dass du nicht da warst"-Mail: ein Klick setzt die
+// Person (per E-Mail erkannt) auf anwesend und schickt ihr sofort den
+// Rueckblick nach.
+function wardaLink_(sid, slug, email) {
+  return (
+    SITE_FORM_URL +
+    '?do=warda' +
+    '&sid=' + encodeURIComponent(sid || '') +
+    '&slug=' + encodeURIComponent(slug || '') +
     '&email=' + encodeURIComponent(email || '')
   )
 }
@@ -1080,6 +1095,85 @@ function checkinVerarbeiten_(p) {
   )
 }
 
+// "Ich war doch da" aus der Nachfass-Mail: Person per E-Mail (oder Name) in der
+// Event-Tabelle finden, auf anwesend setzen und ihr sofort die Rueckblick-Mail
+// (Variante "war da") schicken.
+function wardaVerarbeiten_(p) {
+  let sheet = null
+  try {
+    if (p.sid) sheet = SpreadsheetApp.openById(p.sid).getSheets()[0]
+  } catch (err) {}
+  if (!sheet) sheet = findeEventSheetPerSlug_(p.slug)
+  if (!sheet) {
+    return abmeldeSeite_(
+      '<h1>Ups</h1><p>Wir konnten das Event nicht zuordnen. Bitte antworte kurz auf die E-Mail.</p>',
+    )
+  }
+
+  const werte = sheet.getDataRange().getValues()
+  const kopf = werte[0]
+  const iVorname = kopf.indexOf('Vorname')
+  const iNachname = kopf.indexOf('Nachname')
+  const iEmail = kopf.indexOf('E-Mail')
+  const iAnrede = kopf.indexOf('Anrede')
+  const iReferent = kopf.indexOf('Referent')
+  const iSlug = kopf.indexOf('Slug')
+
+  const email = String(p.email || '').trim().toLowerCase()
+  const vn = String(p.vorname || '').trim().toLowerCase()
+  const nn = String(p.nachname || '').trim().toLowerCase()
+
+  let treffer = -1
+  for (let r = 1; r < werte.length; r++) {
+    const rEmail = iEmail >= 0 ? String(werte[r][iEmail] || '').trim().toLowerCase() : ''
+    const rVn = iVorname >= 0 ? String(werte[r][iVorname] || '').trim().toLowerCase() : ''
+    const rNn = iNachname >= 0 ? String(werte[r][iNachname] || '').trim().toLowerCase() : ''
+    if ((email && rEmail === email) || (vn && nn && rVn === vn && rNn === nn)) {
+      treffer = r
+      break
+    }
+  }
+  if (treffer < 0) {
+    return abmeldeSeite_(
+      '<h1>Nicht gefunden</h1><p>Wir haben deine Anmeldung nicht gefunden. Bitte antworte kurz auf die E-Mail, dann tragen wir dich manuell ein.</p>',
+    )
+  }
+
+  const zeile = werte[treffer]
+  const spAnwesend = ensureColumn_(sheet, 'Anwesend')
+  if (!String(zeile[spAnwesend - 1] || '').trim()) {
+    sheet
+      .getRange(treffer + 1, spAnwesend)
+      .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+    SpreadsheetApp.flush()
+  }
+
+  const zielEmail = iEmail >= 0 ? String(zeile[iEmail] || '').trim() : ''
+  if (zielEmail) {
+    try {
+      const mt = String(sheet.getParent().getName()).match(/^\s*.*?\s+—\s+(.+?)\s*$/)
+      const inhalt = nachfassDaMail_({
+        anrede: anrede_(
+          iAnrede >= 0 ? zeile[iAnrede] : '',
+          iVorname >= 0 ? zeile[iVorname] : '',
+        ),
+        slug: iSlug >= 0 ? String(zeile[iSlug] || '') : String(p.slug || ''),
+        titel: mt ? mt[1] : String(sheet.getParent().getName()),
+        referent: iReferent >= 0 ? ersterWert_(werte, iReferent) : '',
+      })
+      sendeTeilnehmerMail_(zielEmail, inhalt.subject, inhalt.htmlBody, inhalt.attachments)
+    } catch (err) {
+      Logger.log('warda — Rueckblick-Mail fehlgeschlagen: ' + err)
+    }
+  }
+
+  return abmeldeSeite_(
+    '<h1>Alles klar!</h1>' +
+      '<p>Wir haben dich als anwesend vermerkt. Die Rückblick-Mail zum Abend ist gerade zu dir unterwegs.</p>',
+    'Danke – NewBuild Kollektiv',
+  )
+}
+
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
 // "Senden als"-Alias (GmailApp, damit "from" gesetzt werden kann) und haengt
 // automatisch die Signatur an — HTML plus Text-Fallback. Optional: attachments
@@ -1223,7 +1317,18 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
   const iAnrede = kopf.indexOf('Anrede')
   const iReferent = kopf.indexOf('Referent')
   const iSlug = kopf.indexOf('Slug')
+  const iAnwesend = kopf.indexOf('Anwesend')
   if (iEmail < 0 || iDatum < 0) return
+
+  // Wurde die Check-in-Liste fuer dieses Event ueberhaupt genutzt? Nur dann
+  // koennen wir "war da" / "war nicht da" trennen. Ist die Spalte leer (niemand
+  // hat am Eingang eingecheckt), bekommen alle die normale Rueckblick-Mail —
+  // niemand faelschlich ein "schade, dass du nicht da warst".
+  const checkinGenutzt =
+    iAnwesend >= 0 &&
+    werte.some(function (row, idx) {
+      return idx > 0 && String(row[iAnwesend] || '').trim()
+    })
 
   // Event-Datum/-Zeit/-Ort/-Referent/-Slug sind pro Tabelle gleich — ersten
   // befuellten Wert der jeweiligen Spalte nehmen.
@@ -1293,6 +1398,8 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
           ort: eventOrt,
           start: eventStart,
           ende: eventEnde,
+          checkinGenutzt: checkinGenutzt,
+          anwesend: iAnwesend >= 0 && !!String(zeile[iAnwesend] || '').trim(),
         })
       } catch (err) {
         Logger.log('Erinnerung — Mailaufbau "' + stufe.spalte + '" fehlgeschlagen: ' + err)
@@ -1526,7 +1633,38 @@ function mailDreiStunden_(e) {
   }
 }
 
+// Am Tag danach: zwei Varianten. Wer eingecheckt war (oder wo die Check-in-
+// Liste gar nicht genutzt wurde) bekommt den warmen Rueckblick; wer als
+// abwesend gilt, bekommt "schade" + einen Ich-war-doch-da-Link, der die
+// Person auf anwesend setzt und ihr sofort den Rueckblick nachschickt.
 function mailNachfass_(e) {
+  return e.checkinGenutzt && !e.anwesend ? nachfassNichtDaMail_(e) : nachfassDaMail_(e)
+}
+
+function nachfassNichtDaMail_(e) {
+  return {
+    subject: 'Schade, dass du nicht dabei warst',
+    htmlBody: wrapMail_(
+      '<p>' +
+        escapeHtml_(e.anrede) +
+        ',</p>' +
+        '<p>schade, dass es gestern beim NewBuild Kollektiv nicht geklappt hat – ' +
+        'wir haben dich vermisst.</p>' +
+        '<p>Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass du dann ' +
+        'wieder dabei bist.</p>' +
+        '<p style="margin:0 0 18px;padding:14px 16px;background:#f4f4f2;border-radius:8px">' +
+        'Warst du <strong>doch da</strong> und hast nur vergessen, dich am Eingang ' +
+        'einzuchecken?<br>' +
+        '<a href="' + wardaLink_(e.sid, e.slug, e.email) +
+        '" style="color:#3d5a80">Ja, ich war da →</a><br>' +
+        'Dann vermerken wir das und du bekommst gleich die Rückblick-Mail zum Abend.' +
+        '</p>' +
+        '<p>Bis bald und liebe Grüße,</p>',
+    ),
+  }
+}
+
+function nachfassDaMail_(e) {
   return {
     subject: 'Danke fürs Kommen – bis zum nächsten Mal',
     htmlBody: wrapMail_(

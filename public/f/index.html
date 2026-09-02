@@ -186,8 +186,39 @@
     });
   }
 
+  // Ein-Klick-Aktionen ohne Formular (Link aus einer Mail): direkt absenden.
+  function autoSubmit(action) {
+    card.innerHTML = '<h1>Einen Moment …</h1><p>Wir tragen dich ein.</p>' + foot;
+    fetch(EXEC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: action,
+        slug: slug,
+        sid: q.get('sid') || '',
+        email: q.get('email') || '',
+        event: q.get('event') || '',
+        datum: q.get('datum') || ''
+      })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res && res.html) {
+          card.innerHTML = res.html + foot;
+          if (res.redirect) setTimeout(function () { location.href = res.redirect; }, 2500);
+        } else {
+          throw new Error('Unerwartete Antwort');
+        }
+      })
+      .catch(function () {
+        card.innerHTML = '<h1>Hm</h1><p class="err">Das hat nicht geklappt. Bitte antworte kurz auf die E-Mail, dann tragen wir dich manuell ein.</p>' + foot;
+      });
+  }
+
   if (doo === 'fotoinfo') {
     showInfo();
+  } else if (doo === 'warda') {
+    autoSubmit('warda');
   } else if (CFG[doo]) {
     renderForm(CFG[doo]);
   } else {
