@@ -1531,12 +1531,17 @@ function mailNachfass_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>ich habe mich sehr gefreut, dich bei unserem gestrigen NewBuild Kollektiv Abend gesehen zu haben.</p>' +
+        '<p>was für ein schöner Abend gestern! Ich habe mich sehr gefreut, dass du ' +
+        'bei unserem NewBuild Kollektiv Abend dabei gewesen bist. Ich denke heute noch ' +
+        'an die vielen Gespräche, die gestern entstanden sind.</p>' +
         '<p>Ich hoffe, du hast ' +
         (e.referent
           ? 'den Austausch und das Vorgetragene von ' + escapeHtml_(e.referent) + ' '
           : 'den Austausch und die Impulse des Abends ') +
-        'genauso genossen wie ich. Lass mich gerne wissen, falls du noch ' +
+        'genauso genossen wie ich. Ich habe wieder gemerkt, wie viel Energie entsteht, ' +
+        'wenn Menschen aus der Planungswelt offen teilen, was sie umtreibt. Das hat mich ' +
+        'bestärkt, wie wichtig es ist, dass wir genau diesen Austausch jetzt zu KI-Themen führen.</p>' +
+        '<p>Lass mich gerne wissen, falls du noch ' +
         '<a href="' + feedbackLink_(e.slug, e.titel) +
         '" style="color:#3d5a80">Hinweise für unsere Treffen</a> hast.</p>' +
         '<p>Und falls du selbst einmal ein Thema oder deine Erfahrungen mit dem Kollektiv teilen ' +
@@ -1544,7 +1549,7 @@ function mailNachfass_(e) {
         '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
         '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.</p>' +
         '<p>Ich freue mich schon auf das nächste Mal. Bald kommen die Infos zum nächsten Event.</p>' +
-        '<p>Bis bald und liebe Grüße<br>Ann-Kathrin</p>',
+        '<p>Bis bald und liebe Grüße,</p>',
     ),
   }
 }
