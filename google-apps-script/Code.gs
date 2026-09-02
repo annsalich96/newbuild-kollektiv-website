@@ -1637,9 +1637,11 @@ function mailDreiStunden_(e) {
 // slug -> fertiges <p>…</p> (z. B. Hinweis aufs naechste Treffen).
 const NACHFASS_ZUSATZ = {
   'session-01-ki-belohnt-ordnung':
-    '<p>Übrigens: Unser nächstes Treffen <strong>„Architecture Intelligence"</strong> ' +
-    'findet am <strong>24. September</strong> statt. Alle Infos und die Anmeldung findest du ' +
-    '<a href="https://oblik.media/events/architecture-intelligence" style="color:#3d5a80">hier</a>.</p>',
+    '<p>Übrigens: ' +
+    '<a href="https://oblik.media/events/architecture-intelligence" style="color:#3d5a80">Hier findest du alle Infos und die Anmeldung</a> ' +
+    'zum großen Event <strong>„Architecture Intelligence"</strong> am <strong>24. September</strong> – ' +
+    'zu dem ihr gerne alle eure Teammitglieder mit einladen dürft, um auch sie bei der ' +
+    'KI-Entwicklung mitzunehmen.</p>',
 }
 
 // Am Tag danach: zwei Varianten. Wer eingecheckt war (oder wo die Check-in-
