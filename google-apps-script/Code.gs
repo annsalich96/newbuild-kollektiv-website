@@ -175,6 +175,14 @@ function doPost(e) {
     validateRegistration(data)
     data.phone = normalizePhone(data.phone)
 
+    // Referent:in-Zeile fuer die Mails aus den drei CMS-Feldern zusammensetzen
+    // (Fallback: altes eventSpeaker-Feld, falls noch zwischengespeichertes JS
+    // im Umlauf ist). data.eventSpeaker ist ab hier der kanonische Wert.
+    data.eventSpeaker =
+      referentText_(data.speakerName, data.speakerRole, data.speakerCompany) ||
+      data.eventSpeaker ||
+      ''
+
     const sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
     appendRegistration(sheet, data)
     schreibeZusatzfelder_(sheet, data)
@@ -550,6 +558,19 @@ function kurzTitel_(t) {
   const s = String(t || '')
   const i = s.indexOf(':')
   return (i > 0 ? s.slice(0, i) : s).trim()
+}
+
+// Referent:in fuer E-Mails: Name / Position / Firma kommen als drei getrennte
+// Felder aus dem Pages CMS (ohne Satzzeichen). Hier zu einer Zeile gesetzt:
+//   "Name, Position Firma"  —  fehlt eins, faellt es sauber weg.
+// (Website baut ihre eigene Form in generate-event-pages.mjs.)
+function referentText_(name, position, firma) {
+  const n = String(name || '').trim()
+  const zusatz = [String(position || '').trim(), String(firma || '').trim()]
+    .filter(Boolean)
+    .join(' ')
+  if (!n) return zusatz
+  return zusatz ? n + ', ' + zusatz : n
 }
 
 // ── Abmelde-Link / -Seite ───────────────────────────────────────────────────

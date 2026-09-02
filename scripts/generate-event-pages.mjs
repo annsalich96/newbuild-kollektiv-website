@@ -41,8 +41,17 @@ export function generateEventPages() {
     // Events wie "Architecture Intelligence", die alle Namen stattdessen in
     // der Kurzbeschreibung auflisten) - ohne "|| ''" wuerde String(undefined)
     // als sichtbarer Text "undefined" auf der Seite landen.
-    const speaker = event.speakerCompany
-      ? `${event.speakerName || ''} — ${event.speakerCompany}`
+    // Referent:in kommt als drei getrennte CMS-Felder (Name / Position /
+    // Firma), damit derselbe Datensatz auch fuer die E-Mails und die
+    // Grafiken taugt. Die Satzzeichen setzt der Code, nicht das CMS:
+    //   Website:  "Name — Position, Firma"
+    //   E-Mail:   "Name, Position Firma"  (siehe Code.gs -> referentText_)
+    const speakerExtra = [event.speakerRole, event.speakerCompany]
+      .map((s) => String(s || '').trim())
+      .filter(Boolean)
+      .join(', ')
+    const speaker = speakerExtra
+      ? `${event.speakerName || ''} — ${speakerExtra}`
       : event.speakerName || ''
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
@@ -89,6 +98,9 @@ export function generateEventPages() {
       .replaceAll('__TIME__', escapeHtml(event.time))
       .replaceAll('__LOCATION__', escapeHtml(event.location))
       .replaceAll('__SPEAKER__', escapeHtml(speaker))
+      .replaceAll('__SPEAKER_NAME__', escapeHtml(event.speakerName || ''))
+      .replaceAll('__SPEAKER_ROLE__', escapeHtml(event.speakerRole || ''))
+      .replaceAll('__SPEAKER_COMPANY__', escapeHtml(event.speakerCompany || ''))
       .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs)
       .replaceAll('__SPEAKER_BIO_BLOCK__', speakerBioBlock)
       .replaceAll('__EVENT_META_BLOCK__', eventMetaBlock)

@@ -43,11 +43,15 @@ content:
             label: Ort
             type: string
           - name: speakerName
-            label: "Referent:in (optional - bei mehreren Speakern leer lassen und alle in der Kurzbeschreibung auflisten)"
+            label: "Referent:in — Name (optional - bei mehreren Speakern leer lassen und alle in der Kurzbeschreibung auflisten)"
+            type: string
+            required: false
+          - name: speakerRole
+            label: "Referent:in — Position (optional, z.B. \"Geschäftsführer\" - nur die Position, KEIN Komma/Bindestrich, das setzt das System)"
             type: string
             required: false
           - name: speakerCompany
-            label: Firma/Zusatz (optional)
+            label: "Referent:in — Firma (optional, nur der Firmenname - keine Position, keine Satzzeichen)"
             type: string
             required: false
           - name: speakerBio
