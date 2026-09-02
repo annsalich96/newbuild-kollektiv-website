@@ -1562,7 +1562,7 @@ function schreibeZusatzfelder_(sheet, data) {
 // 1 Woche vorher — bewusst schlank: nur Terminzeile, keine volle Eckdaten-Box.
 function mailEineWoche_(e) {
   return {
-    subject: 'In einer Woche: NewBuild Kollektiv – ' + kurzTitel_(e.titel),
+    subject: 'In einer Woche: NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
@@ -1611,7 +1611,7 @@ function mailEinTag_(e) {
 // ~3 h vorher — kurzer Absprung: Termin, Ort + Maps, Kalenderdatei.
 function mailDreiStunden_(e) {
   return {
-    subject: 'Gleich geht’s los: NewBuild Kollektiv – ' + kurzTitel_(e.titel),
+    subject: 'Gleich geht’s los: NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
@@ -1654,7 +1654,7 @@ function mailNachfass_(e) {
 
 function nachfassNichtDaMail_(e) {
   return {
-    subject: 'Schade, dass du nicht dabei warst',
+    subject: 'Schade – bis zum nächsten Mal',
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
@@ -1676,7 +1676,7 @@ function nachfassNichtDaMail_(e) {
 
 function nachfassDaMail_(e) {
   return {
-    subject: 'Danke fürs Kommen – bis zum nächsten Mal',
+    subject: 'Danke fürs Kommen – NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
