@@ -375,6 +375,49 @@ function upsertHistoryEntry(data) {
   ])
 }
 
+// Einmal-Funktion: traegt Anrede in bestehenden "History Anmeldungen"-Zeilen
+// nach, indem sie in allen Event-Tabellen (Ordner "Events") nach der E-Mail
+// sucht und deren "Anrede"-Spalte uebernimmt. Danach im Skript-Editor loeschen
+// oder liegen lassen (macht nichts kaputt, einfach nochmal ausfuehren).
+function backfillHistoryAnrede_() {
+  const anredeProEmail = {}
+  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  while (files.hasNext()) {
+    try {
+      const sh = SpreadsheetApp.open(files.next()).getSheets()[0]
+      const werte = sh.getDataRange().getValues()
+      const kopf = werte[0]
+      const iEmail = kopf.indexOf('E-Mail')
+      const iAnrede = kopf.indexOf('Anrede')
+      if (iEmail < 0 || iAnrede < 0) continue
+      for (let r = 1; r < werte.length; r++) {
+        const email = String(werte[r][iEmail] || '').trim().toLowerCase()
+        const code = anredeCode_(werte[r][iAnrede])
+        if (email && code) anredeProEmail[email] = code
+      }
+    } catch (err) {}
+  }
+
+  const historySheet = getOrCreateHistorySpreadsheet().getSheets()[0]
+  const werte = historySheet.getDataRange().getValues()
+  const emailCol = HISTORY_HEADERS.indexOf('E-Mail')
+  const anredeCol = HISTORY_HEADERS.indexOf('Anrede')
+  let aktualisiert = 0
+
+  for (let r = 1; r < werte.length; r++) {
+    const email = String(werte[r][emailCol] || '').trim().toLowerCase()
+    const vorhanden = String(werte[r][anredeCol] || '').trim()
+    if (vorhanden) continue
+    const code = anredeProEmail[email]
+    if (code) {
+      historySheet.getRange(r + 1, anredeCol + 1).setValue(code)
+      aktualisiert++
+    }
+  }
+
+  Logger.log('Anrede nachgetragen bei ' + aktualisiert + ' Zeilen in "History Anmeldungen".')
+}
+
 function appendRegistration(sheet, data) {
   const now = new Date()
   sheet.appendRow([
