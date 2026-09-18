@@ -142,6 +142,7 @@ const HISTORY_HEADERS = [
   'Vorname',
   'Nachname',
   'E-Mail',
+  'Anrede',
   'Unternehmen',
   'Unternehmensadresse',
   'Telefonnummer',
@@ -218,7 +219,7 @@ function doGet(e) {
 }
 
 function validateRegistration(data) {
-  const required = ['eventTitle', 'firstName', 'lastName', 'email']
+  const required = ['eventTitle', 'firstName', 'lastName', 'email', 'anrede']
   const missing = required.filter((key) => !data[key])
   if (missing.length > 0) {
     throw new Error('Fehlende Felder: ' + missing.join(', '))
@@ -342,14 +343,18 @@ function upsertHistoryEntry(data) {
 
   const values = sheet.getDataRange().getValues()
   const emailCol = HISTORY_HEADERS.indexOf('E-Mail')
+  const anredeCol = HISTORY_HEADERS.indexOf('Anrede')
   const countCol = HISTORY_HEADERS.indexOf('Anzahl Anmeldungen')
   const lastEventCol = HISTORY_HEADERS.indexOf('Letztes Event')
+  const anredeCode = anredeCode_(data.anrede)
 
   for (let row = 1; row < values.length; row++) {
     if (String(values[row][emailCol]).trim().toLowerCase() === email) {
       const sheetRow = row + 1 // 1-basiert + Header-Zeile
       sheet.getRange(sheetRow, lastEventCol + 1).setValue(eventLabel)
       sheet.getRange(sheetRow, countCol + 1).setValue((Number(values[row][countCol]) || 0) + 1)
+      // Anrede nachtragen/aktualisieren, falls sie noch fehlt oder sich geaendert hat
+      if (anredeCode) sheet.getRange(sheetRow, anredeCol + 1).setValue(anredeCode)
       return
     }
   }
@@ -359,6 +364,7 @@ function upsertHistoryEntry(data) {
     data.firstName,
     data.lastName,
     data.email,
+    anredeCode,
     data.company || '',
     data.companyAddress || '',
     data.phone || '',
