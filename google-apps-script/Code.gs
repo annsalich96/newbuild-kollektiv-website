@@ -142,7 +142,6 @@ const HISTORY_HEADERS = [
   'Vorname',
   'Nachname',
   'E-Mail',
-  'Anrede',
   'Unternehmen',
   'Unternehmensadresse',
   'Telefonnummer',
@@ -150,6 +149,7 @@ const HISTORY_HEADERS = [
   'Erste Anmeldung',
   'Letztes Event',
   'Anzahl Anmeldungen',
+  'Anrede',
 ]
 
 function doPost(e) {
@@ -364,7 +364,6 @@ function upsertHistoryEntry(data) {
     data.firstName,
     data.lastName,
     data.email,
-    anredeCode,
     data.company || '',
     data.companyAddress || '',
     data.phone || '',
@@ -372,6 +371,7 @@ function upsertHistoryEntry(data) {
     Utilities.formatDate(now, 'Europe/Berlin', 'dd.MM.yyyy'),
     eventLabel,
     1,
+    anredeCode,
   ])
 }
 
@@ -399,6 +399,9 @@ function backfillHistoryAnrede() {
   }
 
   const historySheet = getOrCreateHistorySpreadsheet().getSheets()[0]
+  // Kopfzeile (Zeile 1) auf die richtigen Ueberschriften setzen, damit sie zu den
+  // Spalten passen. Datenzeilen werden dabei nicht angefasst.
+  historySheet.getRange(1, 1, 1, HISTORY_HEADERS.length).setValues([HISTORY_HEADERS])
   const werte = historySheet.getDataRange().getValues()
   const emailCol = HISTORY_HEADERS.indexOf('E-Mail')
   const anredeCol = HISTORY_HEADERS.indexOf('Anrede')
