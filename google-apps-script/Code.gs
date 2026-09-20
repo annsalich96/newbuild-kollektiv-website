@@ -379,7 +379,7 @@ function upsertHistoryEntry(data) {
 // nach, indem sie in allen Event-Tabellen (Ordner "Events") nach der E-Mail
 // sucht und deren "Anrede"-Spalte uebernimmt. Danach im Skript-Editor loeschen
 // oder liegen lassen (macht nichts kaputt, einfach nochmal ausfuehren).
-function backfillHistoryAnrede_() {
+function backfillHistoryAnrede() {
   const anredeProEmail = {}
   const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
   while (files.hasNext()) {
