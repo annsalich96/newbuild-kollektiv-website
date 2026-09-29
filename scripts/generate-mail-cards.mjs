@@ -104,8 +104,9 @@ function karte(event) {
   const zeit = [event.date, event.time].map((s) => String(s || '').trim()).filter(Boolean).join(' · ')
   const bereinigt = (arr) => arr.map((z) => String(z || '').trim()).filter(Boolean)
   const meta = [
-    // Name + Firma (CMS "Referent:in — Firma") als zweite Zeile, Absprache 2026-09-29.
-    { label: 'Referent:in:', werte: bereinigt([event.speakerName, event.speakerCompany]) },
+    // Name, darunter Position und Firma (CMS "Referent:in — Position/Firma")
+    // je als eigene Zeile, Absprache 2026-09-29.
+    { label: 'Referent:in:', werte: bereinigt([event.speakerName, event.speakerRole, event.speakerCompany]) },
     { label: 'Zeit:', werte: bereinigt([zeit]) },
     { label: 'Ort:', werte: bereinigt(ortZeilen(event.location)) },
   ].filter((b) => b.werte.length)
