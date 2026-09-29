@@ -700,8 +700,9 @@ ul {
   /* <h2> ist im Browser standardmaessig bold — ohne Reset sah der Text
      trotz Text-Regular-Groesse fett aus (Ursache fuer den gemeldeten
      Unterschied zur Session-01-Zahl in Sektion 6, die bewusst Text Bold
-     ist). Jetzt echtes Text Regular. */
-  font-weight: var(--font-weight-regular);
+     ist). Danach Regular - wirkte zu duenn (Absprache 2026-09-29), jetzt
+     Medium wie der Titel auf der Event-Seite, aber weiterhin 36pt. */
+  font-weight: var(--font-weight-bold);
   margin: 0;
 }
 
@@ -789,8 +790,13 @@ ul {
 
 .session-card {
   grid-column: span 4;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Flex-Spalte statt 4er-Innenraster (alle Kinder liefen ohnehin ueber
+     die volle Breite 1/5): so koennen alle Kaesten einer Reihe gleich hoch
+     sein (align-self: stretch) und der Button sitzt immer unten - der
+     Meta-Block waechst und schiebt ihn dorthin, siehe unten. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   gap: var(--grid-gutter);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
@@ -840,6 +846,9 @@ ul {
   line-height: var(--line-height-regular-text);
   color: var(--color-muted);
   margin-block: var(--line-height-regular-text) 0;
+  /* Nimmt den Resthoehen-Ausgleich zu hoeheren Nachbarkaesten auf, damit
+     die Buttons aller Kaesten auf einer Linie unten stehen. */
+  flex-grow: 1;
 }
 
 .session-card__meta-block p {
@@ -847,7 +856,7 @@ ul {
 }
 
 .session-card__button {
-  justify-self: center;
+  align-self: center;
   margin-block-start: var(--line-height-regular-text);
 }
 
