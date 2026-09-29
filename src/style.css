@@ -1327,7 +1327,9 @@ ul {
     url("./assets/grain.png") 0 0 / 33.333vw auto repeat,
     linear-gradient(
       135deg,
-      var(--color-accent-orange) 0%,
+      /* Eventfarbe aus Pages CMS (inline am .event-hero gesetzt, siehe
+         generate-event-pages.mjs), sonst NewBuild-Orange. */
+      var(--event-farbe, var(--color-accent-orange)) 0%,
       #4a4340 45%,
       #d8d5d2 100%
     );

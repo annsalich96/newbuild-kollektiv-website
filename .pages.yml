@@ -33,6 +33,13 @@ content:
           - name: isNext
             label: Als "Next Event" auf der Startseite zeigen?
             type: boolean
+          - name: color
+            label: "Farbe (optional) — Farbcode wie #2f6f8f. Färbt den Hintergrund der Eventseite UND die Karte in den Mails. Leer lassen = NewBuild-Orange"
+            type: string
+            required: false
+            pattern:
+              regex: "^#?[0-9a-fA-F]{6}$"
+              message: "Bitte einen 6-stelligen Farbcode eintragen, z. B. #2f6f8f"
           - name: date
             label: Datum
             type: string

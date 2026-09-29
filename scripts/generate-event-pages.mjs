@@ -8,6 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { eventFarbe } from './event-farbe.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
@@ -106,6 +107,9 @@ export function generateEventPages() {
       .replaceAll('__EVENT_META_BLOCK__', eventMetaBlock)
       .replaceAll('__SPEAKER_PHOTO__', speakerPhoto)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
+      // Eventfarbe aus Pages CMS (Feld "Farbe") -> Hintergrund-Verlauf der
+      // Seite (.event-hero), dieselbe Farbe wie auf der Mail-Karte.
+      .replaceAll('__EVENT_FARBE__', eventFarbe(event))
 
     const eventDir = join(outDir, event.slug)
     mkdirSync(eventDir, { recursive: true })

@@ -17,6 +17,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
+import { eventFarbe, kartenToene, rgba } from './event-farbe.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
@@ -108,6 +109,8 @@ function karte(event) {
     { label: 'Ort:', werte: bereinigt(ortZeilen(event.location)) },
   ].filter((b) => b.werte.length)
   const s = passendeSkalierung({ titel, untertitel, meta })
+  // Eventfarbe aus Pages CMS (Feld "Farbe"), Standard = NewBuild-Orange.
+  const t = kartenToene(eventFarbe(event))
   return h(
     'div',
     { width: W, height: H, display: 'flex', padding: '15px 15px 16px', background: '#ffffff', fontFamily: 'Heros', color: '#111111' },
@@ -121,13 +124,14 @@ function karte(event) {
         alignItems: 'center',
         textAlign: 'center',
         padding: '22px 28px 22px',
-        border: '1.5px solid #3a2a24',
+        border: `1.5px solid ${t.rand}`,
+        color: t.text,
         borderRadius: 22,
-        backgroundColor: '#c4693f',
+        backgroundColor: t.basis,
         backgroundImage:
-          'radial-gradient(60% 55% at 22% 100%, rgba(236,176,146,0.85), rgba(236,176,146,0) 70%), ' +
-          'radial-gradient(55% 60% at 100% 55%, rgba(206,160,146,0.9), rgba(206,160,146,0) 70%), ' +
-          'linear-gradient(160deg, #a9451b 0%, #c4693f 35%, #d58c6a 65%, #d9a28a 100%)',
+          `radial-gradient(60% 55% at 22% 100%, ${rgba(t.glanz, 0.85)}, ${rgba(t.glanz, 0)} 70%), ` +
+          `radial-gradient(55% 60% at 100% 55%, ${rgba(t.grau, 0.9)}, ${rgba(t.grau, 0)} 70%), ` +
+          `linear-gradient(160deg, ${t.dunkel} 0%, ${t.basis} 35%, ${t.mittel} 65%, ${t.hell} 100%)`,
       },
       h('div', { fontSize: M.titel * s, fontWeight: 700, lineHeight: 1.2 }, titel),
       untertitel
@@ -146,7 +150,8 @@ function karte(event) {
           padding: '9px 0',
           borderRadius: 999,
           background: '#f8f8f8',
-          border: '1px solid #3a2a24',
+          border: `1px solid ${t.rand}`,
+          color: '#111111',
           fontSize: 16,
           letterSpacing: 0.3,
           alignItems: 'center',
