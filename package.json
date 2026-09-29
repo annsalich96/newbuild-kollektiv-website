@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/check-cms-schema.mjs && tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "event-ordner": "node scripts/event-ordner.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
