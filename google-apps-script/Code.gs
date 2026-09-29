@@ -296,6 +296,27 @@ function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
     return SpreadsheetApp.open(file).getSheets()[0]
   }
 
+  // 2b. URL-Kuerzel im CMS geaendert (neuer Slug unbekannt) und Titel auch:
+  //     bestehende Tabelle derselben Session-Nummer weiterverwenden statt
+  //     die Anmeldungen auf zwei Tabellen zu verteilen (Session 03 am
+  //     29.09.: developing-custome-tools -> ordner-zum-tool). Nur wenn genau
+  //     eine Tabelle mit "<Nummer> — " beginnt.
+  if (eventNumber) {
+    const prefix = String(eventNumber).trim() + ' — '
+    const treffer = []
+    const alle = folder.getFilesByType(MimeType.GOOGLE_SHEETS)
+    while (alle.hasNext()) {
+      const f = alle.next()
+      if (f.getName().indexOf(prefix) === 0) treffer.push(f)
+    }
+    if (treffer.length === 1) {
+      const ss = SpreadsheetApp.open(treffer[0])
+      if (propKey) props.setProperty(propKey, ss.getId())
+      if (niceName && ss.getName() !== niceName) ss.rename(niceName)
+      return ss.getSheets()[0]
+    }
+  }
+
   // 3. Neu anlegen.
   const spreadsheet = SpreadsheetApp.create(niceName)
   moveFileIntoFolder(DriveApp.getFileById(spreadsheet.getId()), folder)
@@ -1355,23 +1376,77 @@ function zusatzspaltenJetztAnlegen() {
   Logger.log('Zusatzspalten angelegt/geprueft (Anrede, Referent, Slug, Anwesend, Foto-Einwilligung): ' + namen.join(' · '))
 }
 
+// Aktuelle Eventdaten aus Pages CMS — die Website veroeffentlicht
+// src/content/events.json bei jedem Build unter /events.json (vite.config.ts).
+// Einzige Quelle fuer Datum/Zeit/Ort/Titel/Referent in den Erinnerungen:
+// die Werte in den Anmeldezeilen sind nur der Stand zum Anmeldezeitpunkt und
+// veralten, sobald im CMS etwas geaendert wird (Session 03: am 25.08. mit
+// 06.10. angelegt, am 10.09. auf 20.10. verschoben -> am 29.09. ging die
+// "1 Woche vorher"-Mail zum alten Termin raus).
+const EVENTS_JSON_URL = 'https://newbuild-kollektiv.com/events.json'
+
+function ladeCmsEvents_() {
+  const res = UrlFetchApp.fetch(EVENTS_JSON_URL + '?t=' + Date.now(), {
+    muteHttpExceptions: true,
+    headers: { 'Cache-Control': 'no-cache' },
+  })
+  if (res.getResponseCode() !== 200) {
+    throw new Error('events.json nicht ladbar (HTTP ' + res.getResponseCode() + ')')
+  }
+  const events = JSON.parse(res.getContentText()).events
+  if (!Array.isArray(events) || !events.length) throw new Error('events.json ohne Events')
+  return events
+}
+
+// Findet das CMS-Event zu einer Tabelle: zuerst ueber einen der Slugs in der
+// Spalte "Slug" (auch aeltere, falls das URL-Kuerzel im CMS geaendert wurde
+// und der neue schon in der Tabelle steht), sonst ueber die Session-Nummer
+// vorne im Tabellennamen ("Session 03 — ..."). null, wenn nichts passt.
+function findeCmsEvent_(cmsEvents, werte, iSlug, sheetName) {
+  if (iSlug >= 0) {
+    const slugs = {}
+    for (let r = 1; r < werte.length; r++) {
+      const s = String(werte[r][iSlug] || '').trim()
+      if (s) slugs[s] = true
+    }
+    const perSlug = cmsEvents.filter(function (e) { return slugs[e.slug] })
+    if (perSlug.length) return perSlug[0]
+  }
+  const nr = String(sheetName).split(' — ')[0].trim()
+  if (nr && String(sheetName).indexOf(' — ') > 0) {
+    const perNr = cmsEvents.filter(function (e) { return String(e.number || '').trim() === nr })
+    if (perNr.length === 1) return perNr[0]
+  }
+  return null
+}
+
 function sendeErinnerungen() {
   const jetzt = new Date()
   const stunde = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H'))
-  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
 
+  // Ohne aktuelle CMS-Daten lieber gar nichts verschicken als Mails mit
+  // veraltetem Termin — der naechste Lauf (15 min) versucht es erneut.
+  let cmsEvents
+  try {
+    cmsEvents = ladeCmsEvents_()
+  } catch (err) {
+    Logger.log('Erinnerung — abgebrochen, ' + err)
+    return
+  }
+
+  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
   while (files.hasNext()) {
     const file = files.next()
     try {
       const ss = SpreadsheetApp.open(file)
-      verarbeiteEventTabelle_(ss.getSheets()[0], ss.getName(), jetzt, stunde)
+      verarbeiteEventTabelle_(ss.getSheets()[0], ss.getName(), jetzt, stunde, cmsEvents)
     } catch (err) {
       Logger.log('Erinnerung — Fehler bei "' + file.getName() + '": ' + err)
     }
   }
 }
 
-function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
+function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
   const werte = sheet.getDataRange().getValues()
   if (werte.length < 2) return
 
@@ -1403,13 +1478,21 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
       return idx > 0 && String(row[iAnwesend] || '').trim()
     })
 
-  // Event-Datum/-Zeit/-Ort/-Referent/-Slug sind pro Tabelle gleich — ersten
-  // befuellten Wert der jeweiligen Spalte nehmen.
-  const eventDatum = ersterWert_(werte, iDatum)
-  const eventZeit = ersterWert_(werte, iZeit)
-  const eventOrt = ersterWert_(werte, iOrt)
-  const eventReferent = ersterWert_(werte, iReferent)
-  const eventSlug = ersterWert_(werte, iSlug)
+  // Event-Datum/-Zeit/-Ort/-Referent/-Slug/-Titel kommen aus dem aktuellen
+  // Stand in Pages CMS (siehe ladeCmsEvents_), NICHT aus den Anmeldezeilen.
+  // Ohne passendes CMS-Event wird die Tabelle uebersprungen statt mit
+  // womoeglich veralteten Zeilenwerten zu verschicken.
+  const cms = findeCmsEvent_(cmsEvents, werte, iSlug, sheetName)
+  if (!cms) {
+    Logger.log('Erinnerung — "' + sheetName + '": kein passendes Event in events.json, uebersprungen.')
+    return
+  }
+  const eventDatum = String(cms.date || '')
+  const eventZeit = String(cms.time || '')
+  const eventOrt = String(cms.location || '')
+  const eventReferent =
+    referentText_(cms.speakerName, cms.speakerRole, cms.speakerCompany) || ersterWert_(werte, iReferent)
+  const eventSlug = String(cms.slug || '')
 
   const eventStart = parseEventDatum_(eventDatum, eventZeit)
   if (!eventStart) {
@@ -1422,8 +1505,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde) {
   const eventEnde = parseEventEnde_(eventStart, eventZeit)
   const eventDatumText = datumAnzeige_(eventDatum)
 
-  const m = String(sheetName).match(/^\s*.*?\s+—\s+(.+?)\s*$/)
-  const eventTitel = m ? m[1] : String(sheetName).trim()
+  const eventTitel = String(cms.title || '').trim() || String(sheetName).trim()
 
   const tageBis = tagesDifferenz_(jetzt, eventStart)
   const stundenBis = (eventStart.getTime() - jetzt.getTime()) / 3600000
