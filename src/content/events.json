@@ -47,7 +47,8 @@
       "speakerRole": "Associate, Head of Digital Management Berlin",
       "speakerCompany": " David Chipperfield Architcts, Berlin",
       "speakerBio": "Head of Digital Management bei David Chipperfield Architects Berlin und Gründer von amenda, einer Plattform, die Architektur- und Planungsbüros ein zentrales Zuhause für ihre Daten und damit Kontext für KI bietet.",
-      "speakerImage": "/dca-berlin-Niklas-Wohlgemuth-016b20118d27be1b.webp"
+      "speakerImage": "/dca-berlin-Niklas-Wohlgemuth-016b20118d27be1b.webp",
+      "description": "In jedem Architekturbüro steckt über Jahre gewachsenes Wissen: Standards und Qualitätsansprüche, Vorlagen und Handbücher, Projekterfahrungen und die Haltung des Büros. Das Problem: Dieses Wissen liegt an vielen verschiedenen Orten – und ein großer Teil davon in den Köpfen erfahrener Kolleginnen und Kollegen. Genau dann, wenn es im Projekt gebraucht wird, beginnt die Suche.\n\nNiklas Wohlgemuth zeigt, wie er in Zusammenarbeit mit David Chipperfield Architects Berlin auf Basis von amenda ein Tool entwickelt, das dieses verstreute Wissen durchsucht, erfasst und kuratiert zusammenführt. Aus vielen einzelnen Quellen entsteht so Schritt für Schritt eine verlässliche Single Source of Truth für das gesamte Büro.\n\nIm Vortrag wird deutlich, wie sich Bürowissen so strukturieren lässt, dass es nicht nur schneller gefunden, sondern auch weitergenutzt werden kann: als gemeinsamer Wissensstand für Mitarbeitende, als Kontext für eigene KI-Anwendungen und als Grundlage für weitere digitale Prozesse und Tools im Büro."
     },
     {
       "isNext": false
