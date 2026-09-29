@@ -99,7 +99,9 @@ function metaBlock(label, werte, s) {
   )
 }
 
-function karte(event) {
+// button: 'GOOGLE MAPS' (Bestaetigung/Erinnerungen, Klick -> Maps, dazu ICS)
+// oder 'ANMELDUNG' (Einladungen/Teaser, Klick -> Anmeldeseite).
+function karte(event, button = 'GOOGLE MAPS') {
   const [titel, untertitel] = titelTeile(event.title)
   const zeit = [event.date, event.time].map((s) => String(s || '').trim()).filter(Boolean).join(' · ')
   const bereinigt = (arr) => arr.map((z) => String(z || '').trim()).filter(Boolean)
@@ -158,14 +160,17 @@ function karte(event) {
           letterSpacing: 0.3,
           alignItems: 'center',
         },
-        'GOOGLE MAPS',
+        button,
       ),
     ),
   )
 }
 
-export function mailKarteDateiname(slug) {
-  return `mail/${slug}-karte.png`
+// Zwei Varianten pro Event (Absprache 2026-09-29, wie bei Session 01):
+//   <slug>-karte.png            Button GOOGLE MAPS  -> Bestaetigung + Erinnerungen
+//   <slug>-karte-anmeldung.png  Button ANMELDUNG    -> Einladungs-/Teaser-Mails
+export function mailKarteDateiname(slug, variante = 'maps') {
+  return variante === 'anmeldung' ? `mail/${slug}-karte-anmeldung.png` : `mail/${slug}-karte.png`
 }
 
 export async function generateMailCards() {
@@ -173,9 +178,11 @@ export async function generateMailCards() {
   const dateien = []
   for (const event of events) {
     if (!event || !event.slug) continue
-    const svg = await satori(karte(event), { width: W, height: H, fonts })
-    const png = new Resvg(svg, { fitTo: { mode: 'zoom', value: SCALE } }).render().asPng()
-    dateien.push({ fileName: mailKarteDateiname(event.slug), source: png, event })
+    for (const [variante, button] of [['maps', 'GOOGLE MAPS'], ['anmeldung', 'ANMELDUNG']]) {
+      const svg = await satori(karte(event, button), { width: W, height: H, fonts })
+      const png = new Resvg(svg, { fitTo: { mode: 'zoom', value: SCALE } }).render().asPng()
+      dateien.push({ fileName: mailKarteDateiname(event.slug, variante), source: png, event, variante })
+    }
   }
 
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
@@ -189,7 +196,7 @@ h1{font-weight:500;margin:0 0 6px}p{margin:0 0 28px;color:#555}.k{max-width:600p
 <body><main><h1>Mail-Karten</h1><p>Automatisch aus Pages CMS erzeugt — ändert sich mit jeder Änderung dort.</p>
 ${dateien
   .map(
-    (d) => `<div class="k"><h2>${esc(d.event.number ? d.event.number + ' — ' : '')}${esc(d.event.title)}</h2>
+    (d) => `<div class="k"><h2>${esc(d.event.number ? d.event.number + ' — ' : '')}${esc(d.event.title)} · ${d.variante === 'anmeldung' ? 'Einladung (Button Anmeldung)' : 'Bestätigung/Erinnerung (Button Google Maps)'}</h2>
 <img src="/${d.fileName}" alt="" width="600" height="450"><a href="/${d.fileName}" download>PNG herunterladen</a></div>`,
   )
   .join('\n')}
