@@ -545,8 +545,9 @@ ul {
   font-weight: var(--font-weight-bold);
   margin: 0;
   /* Kompensiert das Leading von line-height-bold (71px bei 48px Schrift =
-     11.5px halbe Zeilendurchschuss oben), analog zu .section__eyebrow. */
-  margin-block-start: calc(-11.5 * var(--px));
+     11.5px halbe Zeilendurchschuss oben) plus ~4px Versalhoehen-Differenz
+     zum 24px-Label - per Messung auf Versal-Oberkante von "MISSION". */
+  margin-block-start: calc(-15.5 * var(--px));
 }
 
 @media (max-width: 768px) {
@@ -1349,6 +1350,9 @@ ul {
   line-height: var(--line-height-bold);
   font-weight: var(--font-weight-bold);
   margin: 0;
+  /* Kompensiert das Leading von line-height-bold, damit der Titel oben
+     buendig mit dem Eyebrow-Label sitzt - wie .section__statement. */
+  margin-block-start: calc(-15.5 * var(--px));
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
@@ -1379,6 +1383,10 @@ ul {
   .event-detail__title,
   .event-detail__description {
     grid-column: 1 / -1;
+  }
+
+  .event-detail__title {
+    margin-block-start: 0;
   }
 }
 
