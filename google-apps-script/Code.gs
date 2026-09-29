@@ -1438,6 +1438,12 @@ function sendeErinnerungen() {
   const jetzt = new Date()
   const stunde = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H'))
 
+  try {
+    fotosInHistoryEintragen()
+  } catch (err) {
+    Logger.log('Fotos/LinkedIn — Fehler: ' + err)
+  }
+
   // Ohne aktuelle CMS-Daten lieber gar nichts verschicken als Mails mit
   // veraltetem Termin — der naechste Lauf (15 min) versucht es erneut.
   let cmsEvents
@@ -1721,6 +1727,51 @@ function schreibeZusatzfelder_(sheet, data) {
   if (data.eventSlug) {
     sheet.getRange(row, ensureColumn_(sheet, 'Slug')).setValue(String(data.eventSlug))
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FOTOS + LINKEDIN in "History Anmeldungen" (nur intern, zum Wiedererkennen)
+//  Quelle ist Anns private Tabelle "NBK Foto-Quelle (intern)" in ihrem Drive
+//  (Spalten: E-Mail · Foto-URL · LinkedIn). Hier steht bewusst nur die
+//  Datei-ID, KEINE Personendaten — dieses Repo ist oeffentlich.
+//  Laeuft mit jedem sendeErinnerungen-Lauf (alle 15 min) und fuellt nur leere
+//  Zellen; neue Recherche-Ergebnisse in der Quelle erscheinen so automatisch.
+// ═══════════════════════════════════════════════════════════════════════════
+const FOTO_QUELLE_ID = '1dYdZ85E8au41le0-XrSgb6W7Ey9tqYPOjMKwZ2YQ2EA'
+
+function fotosInHistoryEintragen() {
+  const quelle = SpreadsheetApp.openById(FOTO_QUELLE_ID).getSheets()[0].getDataRange().getValues()
+  const kq = quelle[0]
+  const qE = kq.indexOf('E-Mail'), qF = kq.indexOf('Foto-URL'), qL = kq.indexOf('LinkedIn')
+  const proEmail = {}
+  for (let r = 1; r < quelle.length; r++) {
+    const e = String(quelle[r][qE] || '').trim().toLowerCase()
+    if (e) proEmail[e] = { foto: String(quelle[r][qF] || '').trim(), linkedin: String(quelle[r][qL] || '').trim() }
+  }
+
+  const sheet = getOrCreateHistorySpreadsheet().getSheets()[0]
+  const spFoto = ensureColumn_(sheet, 'Foto')
+  const spLinkedin = ensureColumn_(sheet, 'LinkedIn')
+  sheet.setColumnWidth(spFoto, 90)
+  const werte = sheet.getDataRange().getValues()
+  const formeln = sheet.getDataRange().getFormulas()
+  const iE = werte[0].indexOf('E-Mail')
+  let n = 0
+  for (let r = 1; r < werte.length; r++) {
+    const p = proEmail[String(werte[r][iE] || '').trim().toLowerCase()]
+    if (!p) continue
+    if (p.foto && !formeln[r][spFoto - 1] && !werte[r][spFoto - 1]) {
+      sheet.getRange(r + 1, spFoto).setFormula('=IMAGE("' + p.foto.replace(/"/g, '%22') + '")')
+      sheet.setRowHeight(r + 1, 90)
+      n++
+    }
+    if (p.linkedin && !werte[r][spLinkedin - 1]) {
+      sheet.getRange(r + 1, spLinkedin).setValue(p.linkedin)
+      n++
+    }
+  }
+  if (n) SpreadsheetApp.flush()
+  Logger.log('Fotos/LinkedIn in History eingetragen: ' + n + ' Zellen.')
 }
 
 // ── Mailtexte der einzelnen Stufen ────────────────────────────────────────
