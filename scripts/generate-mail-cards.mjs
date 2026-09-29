@@ -106,9 +106,9 @@ function karte(event, button = 'GOOGLE MAPS') {
   const zeit = [event.date, event.time].map((s) => String(s || '').trim()).filter(Boolean).join(' · ')
   const bereinigt = (arr) => arr.map((z) => String(z || '').trim()).filter(Boolean)
   const meta = [
-    // Name, darunter Position und Firma (CMS "Referent:in — Position/Firma")
-    // je als eigene Zeile, Absprache 2026-09-29.
-    { label: 'Referent:in:', werte: bereinigt([event.speakerName, event.speakerRole, event.speakerCompany]) },
+    // Name, darunter das Buero (CMS "Referent:in — Firma"). Position bewusst
+    // nicht auf der Karte (Absprache 2026-09-29: "es reicht das Buero").
+    { label: 'Referent:in:', werte: bereinigt([event.speakerName, event.speakerCompany]) },
     { label: 'Zeit:', werte: bereinigt([zeit]) },
     { label: 'Ort:', werte: bereinigt(ortZeilen(event.location)) },
   ].filter((b) => b.werte.length)
