@@ -790,13 +790,15 @@ ul {
 
 .session-card {
   grid-column: span 4;
-  /* Flex-Spalte statt 4er-Innenraster (alle Kinder liefen ohnehin ueber
-     die volle Breite 1/5): so koennen alle Kaesten einer Reihe gleich hoch
-     sein (align-self: stretch) und der Button sitzt immer unten - der
-     Meta-Block waechst und schiebt ihn dorthin, siehe unten. */
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
+  /* Subgrid ueber 4 Zeilen (Nummer / Titel / Meta / Button): die Zeilen
+     gehoeren dem aeusseren .grid, daher sind sie in allen Kaesten einer
+     Reihe gleich hoch - Referent/Datum und Button beginnen ueberall auf
+     derselben Hoehe, auch wenn ein Titel kuerzer ist. Nebeneffekt: alle
+     Kaesten einer Reihe sind gleich hoch. */
+  grid-row: span 4;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: subgrid;
   gap: var(--grid-gutter);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
@@ -812,9 +814,17 @@ ul {
 .session-card__text,
 .session-card__meta-block,
 .session-card__button {
-  grid-column: 1 / 5;
+  grid-column: 1 / -1;
   padding-inline: var(--space-4);
 }
+
+/* Feste Zeilen statt Auto-Platzierung: faellt die (optionale) Nummer weg,
+   bleibt Zeile 1 leer, statt dass Titel/Meta eine Zeile hochrutschen und
+   aus der Flucht mit den Nachbarkaesten fallen. */
+.session-card__number { grid-row: 1; }
+.session-card__text { grid-row: 2; }
+.session-card__meta-block { grid-row: 3; }
+.session-card__button { grid-row: 4; }
 
 .session-card__number {
   /* Text Regular statt Bold (Absprache) — jetzt gleiche Schriftart/-groesse
@@ -846,9 +856,6 @@ ul {
   line-height: var(--line-height-regular-text);
   color: var(--color-muted);
   margin-block: var(--line-height-regular-text) 0;
-  /* Nimmt den Resthoehen-Ausgleich zu hoeheren Nachbarkaesten auf, damit
-     die Buttons aller Kaesten auf einer Linie unten stehen. */
-  flex-grow: 1;
 }
 
 .session-card__meta-block p {
@@ -856,7 +863,8 @@ ul {
 }
 
 .session-card__button {
-  align-self: center;
+  justify-self: center;
+  align-self: end;
   margin-block-start: var(--line-height-regular-text);
 }
 
