@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { generateEventPages } from './scripts/generate-event-pages.mjs'
+import { generateMailCards } from './scripts/generate-mail-cards.mjs'
 
 // Erzeugt events/<slug>/index.html aus src/content/events.json - muss vor
 // dem rollupOptions.input unten passieren, da Rollup die Dateien physisch
@@ -17,7 +18,12 @@ export default defineConfig({
       // Datumsaenderung in Pages CMS Erinnerungen zum alten Termin raus
       // (passiert am 2026-09-29 mit Session 03: 06.10. statt 20.10.).
       name: 'publish-events-json',
-      generateBundle() {
+      async generateBundle() {
+        // Eventkarten fuer die Mails (+ Uebersicht unter /mail/), siehe
+        // scripts/generate-mail-cards.mjs.
+        for (const datei of await generateMailCards()) {
+          this.emitFile({ type: 'asset', fileName: datei.fileName, source: datei.source })
+        }
         this.emitFile({
           type: 'asset',
           fileName: 'events.json',

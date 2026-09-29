@@ -593,19 +593,26 @@ const GRAFIKEN = {
       href: 'https://www.google.com/maps/search/?api=1&query=Projo%20Berlin%2C%20Chausseestra%C3%9Fe%20123%2C%2010115%20Berlin',
     },
   },
-  // Nachgebaut im Codex-Stil (Vorlage: scripts/mail-grafik.template.html).
-  'session-03-ordner-zum-tool': {
-    erinnerung: {
-      url: 'https://newbuild-kollektiv.com/mail/session-03-ordner-zum-tool-erinnerung-maps-email-large-600.png',
-      href: 'https://www.google.com/maps/search/?api=1&query=KALDEWEI%20Brand%20Space%20Berlin%2C%20Stadtbahnbogen%20590%2C%2010623%20Berlin',
-    },
-  },
+}
+
+// Alle anderen Events: die Website erzeugt beim Build aus Pages CMS fuer JEDES
+// Event automatisch eine Karte im selben Stil unter /mail/<slug>-karte.png
+// (scripts/generate-mail-cards.mjs). Ein Eintrag in GRAFIKEN oben ist nur
+// noetig, wenn ein Event eine eigens gestaltete Grafik bekommen soll.
+function automatischeKarte_(slug, ort) {
+  if (!slug) return null
+  return {
+    url: 'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(String(slug)) + '-karte.png',
+    href: ort ? mapsLink_(ort) : eventSeiteUrl_(slug),
+  }
 }
 
 // Klickbarer, zentrierter Grafikblock (ganzes Bild -> href) fuer eine
-// Mailstufe. Leerer String, wenn fuer slug/variant keine Grafik hinterlegt ist.
-function grafikBlock_(slug, variant) {
-  const g = GRAFIKEN[String(slug || '')] && GRAFIKEN[String(slug || '')][variant]
+// Mailstufe. Leerer String nur, wenn kein Slug bekannt ist.
+function grafikBlock_(slug, variant, ort) {
+  const g =
+    (GRAFIKEN[String(slug || '')] && GRAFIKEN[String(slug || '')][variant]) ||
+    automatischeKarte_(slug, ort)
   if (!g || !g.url) return ''
   const img =
     '<img src="' + g.url + '" width="520" alt="Eventgrafik" ' +
@@ -621,7 +628,7 @@ function grafikBlock_(slug, variant) {
 // sonst der graue Text-Kasten. Nach der Grafik eine kleine Zeile mit
 // Datum/Ort/Maps als Fallback, falls Bilder im Client blockiert sind.
 function eckdatenBlock_(e) {
-  const g = grafikBlock_(e.slug, 'erinnerung')
+  const g = grafikBlock_(e.slug, 'erinnerung', e.ort)
   if (!g) return eventBox_(e.titel, e.referent, e.datum, e.zeit, e.ort)
   return (
     g +
