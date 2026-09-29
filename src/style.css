@@ -929,7 +929,7 @@ ul {
      einen Wimpernschlag an derselben Stelle kollabierten, bevor die
      Animation richtig einsetzte. Fotogalerie 2 (marquee-ltr, from:0%)
      braucht das nicht, siehe Override weiter unten. */
-  transform: translateX(-33.333%);
+  transform: translateX(0%);
   animation: marquee-rtl 24s linear infinite;
 }
 
@@ -952,13 +952,15 @@ ul {
    vermutet). Sponsors-marquee.ts erzeugt deshalb drei Kopien im Markup,
    Animation laeuft ueber ein Drittel statt die Haelfte — damit ist immer
    mind. Viewport+ein-Set an Inhalt vorhanden, egal an welcher Stelle des
-   Loops. */
+   Loops.
+   Laufrichtung (Absprache 2026-09-29): Inhalt wandert von rechts nach
+   links (0 -> -33,333%), vorher umgekehrt. Ruhezustand oben = "from". */
 @keyframes marquee-rtl {
   from {
-    transform: translateX(-33.333%);
+    transform: translateX(0%);
   }
   to {
-    transform: translateX(0%);
+    transform: translateX(-33.333%);
   }
 }
 
@@ -1315,12 +1317,21 @@ ul {
 
 .event-hero {
   position: relative;
-  background: linear-gradient(
-    135deg,
-    var(--color-accent-orange) 0%,
-    #4a4340 45%,
-    #d8d5d2 100%
-  );
+  /* Oberste Ebene: Koernung, 1:1 aus public/background.jpg (Startseite)
+     herausgefiltert (nur das Rauschen, ohne Farbverlauf) und per Overlay
+     auf den Verlauf gelegt - sonst wirkte der Event-Hintergrund glatt/
+     digital neben der koernigen Startseite. Kachelbreite 33,333vw = 480 von
+     1440px Bildbreite, damit das Korn exakt so gross ist wie auf der
+     Startseite (dort wird das Bild auf 100vw gedehnt). */
+  background:
+    url("./assets/grain.png") 0 0 / 33.333vw auto repeat,
+    linear-gradient(
+      135deg,
+      var(--color-accent-orange) 0%,
+      #4a4340 45%,
+      #d8d5d2 100%
+    );
+  background-blend-mode: overlay, normal;
   /* Kein eigenes Bottom-Padding mehr: Sponsoren-Leiste ist bereits exakt
      1 Balken hoch, der Abstand zum Formular kommt allein aus
      .event-form-section (0,5 Balken oben) - siehe Element-Tabelle. Mit
