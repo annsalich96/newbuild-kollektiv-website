@@ -593,6 +593,13 @@ const GRAFIKEN = {
       href: 'https://www.google.com/maps/search/?api=1&query=Projo%20Berlin%2C%20Chausseestra%C3%9Fe%20123%2C%2010115%20Berlin',
     },
   },
+  // Nachgebaut im Codex-Stil (Vorlage: scripts/mail-grafik.template.html).
+  'session-03-ordner-zum-tool': {
+    erinnerung: {
+      url: 'https://newbuild-kollektiv.com/mail/session-03-ordner-zum-tool-erinnerung-maps-email-large-600.png',
+      href: 'https://www.google.com/maps/search/?api=1&query=KALDEWEI%20Brand%20Space%20Berlin%2C%20Stadtbahnbogen%20590%2C%2010623%20Berlin',
+    },
+  },
 }
 
 // Klickbarer, zentrierter Grafikblock (ganzes Bild -> href) fuer eine

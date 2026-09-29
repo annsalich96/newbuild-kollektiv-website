@@ -1,0 +1,52 @@
+<!--
+  Vorlage fuer die Event-Grafik in den Erinnerungs-/Bestaetigungsmails
+  (Codex-Stil, 600x450). Texte unten anpassen, im Browser oeffnen und nur
+  das Element #grafik als PNG speichern -> public/mail/<slug>-erinnerung-maps-email-large-600.png,
+  danach Eintrag in GRAFIKEN (google-apps-script/Code.gs) ergaenzen.
+-->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Mailgrafik</title>
+<style>
+  html, body { margin: 0; background: #fff; }
+  #grafik {
+    width: 600px; height: 450px; box-sizing: border-box; padding: 15px 15px 16px;
+    background: #fff; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111;
+  }
+  .card {
+    height: 100%; box-sizing: border-box; border: 1.5px solid #3a2a24; border-radius: 22px;
+    background:
+      radial-gradient(ellipse 60% 55% at 22% 100%, rgba(236,176,146,.85), rgba(236,176,146,0) 70%),
+      radial-gradient(ellipse 55% 60% at 100% 55%, rgba(206,160,146,.9), rgba(206,160,146,0) 70%),
+      linear-gradient(160deg, #a9451b 0%, #c4693f 35%, #d58c6a 65%, #d9a28a 100%);
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 22px 28px 0;
+  }
+  h1 { margin: 0; font-size: 29px; font-weight: 700; line-height: 1.2; }
+  .sub { margin: 12px 0 0; font-size: 21px; line-height: 1.35; max-width: 470px; }
+  .meta { margin-top: 30px; display: flex; flex-direction: column; gap: 13px; }
+  .meta b { display: block; font-size: 16px; font-weight: 700; }
+  .meta span { display: block; font-size: 21px; line-height: 1.3; }
+  .btn {
+    margin-top: auto; margin-bottom: 22px; width: 228px; padding: 9px 0; border-radius: 999px;
+    background: #f8f8f8; border: 1px solid #3a2a24; font-size: 16px; letter-spacing: .02em;
+  }
+</style>
+</head>
+<body>
+  <div id="grafik">
+    <div class="card">
+      <h1>Vom Ordner zum Tool</h1>
+      <p class="sub">Wie Bürowissen digital nutzbar wird.</p>
+      <div class="meta">
+        <div><b>Referent:in:</b><span>Niklas Wohlgemuth</span></div>
+        <div><b>Zeit:</b><span>Di., 20.10.2026 · 18:30–22:00</span></div>
+        <div><b>Ort:</b><span>KALDEWEI Brand Space Berlin<br>Stadtbahnbogen 590, 10623 Berlin</span></div>
+      </div>
+      <div class="btn">GOOGLE MAPS</div>
+    </div>
+  </div>
+</body>
+</html>
