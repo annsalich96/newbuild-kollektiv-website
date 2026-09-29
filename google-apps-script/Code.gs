@@ -219,7 +219,7 @@ function doGet(e) {
 }
 
 function validateRegistration(data) {
-  const required = ['eventTitle', 'firstName', 'lastName', 'email', 'anrede']
+  const required = ['eventTitle', 'firstName', 'lastName', 'email', 'anrede', 'company']
   const missing = required.filter((key) => !data[key])
   if (missing.length > 0) {
     throw new Error('Fehlende Felder: ' + missing.join(', '))
