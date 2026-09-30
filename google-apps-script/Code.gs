@@ -185,12 +185,36 @@ function doPost(e) {
       ''
 
     const sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
-    appendRegistration(sheet, data)
-    schreibeZusatzfelder_(sheet, data)
-    if (data.checkin) markiereAnwesend_(sheet, data)
-    upsertHistoryEntry(data)
-    sendConfirmationEmail(data)
-    sendAdminNotificationEmail(data)
+    const row = appendRegistration(sheet, data)
+    schreibeZusatzfelder_(sheet, data, row)
+    if (data.checkin) markiereAnwesend_(sheet, data, row)
+
+    // Ab hier ist die Anmeldung gespeichert. Alles Weitere darf sie nicht mehr
+    // als "fehlgeschlagen" melden — sonst probieren die Leute es nochmal und
+    // stehen doppelt in der Liste (30.09.2026: Mail-Tageskontingent nach dem
+    // Einladungsversand erschoepft, "Dienst an einem Tag zu haeufig aufgerufen:
+    // email" -> Website zeigte Fehler, Anmeldungen kamen aber an).
+    try {
+      upsertHistoryEntry(data)
+    } catch (err) {
+      Logger.log('Anmeldung — History-Eintrag fehlgeschlagen: ' + err)
+    }
+    const spBest = ensureColumn_(sheet, 'Bestätigung')
+    try {
+      sendConfirmationEmail(data)
+      sheet
+        .getRange(row, spBest)
+        .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+    } catch (err) {
+      // Wird von sendeErinnerungen nachgeholt, sobald wieder Kontingent da ist.
+      sheet.getRange(row, spBest).setValue('offen')
+      Logger.log('Anmeldung — Bestaetigung spaeter nachholen (' + data.email + '): ' + err)
+    }
+    try {
+      sendAdminNotificationEmail(data)
+    } catch (err) {
+      Logger.log('Anmeldung — Admin-Benachrichtigung fehlgeschlagen: ' + err)
+    }
 
     return jsonResponse({ ok: true })
   } catch (error) {
@@ -442,9 +466,13 @@ function backfillHistoryAnrede() {
   Logger.log('Anrede nachgetragen bei ' + aktualisiert + ' Zeilen in "History Anmeldungen".')
 }
 
+// Traegt die Anmeldung ein und gibt die Zeilennummer zurueck. Ist dieselbe
+// E-Mail fuer dieses Event schon angemeldet (nicht abgemeldet), wird deren
+// Zeile mit den neuen Angaben aktualisiert statt eine Dublette anzuhaengen —
+// die Erinnerungs-Statusspalten dieser Zeile bleiben erhalten.
 function appendRegistration(sheet, data) {
   const now = new Date()
-  sheet.appendRow([
+  const neu = [
     data.firstName,
     data.lastName,
     data.email,
@@ -458,27 +486,49 @@ function appendRegistration(sheet, data) {
     data.eventDate || '',
     data.eventTime || '',
     data.eventLocation || '',
-    'Nein',
-  ])
+  ]
+  const werte = sheet.getDataRange().getValues()
+  const iEmail = werte[0].indexOf('E-Mail')
+  const iStatus = werte[0].indexOf('Status')
+  const email = String(data.email || '').trim().toLowerCase()
+  if (iEmail >= 0 && email) {
+    for (let r = 1; r < werte.length; r++) {
+      if (String(werte[r][iEmail] || '').trim().toLowerCase() !== email) continue
+      if (iStatus >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(werte[r][iStatus] || ''))) continue
+      sheet.getRange(r + 1, 1, 1, neu.length).setValues([neu])
+      return r + 1
+    }
+  }
+  sheet.appendRow(neu.concat(['Nein']))
+  return sheet.getLastRow()
 }
 
 function sendConfirmationEmail(data) {
-  const subject = 'Anmeldebestätigung: ' + kurzTitel_(data.eventTitle)
-  const html = wrapMail_(
-    '<p>' + escapeHtml_(anrede_(data.anrede, data.firstName)) + ',</p>' +
-      '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
-      eckdatenBlock_({
-        slug: data.eventSlug,
-        titel: data.eventTitle,
-        referent: data.eventSpeaker,
-        datum: data.eventDate,
-        zeit: data.eventTime,
-        ort: data.eventLocation,
-      }) +
-      '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
-      '<p>Bis bald,<br>NewBuild Kollektiv</p>',
-  )
-  sendeTeilnehmerMail_(data.email, subject, html)
+  const m = bestaetigungMail_({
+    anrede: anrede_(data.anrede, data.firstName),
+    slug: data.eventSlug,
+    titel: data.eventTitle,
+    referent: data.eventSpeaker,
+    datum: data.eventDate,
+    zeit: data.eventTime,
+    ort: data.eventLocation,
+  })
+  sendeTeilnehmerMail_(data.email, m.subject, m.htmlBody)
+}
+
+// Anmeldebestaetigung — direkt bei der Anmeldung und beim Nachholen durch
+// sendeErinnerungen (Spalte "Bestätigung" = "offen").
+function bestaetigungMail_(e) {
+  return {
+    subject: 'Anmeldebestätigung: ' + kurzTitel_(e.titel),
+    htmlBody: wrapMail_(
+      '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+        '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
+        eckdatenBlock_(e) +
+        '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
+        '<p>Bis bald,<br>NewBuild Kollektiv</p>',
+    ),
+  }
 }
 
 // Alle Anmeldungen fuer dasselbe Event landen in einem einzigen Mail-Thread
@@ -1390,6 +1440,40 @@ function zusatzspaltenJetztAnlegen() {
   Logger.log('Zusatzspalten angelegt/geprueft (Anrede, Referent, Slug, Anwesend, Foto-Einwilligung): ' + namen.join(' · '))
 }
 
+// EINMALIG im Editor ausfuehren (30.09.2026): markiert alle Anmeldungen vom
+// BESTAETIGUNG_NACHHOLEN_TAG ohne Eintrag in "Bestätigung" als "offen" — je
+// E-Mail nur eine Zeile, weitere Zeilen derselben Person als "Dublette".
+// sendeErinnerungen verschickt die Bestaetigungen dann automatisch, sobald
+// das Mail-Kontingent wieder reicht.
+const BESTAETIGUNG_NACHHOLEN_TAG = '30.09.2026'
+
+function bestaetigungenNachholenMarkieren() {
+  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  let n = 0
+  while (files.hasNext()) {
+    const sheet = SpreadsheetApp.open(files.next()).getSheets()[0]
+    const spBest = ensureColumn_(sheet, 'Bestätigung')
+    const werte = sheet.getDataRange().getValues()
+    const kopf = werte[0]
+    const iEmail = kopf.indexOf('E-Mail')
+    const iDatum = kopf.indexOf('Anmeldedatum')
+    if (iEmail < 0 || iDatum < 0) continue
+    const gesehen = {}
+    for (let r = 1; r < werte.length; r++) {
+      const email = String(werte[r][iEmail] || '').trim().toLowerCase()
+      if (!email) continue
+      const tag = istDate_(werte[r][iDatum])
+        ? Utilities.formatDate(werte[r][iDatum], 'Europe/Berlin', 'dd.MM.yyyy')
+        : String(werte[r][iDatum] || '').trim()
+      if (tag !== BESTAETIGUNG_NACHHOLEN_TAG || String(werte[r][spBest - 1] || '').trim()) continue
+      sheet.getRange(r + 1, spBest).setValue(gesehen[email] ? 'Dublette' : 'offen')
+      if (!gesehen[email]) n++
+      gesehen[email] = true
+    }
+  }
+  Logger.log(n + ' Bestaetigungen zum Nachholen markiert (Versand ueber sendeErinnerungen).')
+}
+
 // Aktuelle Eventdaten aus Pages CMS — die Website veroeffentlicht
 // src/content/events.json bei jedem Build unter /events.json (vite.config.ts).
 // Einzige Quelle fuer Datum/Zeit/Ort/Titel/Referent in den Erinnerungen:
@@ -1535,6 +1619,66 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
     ', stunde=' + stunde,
   )
 
+  const sid = sheet.getParent().getId()
+  const iBest = kopf.indexOf('Bestätigung')
+  const eventDaten = function (zeile, email) {
+    return {
+      anrede: anrede_(
+        iAnrede >= 0 ? zeile[iAnrede] : '',
+        iVorname >= 0 ? zeile[iVorname] : '',
+      ),
+      slug: eventSlug,
+      sid: sid,
+      email: email,
+      titel: eventTitel,
+      referent: eventReferent,
+      datum: eventDatumText,
+      zeit: eventZeit,
+      ort: eventOrt,
+      start: eventStart,
+      ende: eventEnde,
+      checkinGenutzt: checkinGenutzt,
+      anwesend: iAnwesend >= 0 && !!String(zeile[iAnwesend] || '').trim(),
+    }
+  }
+
+  // Anmeldebestaetigungen nachholen, die bei der Anmeldung nicht rausgingen
+  // (Spalte "Bestätigung" = "offen", z. B. Mail-Tageskontingent erschoepft).
+  if (iBest >= 0 && stundenBis > 0) {
+    const bestaetigt = {}
+    for (let r = 1; r < werte.length; r++) {
+      const v = String(werte[r][iBest] || '').trim()
+      if (v && v !== 'offen') bestaetigt[String(werte[r][iEmail] || '').trim().toLowerCase()] = true
+    }
+    for (let r = 1; r < werte.length; r++) {
+      if (String(werte[r][iBest] || '').trim() !== 'offen') continue
+      const email = String(werte[r][iEmail] || '').trim()
+      const key = email.toLowerCase()
+      if (!email) continue
+      if (bestaetigt[key]) {
+        sheet.getRange(r + 1, iBest + 1).setValue('Dublette')
+        continue
+      }
+      if (MailApp.getRemainingDailyQuota() < 2) {
+        Logger.log('Bestaetigung — Tageskontingent erschoepft, Rest folgt beim naechsten Lauf.')
+        return
+      }
+      try {
+        const m = bestaetigungMail_(eventDaten(werte[r], email))
+        sendeTeilnehmerMail_(email, m.subject, m.htmlBody)
+        sheet
+          .getRange(r + 1, iBest + 1)
+          .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+        bestaetigt[key] = true
+        SpreadsheetApp.flush()
+        Utilities.sleep(300)
+        Logger.log('Bestaetigung — an ' + email + ' nachgeholt.')
+      } catch (err) {
+        Logger.log('Bestaetigung — Nachholen an ' + email + ' fehlgeschlagen: ' + err)
+      }
+    }
+  }
+
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     const faellig =
       stufe.modus === 'tage'
@@ -1545,12 +1689,23 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
 
     const spalte = ensureColumn_(sheet, stufe.spalte)
 
+    // Pro E-Mail nur eine Mail je Stufe, auch wenn jemand mehrfach in der
+    // Tabelle steht (Doppelanmeldungen vom 30.09.2026).
+    const erledigt = {}
+    for (let r = 1; r < werte.length; r++) {
+      if (werte[r][spalte - 1]) erledigt[String(werte[r][iEmail] || '').trim().toLowerCase()] = true
+    }
+
     for (let r = 1; r < werte.length; r++) {
       const zeile = werte[r]
       const email = String(zeile[iEmail] || '').trim()
       if (!email) continue
       if (iStatus >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(zeile[iStatus] || ''))) continue
       if (zeile[spalte - 1]) continue // in dieser Stufe schon verschickt
+      if (erledigt[email.toLowerCase()]) {
+        sheet.getRange(r + 1, spalte).setValue('Dublette')
+        continue
+      }
       if (MailApp.getRemainingDailyQuota() < 2) {
         Logger.log('Erinnerung — Tageskontingent erschoepft, Rest folgt beim naechsten Lauf.')
         return
@@ -1558,24 +1713,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
 
       let inhalt
       try {
-        inhalt = stufe.bauen({
-          anrede: anrede_(
-            iAnrede >= 0 ? zeile[iAnrede] : '',
-            iVorname >= 0 ? zeile[iVorname] : '',
-          ),
-          slug: eventSlug,
-          sid: sheet.getParent().getId(),
-          email: email,
-          titel: eventTitel,
-          referent: eventReferent,
-          datum: eventDatumText,
-          zeit: eventZeit,
-          ort: eventOrt,
-          start: eventStart,
-          ende: eventEnde,
-          checkinGenutzt: checkinGenutzt,
-          anwesend: iAnwesend >= 0 && !!String(zeile[iAnwesend] || '').trim(),
-        })
+        inhalt = stufe.bauen(eventDaten(zeile, email))
       } catch (err) {
         Logger.log('Erinnerung — Mailaufbau "' + stufe.spalte + '" fehlgeschlagen: ' + err)
         sheet.getRange(r + 1, spalte).setValue('FEHLER (Aufbau): ' + err)
@@ -1587,6 +1725,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
         sheet
           .getRange(r + 1, spalte)
           .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+        erledigt[email.toLowerCase()] = true
         SpreadsheetApp.flush()
         Utilities.sleep(300)
         Logger.log('Erinnerung — "' + stufe.spalte + '" an ' + email + ' verschickt.')
@@ -1708,8 +1847,7 @@ function anrede_(roh, vorname) {
 // die gerade angehaengte Zeile zusaetzlich als anwesend markieren + Foto-Angabe
 // aus dem Check-in uebernehmen. So ist der Walk-in in einem Rutsch angemeldet
 // UND eingecheckt.
-function markiereAnwesend_(sheet, data) {
-  const row = sheet.getLastRow()
+function markiereAnwesend_(sheet, data, row) {
   sheet
     .getRange(row, ensureColumn_(sheet, 'Anwesend'))
     .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
@@ -1718,8 +1856,7 @@ function markiereAnwesend_(sheet, data) {
     .setValue(data.foto ? 'Ja' : 'Nein')
 }
 
-function schreibeZusatzfelder_(sheet, data) {
-  const row = sheet.getLastRow()
+function schreibeZusatzfelder_(sheet, data, row) {
   sheet.getRange(row, ensureColumn_(sheet, 'Anrede')).setValue(anredeCode_(data.anrede))
   if (data.eventSpeaker) {
     sheet.getRange(row, ensureColumn_(sheet, 'Referent')).setValue(String(data.eventSpeaker))
