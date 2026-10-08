@@ -661,10 +661,34 @@ const GRAFIKEN = {
 // noetig, wenn ein Event eine eigens gestaltete Grafik bekommen soll.
 function automatischeKarte_(slug, ort) {
   if (!slug) return null
+  const url = 'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(String(slug)) + '-karte.png'
+  if (!istBild_(url)) return null
   return {
-    url: 'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(String(slug)) + '-karte.png',
+    url: url,
     href: ort ? mapsLink_(ort) : eventSeiteUrl_(slug),
   }
+}
+
+// true, wenn unter der URL wirklich ein Bild liegt. Fehlt die Karte (Event
+// neu im CMS, Build noch nicht durch), antwortet Cloudflare mit 200 und einer
+// HTML-Seite -> in der Mail erschiene ein kaputtes Bild. Ergebnis 6 h gecacht.
+function istBild_(url) {
+  const cache = CacheService.getScriptCache()
+  const key = 'bild_' + Utilities.base64EncodeWebSafe(url).slice(0, 200)
+  const c = cache.get(key)
+  if (c) return c === '1'
+  let ok = false
+  try {
+    const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true })
+    const typ = String(res.getHeaders()['Content-Type'] || res.getHeaders()['content-type'] || '')
+    ok = res.getResponseCode() === 200 && /^image\//i.test(typ)
+  } catch (err) {
+    Logger.log('Kartenpruefung fehlgeschlagen (' + url + '): ' + err)
+    return true // im Zweifel Bild zeigen wie bisher, nicht cachen
+  }
+  // Fehlende Karte nur kurz merken, damit sie nach dem naechsten Build erscheint.
+  cache.put(key, ok ? '1' : '0', ok ? 21600 : 600)
+  return ok
 }
 
 // Klickbarer, zentrierter Grafikblock (ganzes Bild -> href) fuer eine
