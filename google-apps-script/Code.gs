@@ -512,22 +512,32 @@ function sendConfirmationEmail(data) {
     datum: data.eventDate,
     zeit: data.eventTime,
     ort: data.eventLocation,
+    start: data.eventDate ? parseEventDatum_(data.eventDate, data.eventTime) : null,
   })
-  sendeTeilnehmerMail_(data.email, m.subject, m.htmlBody)
+  sendeTeilnehmerMail_(data.email, m.subject, m.htmlBody, m.attachments)
 }
 
 // Anmeldebestaetigung — direkt bei der Anmeldung und beim Nachholen durch
-// sendeErinnerungen (Spalte "Bestätigung" = "offen").
+// sendeErinnerungen (Spalte "Bestätigung" = "offen"). Haengt die Kalenderdatei
+// (.ics) an, sobald der Termin lesbar ist (e.start).
 function bestaetigungMail_(e) {
+  const ics = e.start
+    ? icsDatei_(e.titel, e.start, e.ende || parseEventEnde_(e.start, e.zeit), e.ort, e.slug)
+    : null
   return {
     subject: 'Anmeldebestätigung: ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' + escapeHtml_(e.anrede) + ',</p>' +
         '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
         eckdatenBlock_(e) +
+        (ics
+          ? '<p>Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht ' +
+            'der Termin direkt in deinem Kalender.</p>'
+          : '') +
         '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
         '<p>Bis bald,<br>NewBuild Kollektiv</p>',
     ),
+    attachments: ics ? [ics] : undefined,
   }
 }
 
@@ -1365,7 +1375,11 @@ function icsDatei_(titel, start, ende, ort, slug) {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    'UID:' + Utilities.getUuid() + '@newbuild-kollektiv.com',
+    // Feste UID pro Event: die .ics aus Bestaetigung und "1 Tag vorher"-Mail
+    // aktualisieren denselben Kalendereintrag statt einen zweiten anzulegen
+    // (auch nach einer Terminverschiebung im CMS).
+    'UID:' + (slug ? String(slug) : Utilities.getUuid()) + '@newbuild-kollektiv.com',
+    'SEQUENCE:' + Math.floor(Date.now() / 1000),
     'DTSTAMP:' + utc(new Date()),
     'DTSTART:' + utc(start),
     'DTEND:' + utc(ende),
@@ -1665,7 +1679,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
       }
       try {
         const m = bestaetigungMail_(eventDaten(werte[r], email))
-        sendeTeilnehmerMail_(email, m.subject, m.htmlBody)
+        sendeTeilnehmerMail_(email, m.subject, m.htmlBody, m.attachments)
         sheet
           .getRange(r + 1, iBest + 1)
           .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
@@ -2100,14 +2114,8 @@ function testErinnerungsmails() {
     ende: new Date(start.getTime() + 90 * 60000),
   }
 
-  const bestHtml = wrapMail_(
-    '<p>' + escapeHtml_(e.anrede) + ',</p>' +
-      '<p>vielen Dank für deine Anmeldung zu folgendem Event:</p>' +
-      eckdatenBlock_(e) +
-      '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
-      '<p>Bis bald,<br>NewBuild Kollektiv</p>',
-  )
-  sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] Anmeldebestätigung: ' + kurzTitel_(e.titel), bestHtml)
+  const best = bestaetigungMail_(e)
+  sendeTeilnehmerMail_(TEST_EMPFAENGER, '[TEST] ' + best.subject, best.htmlBody, best.attachments)
   Utilities.sleep(600)
 
   ERINNERUNG_STUFEN.forEach(function (stufe) {
