@@ -201,7 +201,7 @@ function doPost(e) {
     }
     const spBest = ensureColumn_(sheet, 'Bestätigung')
     try {
-      sendConfirmationEmail(data)
+      sendConfirmationEmail(data, sheet.getParent().getId())
       sheet
         .getRange(row, spBest)
         .setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
@@ -503,10 +503,12 @@ function appendRegistration(sheet, data) {
   return sheet.getLastRow()
 }
 
-function sendConfirmationEmail(data) {
+function sendConfirmationEmail(data, sid) {
   const m = bestaetigungMail_({
     anrede: anrede_(data.anrede, data.firstName),
     slug: data.eventSlug,
+    sid: sid,
+    email: data.email,
     titel: data.eventTitle,
     referent: data.eventSpeaker,
     datum: data.eventDate,
@@ -534,8 +536,9 @@ function bestaetigungMail_(e) {
           ? '<p>Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht ' +
             'der Termin direkt in deinem Kalender.</p>'
           : '') +
-        '<p>Bei Rückfragen oder falls du doch nicht kannst, antworte einfach auf diese E-Mail.</p>' +
-        '<p>Bis bald,<br>NewBuild Kollektiv</p>',
+        '<p>Bei Rückfragen antworte einfach auf diese E-Mail.</p>' +
+        '<p>Bis bald,<br>NewBuild Kollektiv</p>' +
+        (e.email ? abmeldeSatz_(e) : ''),
     ),
     attachments: ics ? [ics] : undefined,
   }
