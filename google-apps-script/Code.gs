@@ -1720,6 +1720,8 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
     }
   }
 
+  sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten)
+
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     const faellig =
       stufe.modus === 'tage'
@@ -1774,6 +1776,62 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
         Logger.log('Erinnerung — Versand "' + stufe.spalte + '" an ' + email + ' fehlgeschlagen: ' + err)
         sheet.getRange(r + 1, spalte).setValue('FEHLER: ' + err)
       }
+    }
+  })
+}
+
+// ── Vorschau ────────────────────────────────────────────────────────────────
+// Einen Tag bevor eine Erinnerungsstufe an alle geht, bekommt VORSCHAU_EMPFAENGER
+// genau diese Mail (von request@, mit Karte und Anhang) mit "[VORSCHAU]" im
+// Betreff. So faellt ein falscher Text/Termin auf, bevor ihn die Teilnehmenden
+// sehen (13.10.2026: 1-Woche-Mail ging noch in alter Form raus).
+// Die 3-Std-Mail und die Nachfass-Mail (beide Varianten) kommen als Vorschau
+// am Tag vor dem Event bzw. am Eventtag. Jede Vorschau geht pro Event und Stufe
+// nur einmal raus (gemerkt in den Skript-Eigenschaften).
+const VORSCHAU_EMPFAENGER = 'salich@annarchitecture-studio.com'
+
+function sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten) {
+  if (stunde < ERINNERUNG_SENDESTUNDE) return
+  // Empfaengerzahl (eindeutige E-Mails, nicht abgemeldet) fuer den Betreff.
+  const empf = {}
+  let beispiel = null
+  for (let r = 1; r < werte.length; r++) {
+    const email = String(werte[r][iEmail] || '').trim().toLowerCase()
+    if (!email) continue
+    if (iStatus >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(werte[r][iStatus] || ''))) continue
+    empf[email] = true
+    if (!beispiel || email === VORSCHAU_EMPFAENGER) beispiel = werte[r]
+  }
+  const anzahl = Object.keys(empf).length
+  if (!anzahl) return
+
+  const props = PropertiesService.getScriptProperties()
+  const sid = sheet.getParent().getId()
+  ERINNERUNG_STUFEN.forEach(function (stufe) {
+    // Tagesstufen: Vorschau am Vortag. 3-Std-Stufe: Vorschau am Tag vor dem Event.
+    const vorschauTag = stufe.modus === 'tage' ? stufe.wert + 1 : 1
+    if (tageBis !== vorschauTag) return
+    const e = eventDaten(beispiel, VORSCHAU_EMPFAENGER)
+    const key = 'vorschau_' + sid + '_' + stufe.spalte + '_' + Utilities.formatDate(e.start, 'Europe/Berlin', 'yyyyMMdd')
+    if (props.getProperty(key)) return
+    const varianten =
+      stufe.bauen === mailNachfass_
+        ? [['war da', nachfassDaMail_(e)], ['nicht da', nachfassNichtDaMail_(e)]]
+        : [['', stufe.bauen(e)]]
+    try {
+      varianten.forEach(function (v) {
+        const m = v[1]
+        sendeTeilnehmerMail_(
+          VORSCHAU_EMPFAENGER,
+          '[VORSCHAU – morgen an ' + anzahl + ' Personen' + (v[0] ? ', Variante „' + v[0] + '“' : '') + '] ' + m.subject,
+          m.htmlBody,
+          m.attachments,
+        )
+      })
+      props.setProperty(key, Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+      Logger.log('Vorschau "' + stufe.spalte + '" an ' + VORSCHAU_EMPFAENGER + ' verschickt.')
+    } catch (err) {
+      Logger.log('Vorschau "' + stufe.spalte + '" fehlgeschlagen: ' + err)
     }
   })
 }
