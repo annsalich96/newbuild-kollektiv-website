@@ -1957,7 +1957,8 @@ function fotosInHistoryEintragen() {
 // ende } und gibt { subject, htmlBody, attachments? } zurueck. Texte hier frei
 // anpassbar; die Signatur wird automatisch angehaengt.
 
-// 1 Woche vorher — bewusst schlank: nur Terminzeile, keine volle Eckdaten-Box.
+// 1 Woche vorher — Terminzeile, Eventkarte und Kalenderdatei (seit 13.10.2026;
+// viele Anmeldungen vor dem 08.10. hatten noch keine .ics bekommen).
 function mailEineWoche_(e) {
   return {
     subject: 'In einer Woche: NBK Treffen – ' + kurzTitel_(e.titel),
@@ -1972,12 +1973,14 @@ function mailEineWoche_(e) {
         (e.datum ? ', am ' + escapeHtml_(e.datum) : '') +
         (e.zeit ? ' um ' + escapeHtml_(e.zeit) + ' Uhr' : '') +
         '.</p>' +
-        '<p>Die vollständigen Eckdaten und einen Kalendereintrag bekommst du ' +
-        'am Vortag. Falls du vorab Fragen oder Wünsche zum Thema hast: ' +
-        'antworte einfach auf diese Mail.</p>' +
+        eckdatenBlock_(e) +
+        '<p>Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht ' +
+        'der Termin direkt in deinem Kalender. Falls du vorab Fragen oder Wünsche zum ' +
+        'Thema hast: antworte einfach auf diese Mail.</p>' +
         '<p>Bis bald!</p>' +
         abmeldeSatz_(e),
     ),
+    attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort, e.slug)],
   }
 }
 
