@@ -1418,10 +1418,9 @@ function icsDatei_(titel, start, ende, ort, slug) {
       (seite ? '\nInfos zum Event: ' + seite : ''),
     ),
   ]
-  // Link-Feld (zeigt z. B. Apple Kalender gross an): die Route, nicht noch
-  // einmal die Eventseite - die steht schon in der Beschreibung.
-  if (ort) lines.push('URL:' + mapsLink_(ort))
-  else if (seite) lines.push('URL:' + seite)
+  // Bewusst KEIN URL-Feld: Apple Kalender zeigt es zweimal an (oben "Öffnen"
+  // und unten nochmal) - zusammen mit der Beschreibung stand ein Link dann
+  // dreifach im Termin. Maps-Link und Eventseite stehen je einmal in DESCRIPTION.
   lines.push(
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
