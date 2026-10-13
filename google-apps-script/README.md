@@ -81,8 +81,8 @@ Die Status-Spalten legt das Skript in jeder Event-Tabelle bei Bedarf selbst an. 
 
 | Stufe | Was drin ist |
 | --- | --- |
-| Bestätigung (sofort) | volle Eckdaten-Box (Titel, Referent:in, Datum/Zeit, Ort + „In Google Maps öffnen") |
-| 1 Woche vorher | nur Terminzeile (Titel + Datum/Zeit), kein Ort, keine Box |
+| Bestätigung (sofort) | Eventkarte (sonst Eckdaten-Box) + Maps-Link **+ `.ics`-Anhang** + Abmelde-Link (seit 08.10.2026) |
+| 1 Woche vorher | Terminzeile + Eventkarte + Maps-Link **+ `.ics`-Anhang** + Abmelde-Link (seit 13.10.2026; vorher bewusst nur Terminzeile) |
 | 1 Tag vorher | volle Eckdaten-Box **+ `.ics`-Anhang** mit „Aufbrechen"-Wecker |
 | ~3 Std vorher | Termin + Ort + Maps-Link **+ `.ics`-Anhang**, keine volle Box |
 | 1 Tag danach | nur Danke + Feedback-Hinweis |
