@@ -536,8 +536,8 @@ function bestaetigungMail_(e) {
           ? '<p>Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht ' +
             'der Termin direkt in deinem Kalender.</p>'
           : '') +
-        '<p>Bei Rückfragen antworte einfach auf diese E-Mail.</p>' +
-        '<p>Bis bald,<br>NewBuild Kollektiv</p>' +
+        '<p>Bei Rückfragen schreibe mir einfach eine E-Mail.</p>' +
+        '<p>Bis bald,</p>' +
         (e.email ? abmeldeSatz_(e) : ''),
     ),
     attachments: ics ? [ics] : undefined,
@@ -2027,18 +2027,18 @@ function mailEineWoche_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>in einer Woche ist es soweit – unser NewBuild Kollektiv Treffen ' +
+        '<p>in einer Woche ist es soweit: Unser NewBuild Kollektiv Treffen ' +
         '<strong>„' +
         escapeHtml_(e.titel) +
-        '“</strong>' +
-        (e.datum ? ', am ' + escapeHtml_(e.datum) : '') +
+        '“</strong> findet' +
+        (e.datum ? ' am ' + escapeHtml_(e.datum) : '') +
         (e.zeit ? ' um ' + escapeHtml_(e.zeit) + ' Uhr' : '') +
-        '.</p>' +
+        ' statt.</p>' +
         eckdatenBlock_(e) +
-        '<p>Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht ' +
-        'der Termin direkt in deinem Kalender. Falls du vorab Fragen oder Wünsche zum ' +
-        'Thema hast: antworte einfach auf diese Mail.</p>' +
-        '<p>Bis bald!</p>' +
+        '<p>Im Anhang findest du eine Kalenderdatei (.ics). Diese kannst du dir einfach ' +
+        'herunterladen, dann steht der Termin in deinem Kalender. Falls du vorab Fragen ' +
+        'hast, kannst du mir gerne schreiben.</p>' +
+        '<p>Bis nächste Woche!</p>' +
         abmeldeSatz_(e),
     ),
     attachments: [icsDatei_(e.titel, e.start, e.ende, e.ort, e.slug)],
@@ -2056,7 +2056,7 @@ function mailEinTag_(e) {
         'du dich angemeldet hast.</p>' +
         '<p>Hier nochmal die Eckdaten zu deiner Übersicht:</p>' +
         eckdatenBlock_(e) +
-        '<p>Im Anhang findest du eine Kalenderdatei (.ics). Sie erinnert dich ' +
+        '<p>Im Anhang findest du nochmals die Kalenderdatei (.ics). Sie erinnert dich ' +
         AUFBRUCH_VORLAUF_MIN +
         ' Minuten vor Beginn ans Aufbrechen.</p>' +
         '<p>Ich freue mich sehr auf den gemeinsamen Austausch mit dir.</p>' +
@@ -2158,7 +2158,7 @@ function nachfassDaMail_(e) {
         'möchtest, <a href="' + referentLink_() +
         '" style="color:#3d5a80">trag dich gerne hier ein</a>.</p>' +
         '<p>Danke, dass du dabei warst und den Abend mitgestaltet hast.<br>' +
-        'Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen folgen in Kürze.</p>' +
+        'Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen und Fotos folgen in Kürze.</p>' +
         (NACHFASS_ZUSATZ[e.slug] || '') +
         '<p>Bis bald und liebe Grüße,</p>',
     ),
