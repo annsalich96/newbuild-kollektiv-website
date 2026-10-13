@@ -1414,10 +1414,14 @@ function icsDatei_(titel, start, ende, ort, slug) {
     'LOCATION:' + esc(ort),
     'DESCRIPTION:' + esc(
       'NewBuild Kollektiv Treffen. Plane deine Anfahrt ein – der Wecker erinnert dich rechtzeitig ans Aufbrechen.' +
-      (seite ? '\nInfos & Anmeldung: ' + seite : ''),
+      (ort ? '\n\nAnfahrt (Google Maps): ' + mapsLink_(ort) : '') +
+      (seite ? '\nInfos zum Event: ' + seite : ''),
     ),
   ]
-  if (seite) lines.push('URL:' + seite)
+  // Link-Feld (zeigt z. B. Apple Kalender gross an): die Route, nicht noch
+  // einmal die Eventseite - die steht schon in der Beschreibung.
+  if (ort) lines.push('URL:' + mapsLink_(ort))
+  else if (seite) lines.push('URL:' + seite)
   lines.push(
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
