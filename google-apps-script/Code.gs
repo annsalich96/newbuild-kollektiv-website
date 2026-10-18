@@ -97,9 +97,16 @@ function signaturText_() {
 }
 
 // Stunde (0–23, Europe/Berlin), ab der die tagesbasierten Erinnerungen
-// (1 Woche / 1 Tag / Nachfass) rausgehen. Der Trigger laeuft stuendlich,
+// (1 Woche / 1 Tag) rausgehen; Nachfass erst ab 16:30 (siehe ERINNERUNG_STUFEN). Der Trigger laeuft stuendlich,
 // verschickt diese Stufen aber fruehestens ab dieser Uhrzeit.
 const ERINNERUNG_SENDESTUNDE = 8
+
+// Tagesstufe mit eigener Uhrzeit ("ab" in ERINNERUNG_STUFEN, z. B. '16:30'),
+// sonst ab ERINNERUNG_SENDESTUNDE. Uhrzeit Europe/Berlin.
+function sendezeitErreicht_(jetzt, stufe) {
+  const ab = stufe.ab || ('0' + ERINNERUNG_SENDESTUNDE).slice(-2) + ':00'
+  return Utilities.formatDate(jetzt, 'Europe/Berlin', 'HH:mm') >= ab
+}
 
 // Vorlauf in Minuten fuer den "Zeit zum Aufbrechen"-Wecker in der
 // Kalenderdatei (.ics), die der "1 Tag vorher"-Mail anhaengt.
@@ -1736,7 +1743,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     const faellig =
       stufe.modus === 'tage'
-        ? tageBis === stufe.wert && stunde >= ERINNERUNG_SENDESTUNDE
+        ? tageBis === stufe.wert && sendezeitErreicht_(jetzt, stufe)
         : stundenBis > 0 && stundenBis <= stufe.wert
     if (!faellig) return
     Logger.log('Erinnerung — "' + sheetName + '": Stufe "' + stufe.spalte + '" faellig.')
@@ -2179,7 +2186,7 @@ const ERINNERUNG_STUFEN = [
   { spalte: 'Erinnerung 1 Woche', modus: 'tage', wert: 7, bauen: mailEineWoche_ },
   { spalte: 'Erinnerung 1 Tag', modus: 'tage', wert: 1, bauen: mailEinTag_ },
   { spalte: 'Erinnerung 3 Std', modus: 'stunden', wert: 3, bauen: mailDreiStunden_ },
-  { spalte: 'Nachfass E-Mail', modus: 'tage', wert: -1, bauen: mailNachfass_ },
+  { spalte: 'Nachfass E-Mail', modus: 'tage', wert: -1, ab: '16:30', bauen: mailNachfass_ },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────

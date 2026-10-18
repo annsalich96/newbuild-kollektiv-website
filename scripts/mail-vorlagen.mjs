@@ -86,13 +86,13 @@ function stufen(e) {
     { name: 'Erinnerung 3 Std', wann: 'Am Eventtag, ca. 3 Stunden vor Beginn', vorschau: 'am Vortag', mail: gs.mailDreiStunden_(e) },
     {
       name: 'Rückblick „war da“',
-      wann: 'Am Tag nach dem Event, ab 8 Uhr – an alle, die eingecheckt haben (oder an alle, wenn der Check-in nicht genutzt wurde)',
+      wann: 'Am Tag nach dem Event, ab 16:30 Uhr – an alle, die eingecheckt haben (oder an alle, wenn der Check-in nicht genutzt wurde)',
       vorschau: 'am Eventtag',
       mail: gs.nachfassDaMail_(e),
     },
     {
       name: 'Rückblick „nicht da“',
-      wann: 'Am Tag nach dem Event, ab 8 Uhr – an alle, die nicht eingecheckt haben',
+      wann: 'Am Tag nach dem Event, ab 16:30 Uhr – an alle, die nicht eingecheckt haben',
       vorschau: 'am Eventtag',
       mail: gs.nachfassNichtDaMail_(e),
     },
