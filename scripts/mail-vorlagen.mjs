@@ -41,7 +41,7 @@ vm.createContext(sandbox)
 vm.runInContext(
   readFileSync(join(repo, 'google-apps-script/Code.gs'), 'utf-8') +
     // Top-level const sind sonst nicht von aussen sichtbar.
-    '\nthis.AUFBRUCH_VORLAUF_MIN = AUFBRUCH_VORLAUF_MIN; this.SIGNATUR_HTML_FALLBACK = SIGNATUR_HTML_FALLBACK;',
+    '\nthis.AUFBRUCH_VORLAUF_MIN = AUFBRUCH_VORLAUF_MIN; this.SIGNATUR_HTML_FALLBACK = SIGNATUR_HTML_FALLBACK; this.SIGNATUR_MARKE = SIGNATUR_MARKE;',
   sandbox,
 )
 const gs = sandbox
@@ -157,7 +157,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.45 ui-monospace,Menl
   </div>
   <div class="mail">
     <div class="mailkopf"><span><b>Von:</b> NewBuild Kollektiv &lt;request@newbuild-kollektiv.com&gt;</span><span><b>An:</b> Beispielperson (Anrede aus der Anmeldung)</span><span><b>Betreff:</b> ${esc(s.mail.subject)}</span></div>
-    <div class="mailinhalt">${html}${gs.SIGNATUR_HTML_FALLBACK}</div>
+    <div class="mailinhalt">${html.includes(gs.SIGNATUR_MARKE) ? html.replace(gs.SIGNATUR_MARKE, gs.SIGNATUR_HTML_FALLBACK) : html + gs.SIGNATUR_HTML_FALLBACK}</div>
   </div>
 </section>`
     })
