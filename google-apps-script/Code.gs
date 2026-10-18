@@ -783,9 +783,6 @@ function wardaLink_(sid, slug, email) {
   )
 }
 
-// Platzhalter fuer die Signatur, siehe sendeTeilnehmerMail_.
-const SIGNATUR_MARKE = '<!--SIGNATUR-->'
-
 function abmeldeSatz_(e) {
   return (
     '<p style="color:#666;font-size:13px;margin-top:20px">Du kannst doch nicht? ' +
@@ -1385,20 +1382,15 @@ function wardaVerarbeiten_(p) {
 // (Array von Blobs, z.B. die .ics-Datei). Setzt voraus, dass SENDER_EMAIL in
 // Gmail unter Einstellungen > Konten > "Senden als" als verifizierter Alias
 // hinterlegt ist (sonst "Invalid sender email").
-// Steht SIGNATUR_MARKE im Text (z. B. vor einem P.S.), wird die Signatur dort
-// eingesetzt statt ganz am Ende.
 function sendeTeilnehmerMail_(to, subject, htmlBody, attachments) {
-  const teile = String(htmlBody).split(SIGNATUR_MARKE)
-  const nachSig = teile.length > 1 ? teile.slice(1).join('') : ''
   const opts = {
     name: SENDER_NAME,
     from: SENDER_EMAIL,
     replyTo: SENDER_EMAIL,
-    htmlBody: teile[0] + signaturHtml_() + nachSig,
+    htmlBody: htmlBody + signaturHtml_(),
   }
   if (attachments && attachments.length) opts.attachments = attachments
-  const textNachSig = nachSig ? '\n\n' + htmlToPlain_(nachSig) : ''
-  GmailApp.sendEmail(to, subject, htmlToPlain_(teile[0]) + signaturText_() + textNachSig, opts)
+  GmailApp.sendEmail(to, subject, htmlToPlain_(htmlBody) + signaturText_(), opts)
 }
 
 // Kalenderdatei (.ics) fuer die "1 Tag vorher"-Mail. Enthaelt einen
@@ -2077,7 +2069,6 @@ function mailEinTag_(e) {
         ' Minuten vor Beginn ans Aufbrechen.</p>' +
         '<p>Ich freue mich schon sehr auf morgen und den gemeinsamen Austausch mit dir.</p>' +
         '<p>Liebste Grüße,</p>' +
-        SIGNATUR_MARKE +
         '<p style="color:#666;font-size:13px;margin-top:24px">P.S.: Falls sich in ' +
         'deinem Terminkalender doch etwas geändert hat – ' +
         '<a href="' + abmeldeLink_(e.sid, e.slug, e.titel, e.email, e.datum) +
