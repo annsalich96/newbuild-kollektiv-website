@@ -2626,13 +2626,26 @@ function mailTestLink_(slug) {
 function mailTexteDocAnlegen_(ev) {
   const slug = String(ev.slug)
   const name = 'Mail-Texte · ' + (ev.number ? String(ev.number).trim() + ' — ' : '') + String(ev.title || slug).trim()
-  const doc = DocumentApp.create(name)
-  const file = DriveApp.getFileById(doc.getId())
-  moveFileIntoFolder(file, mailTexteOrdner_())
+  // Ein schon vorhandenes (z. B. halb angelegtes) Doc gleichen Namens wird
+  // wiederverwendet statt ein zweites anzulegen.
+  const ordner = mailTexteOrdner_()
+  const vorhanden = ordner.getFilesByName(name)
+  let doc, file
+  if (vorhanden.hasNext()) {
+    file = vorhanden.next()
+    doc = DocumentApp.openById(file.getId())
+    doc.getBody().clear()
+  } else {
+    doc = DocumentApp.create(name)
+    file = DriveApp.getFileById(doc.getId())
+    moveFileIntoFolder(file, ordner)
+  }
   const body = doc.getBody()
   const karte = 'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(slug) + '-karte.png'
 
-  body.getChild(0).asParagraph().setText(name).setHeading(DocumentApp.ParagraphHeading.TITLE)
+  const kopf = body.getChild(0).asParagraph()
+  kopf.setText(name) // setText liefert nichts zurueck, nicht verketten
+  kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
   ;[
     ['p', 'Hier stehen alle automatischen E-Mails zu diesem Event. Einfach den Text ändern – das Doc speichert von selbst, und die nächste Mail übernimmt den neuen Text automatisch. Kein Code, kein Bereitstellen.'],
     ['p', '→ Vorschau aller Mails ansehen (mit Bild, Anhängen und Signatur)', mailVorschauLink_(slug)],
