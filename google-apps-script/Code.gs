@@ -2137,9 +2137,9 @@ function mailDreiStundenStandard_(e) {
 
 // Abweichender Versandtag fuer die Rueckblick-Mail (sonst: Tag nach dem
 // Event). slug -> 'TT.MM.JJJJ'. Uhrzeit wie in ERINNERUNG_STUFEN ("ab").
-const NACHFASS_TERMIN = {
-  'session-03-ordner-zum-tool': '22.10.2026',
-}
+// Grundsatz (Ann, 21.10.2026): der Rueckblick geht IMMER am Tag nach dem
+// Event raus — hier nur im Ausnahmefall etwas eintragen.
+const NACHFASS_TERMIN = {}
 
 // true, wenn die Tagesstufe an dem Tag faellig ist, fuer den tageBis/datum gelten.
 function stufeFaelligAm_(stufe, slug, tageBis, datum) {
