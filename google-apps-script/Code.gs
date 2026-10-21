@@ -2140,7 +2140,7 @@ const NACHFASS_DA_TEXT = {
   'session-03-ordner-zum-tool': function (e) {
     const tag = eventTagWort_(e.start)
     return (
-      '<p>es war richtig schön, dass du' + (tag ? ' ' + tag : '') +
+      '<p>es war sehr schön, dass du' + (tag ? ' ' + tag : '') +
       ' bei unserem NBK Treffen dabei warst und wir uns dadurch wiedersehen konnten.</p>' +
       '<p>Ich hoffe, du konntest einige neue Gedanken und Impulse aus Niklas’ Vortrag, ' +
       'aber auch aus den Gesprächen mit den anderen Teilnehmer:innen mitnehmen.</p>' +
@@ -2148,7 +2148,7 @@ const NACHFASS_DA_TEXT = {
       'etwas genauer anschauen möchtest: <a href="https://www.amenda.app" style="color:#3d5a80">www.amenda.app</a><br>' +
       'Ich selbst kannte Amenda vor meinem Austausch mit Niklas nicht und fand es umso spannender, ' +
       'dass es eine Projektmanagement-Lösung gibt, die speziell auf die Bedürfnisse von ' +
-      'Architekturbüros zugeschnitten ist.</p>' +
+      'großen Architekturbüros zugeschnitten ist.</p>' +
       '<p>In Kürze werde ich außerdem die Fotos vom Abend mit euch teilen.</p>' +
       '<p>Ich freue mich jetzt schon auf unser nächstes <strong>NewBuild Kollektiv Treffen</strong>, ' +
       'das voraussichtlich Ende November stattfinden wird.</p>' +
