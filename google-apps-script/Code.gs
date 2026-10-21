@@ -244,6 +244,8 @@ function doGet(e) {
   if (p.action === 'checkin') return checkinFormular_(p)
   if (p.action === 'checkin_ok') return checkinVerarbeiten_(p)
   if (p.action === 'warda') return wardaVerarbeiten_(p)
+  if (p.action === 'mailvorschau') return mailVorschauSeite_(p)
+  if (p.action === 'mailtest') return mailTestSenden_(p)
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -530,6 +532,10 @@ function sendConfirmationEmail(data, sid) {
 // sendeErinnerungen (Spalte "Bestätigung" = "offen"). Haengt die Kalenderdatei
 // (.ics) an, sobald der Termin lesbar ist (e.start).
 function bestaetigungMail_(e) {
+  return ausDoc_('bestaetigung', e, bestaetigungMailStandard_)
+}
+
+function bestaetigungMailStandard_(e) {
   const ics = e.start
     ? icsDatei_(e.titel, e.start, e.ende || parseEventEnde_(e.start, e.zeit), e.ort, e.slug)
     : null
@@ -1589,6 +1595,12 @@ function sendeErinnerungen() {
     return
   }
 
+  try {
+    mailTexteDocsAnlegen_(cmsEvents)
+  } catch (err) {
+    Logger.log('Mail-Texte-Doc — Fehler: ' + err)
+  }
+
   const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
   while (files.hasNext()) {
     const file = files.next()
@@ -2033,6 +2045,10 @@ function fotosInHistoryEintragen() {
 // 1 Woche vorher — Terminzeile, Eventkarte und Kalenderdatei (seit 13.10.2026;
 // viele Anmeldungen vor dem 08.10. hatten noch keine .ics bekommen).
 function mailEineWoche_(e) {
+  return ausDoc_('woche', e, mailEineWocheStandard_)
+}
+
+function mailEineWocheStandard_(e) {
   return {
     subject: 'In einer Woche: NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
@@ -2058,6 +2074,10 @@ function mailEineWoche_(e) {
 }
 
 function mailEinTag_(e) {
+  return ausDoc_('tag', e, mailEinTagStandard_)
+}
+
+function mailEinTagStandard_(e) {
   return {
     subject: 'Erinnerung NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
@@ -2085,6 +2105,10 @@ function mailEinTag_(e) {
 
 // ~3 h vorher — kurzer Absprung: Termin, Ort + Maps, Kalenderdatei.
 function mailDreiStunden_(e) {
+  return ausDoc_('drei', e, mailDreiStundenStandard_)
+}
+
+function mailDreiStundenStandard_(e) {
   return {
     subject: 'Gleich geht’s los: NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
@@ -2188,6 +2212,10 @@ function mailNachfass_(e) {
 }
 
 function nachfassNichtDaMail_(e) {
+  return ausDoc_('nichtda', e, nachfassNichtDaMailStandard_)
+}
+
+function nachfassNichtDaMailStandard_(e) {
   return {
     subject: 'Schade, dass du nicht dabei warst – NBK Treffen ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
@@ -2211,6 +2239,10 @@ function nachfassNichtDaMail_(e) {
 }
 
 function nachfassDaMail_(e) {
+  return ausDoc_('da', e, nachfassDaMailStandard_)
+}
+
+function nachfassDaMailStandard_(e) {
   const individuell = NACHFASS_DA_TEXT[e.slug]
   if (individuell) {
     return {
@@ -2245,6 +2277,522 @@ function nachfassDaMail_(e) {
         '<p>Bis bald und liebe Grüße,</p>',
     ),
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIL-TEXTE AUS GOOGLE DOCS
+//
+//  Pro Event gibt es ein Google Doc "Mail-Texte · <Event>" (Ordner
+//  DRIVE_FOLDER_NAME/Mail-Texte, freigegeben fuer VORSCHAU_EMPFAENGER). Jede
+//  Mail ist ein Abschnitt mit Ueberschrift 1 (Bestätigung, 1 Woche vorher, …).
+//  Die Mails lesen ihren Text bei jedem Versand frisch aus dem Doc — Texte
+//  aendern heisst also nur: Doc bearbeiten, kein Code, kein Deploy.
+//  Fehlt das Doc oder ein Abschnitt (oder ist er leer), gilt der Standardtext
+//  aus den *Standard_-Funktionen. Bild, .ics und Signatur kommen immer aus dem
+//  Code.
+//
+//  Neue Docs entstehen automatisch in sendeErinnerungen fuer jedes Event im
+//  CMS, das hoechstens MAILDOC_VORLAUF_TAGE zurueckliegt.
+//  Vorschau im Browser: WEBAPP_URL?action=mailvorschau&slug=<slug>
+// ═══════════════════════════════════════════════════════════════════════════
+const MAILTEXTE_ORDNER = 'Mail-Texte'
+const MAILDOC_VORLAUF_TAGE = 2
+
+// [key, Ueberschrift im Doc, Versandzeitpunkt, Builder]
+function mailArten_() {
+  return [
+    ['bestaetigung', 'Bestätigung', 'sofort bei der Anmeldung', bestaetigungMail_],
+    ['woche', '1 Woche vorher', '7 Tage vor dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', mailEineWoche_],
+    ['tag', '1 Tag vorher', 'am Tag vor dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', mailEinTag_],
+    ['drei', '3 Stunden vorher', 'ca. 3 Stunden vor Beginn', mailDreiStunden_],
+    ['da', 'Rückblick – war da', 'am Tag nach dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', nachfassDaMail_],
+    ['nichtda', 'Rückblick – nicht da', 'am Tag nach dem Event, ab ' + ERINNERUNG_SENDESTUNDE +
+      ' Uhr – nur wenn der Check-in genutzt wurde und die Person nicht eingecheckt hat', nachfassNichtDaMail_],
+  ]
+}
+
+function abschnittKey_(ueberschrift) {
+  const t = String(ueberschrift || '').toLowerCase()
+  if (t.indexOf('bestätigung') >= 0 || t.indexOf('bestaetigung') >= 0) return 'bestaetigung'
+  if (t.indexOf('woche') >= 0) return 'woche'
+  if (t.indexOf('stunde') >= 0) return 'drei'
+  if (t.indexOf('nicht da') >= 0) return 'nichtda'
+  if (t.indexOf('war da') >= 0 || t.indexOf('rückblick') >= 0) return 'da'
+  if (t.indexOf('tag') >= 0) return 'tag'
+  return ''
+}
+
+function mailDocId_(slug) {
+  return slug ? PropertiesService.getScriptProperties().getProperty('mailDoc_' + slug) : null
+}
+
+// Pro Skriptlauf nur einmal lesen (ein Lauf verschickt ggf. viele Mails).
+let MAILDOC_CACHE = {}
+
+function mailDocAbschnitte_(slug) {
+  if (Object.prototype.hasOwnProperty.call(MAILDOC_CACHE, slug)) return MAILDOC_CACHE[slug]
+  let res = null
+  const id = mailDocId_(slug)
+  if (id) {
+    try {
+      res = parseMailDoc_(DocumentApp.openById(id).getBody())
+    } catch (err) {
+      Logger.log('Mail-Texte-Doc fuer ' + slug + ' nicht lesbar: ' + err)
+    }
+  }
+  MAILDOC_CACHE[slug] = res
+  return res
+}
+
+function parseMailDoc_(body) {
+  const T = DocumentApp.ElementType
+  const out = {}
+  let akt = null
+  for (let i = 0; i < body.getNumChildren(); i++) {
+    const el = body.getChild(i)
+    const typ = el.getType()
+    if (typ !== T.PARAGRAPH && typ !== T.LIST_ITEM) continue
+    if (el.getHeading() === DocumentApp.ParagraphHeading.HEADING1) {
+      const key = abschnittKey_(el.getText())
+      akt = key ? (out[key] = { betreff: '', absaetze: [] }) : null
+      continue
+    }
+    if (!akt) continue
+    const text = el.getText().trim()
+    if (!text) continue
+    if (!akt.betreff && !akt.absaetze.length && /^betreff\s*:/i.test(text)) {
+      akt.betreff = text.replace(/^betreff\s*:\s*/i, '')
+      continue
+    }
+    const groesse = el.editAsText().getFontSize(0)
+    akt.absaetze.push({
+      html: absatzHtml_(el),
+      karte: /^\[\s*eventkarte\s*\]$/i.test(text),
+      klein: !!groesse && groesse <= 10,
+      liste: typ === T.LIST_ITEM,
+    })
+  }
+  return out
+}
+
+// Absatz aus dem Doc -> HTML (fett, kursiv, Links, Zeilenumbrueche).
+function absatzHtml_(absatz) {
+  let html = ''
+  for (let c = 0; c < absatz.getNumChildren(); c++) {
+    const kind = absatz.getChild(c)
+    if (kind.getType() !== DocumentApp.ElementType.TEXT) continue
+    const t = kind.asText()
+    const s = t.getText()
+    const idx = t.getTextAttributeIndices()
+    for (let k = 0; k < idx.length; k++) {
+      const von = idx[k]
+      const bis = k + 1 < idx.length ? idx[k + 1] : s.length
+      if (bis <= von) continue
+      let teil = escapeHtml_(s.slice(von, bis)).replace(/[\r\n\u000b]/g, '<br>')
+      if (t.isBold(von)) teil = '<strong>' + teil + '</strong>'
+      if (t.isItalic(von)) teil = '<em>' + teil + '</em>'
+      const link = t.getLinkUrl(von)
+      if (link) teil = '<a href="' + String(link).replace(/"/g, '%22') + '" style="color:#3d5a80">' + teil + '</a>'
+      html += teil
+    }
+  }
+  return html
+}
+
+function platzhalterWerte_(e) {
+  return {
+    anrede: e.anrede,
+    titel: e.titel,
+    kurztitel: kurzTitel_(e.titel),
+    datum: e.datum,
+    zeit: e.zeit,
+    ort: e.ort,
+    referent: e.referent,
+    eventtag: eventTagWort_(e.start),
+    minuten: AUFBRUCH_VORLAUF_MIN,
+  }
+}
+
+function platzhalterLinks_(e) {
+  return {
+    abmelde: abmeldeLink_(e.sid, e.slug, e.titel, e.email, e.datum),
+    feedback: feedbackLink_(e.slug, e.titel),
+    referent: referentLink_(),
+    maps: e.ort ? mapsLink_(e.ort) : '',
+    eventseite: eventSeiteUrl_(e.slug),
+    'ich-war-da': wardaLink_(e.sid, e.slug, e.email),
+  }
+}
+
+// {Anrede} … und {Feedback-Link: Text} … in einem (schon escapten) HTML-Absatz.
+function platzhalterHtml_(html, e) {
+  const werte = platzhalterWerte_(e)
+  const links = platzhalterLinks_(e)
+  return String(html)
+    .replace(/\{\s*([A-Za-zÄÖÜäöü-]+?)-Link\s*:\s*([^}]*)\}/g, function (m, name, text) {
+      const url = links[name.toLowerCase()]
+      return url ? '<a href="' + url + '" style="color:#3d5a80">' + text.trim() + '</a>' : text.trim()
+    })
+    .replace(/\{\s*([A-Za-zÄÖÜäöü]+)\s*\}/g, function (m, name) {
+      const k = name.toLowerCase()
+      return Object.prototype.hasOwnProperty.call(werte, k) ? escapeHtml_(werte[k] == null ? '' : werte[k]) : m
+    })
+    .replace(/ {2,}/g, ' ')
+    .replace(/ ([,.!?])/g, '$1')
+}
+
+function platzhalterText_(text, e) {
+  const werte = platzhalterWerte_(e)
+  return String(text)
+    .replace(/\{\s*([A-Za-zÄÖÜäöü]+)\s*\}/g, function (m, name) {
+      const k = name.toLowerCase()
+      return Object.prototype.hasOwnProperty.call(werte, k) ? String(werte[k] == null ? '' : werte[k]) : m
+    })
+    .replace(/ {2,}/g, ' ')
+}
+
+function absaetzeZuHtml_(absaetze, e) {
+  return absaetze
+    .map(function (a) {
+      if (a.karte) return eckdatenBlock_(e)
+      const inhalt = platzhalterHtml_(a.html, e)
+      if (/\{\s*Ich-war-da-Link/i.test(a.html)) {
+        return '<p style="margin:0 0 18px;padding:14px 16px;background:#f4f4f2;border-radius:8px">' + inhalt + '</p>'
+      }
+      if (a.klein) return '<p style="color:#666;font-size:13px;margin:20px 0 18px">' + inhalt + '</p>'
+      return '<p>' + (a.liste ? '• ' : '') + inhalt + '</p>'
+    })
+    .join('')
+}
+
+// Text aus dem Doc, sonst Standard. Anhaenge (.ics) immer vom Standard.
+function ausDoc_(key, e, standard) {
+  const m = standard(e)
+  try {
+    const abschnitte = e.slug ? mailDocAbschnitte_(e.slug) : null
+    const a = abschnitte && abschnitte[key]
+    if (!a || !a.absaetze.length) return m
+    return {
+      subject: a.betreff ? platzhalterText_(a.betreff, e) : m.subject,
+      htmlBody: wrapMail_(absaetzeZuHtml_(a.absaetze, e)),
+      attachments: m.attachments,
+      ausDoc: true,
+    }
+  } catch (err) {
+    Logger.log('Mail-Texte-Doc (' + key + ') — Standardtext verwendet: ' + err)
+    return m
+  }
+}
+
+// ── Doc anlegen ─────────────────────────────────────────────────────────────
+// Vorlage: ['h', Ueberschrift] | ['p', Text] | ['k', kleiner Text] |
+// ['li', Aufzaehlung]. Im Text: **fett**, [Linktext](https://…).
+function mailDocVorlage_(slug) {
+  const vorlage = [
+    ['h', 'Bestätigung'],
+    ['p', 'Betreff: Anmeldebestätigung: {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'vielen Dank für deine Anmeldung zu folgendem Event:'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht der Termin direkt in deinem Kalender.'],
+    ['p', 'Bei Rückfragen schreibe mir einfach eine E-Mail.'],
+    ['p', 'Bis bald,'],
+    ['k', 'Du kannst doch nicht? {Abmelde-Link: Hier abmelden.}'],
+
+    ['h', '1 Woche vorher'],
+    ['p', 'Betreff: In einer Woche: NBK Treffen – {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'in einer Woche ist es soweit: Unser NewBuild Kollektiv Treffen **„{Titel}“** findet am {Datum} um {Zeit} Uhr statt.'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Im Anhang findest du eine Kalenderdatei (.ics). Diese kannst du dir einfach herunterladen, dann steht der Termin in deinem Kalender. Falls du vorab Fragen hast, kannst du mir gerne schreiben.'],
+    ['p', 'Bis nächste Woche!'],
+    ['k', 'Du kannst doch nicht? {Abmelde-Link: Hier abmelden.}'],
+
+    ['h', '1 Tag vorher'],
+    ['p', 'Betreff: Erinnerung NBK Treffen – {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'schon morgen Abend findet unser nächstes NewBuild Kollektiv Treffen statt, für das du dich angemeldet hast.'],
+    ['p', 'Hier nochmal die Eckdaten zu deiner Übersicht:'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Im Anhang findest du auch nochmals die Kalenderdatei (.ics). Wenn du diese herunterlädst, erinnert sie dich {Minuten} Minuten vor Beginn ans Aufbrechen.'],
+    ['p', 'Ich freue mich schon sehr auf morgen und den gemeinsamen Austausch mit dir.'],
+    ['p', 'Liebste Grüße,'],
+    ['k', 'P.S.: Falls sich in deinem Terminkalender doch etwas geändert hat – {Abmelde-Link: hier abmelden}.'],
+
+    ['h', '3 Stunden vorher'],
+    ['p', 'Betreff: Gleich geht’s los: NBK Treffen – {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'in wenigen Stunden geht es los – heute um {Zeit} Uhr.'],
+    ['p', '**{Ort}**'],
+    ['p', '{Maps-Link: In Google Maps öffnen}'],
+    ['p', 'Der Kalendereintrag hängt nochmal an. Bis gleich!'],
+
+    ['h', 'Rückblick – war da'],
+    ['p', 'Betreff: Danke fürs Kommen – NBK Treffen – {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'was für ein schöner Abend {Eventtag}! Ich habe mich sehr gefreut, dass du bei unserem NewBuild Kollektiv Abend dabei gewesen bist.'],
+    ['p', 'Ich hoffe, du hast den Austausch und den Vortrag von {Referent} genauso genossen wie ich und nimmst Impulse für deine eigene Praxis mit.'],
+    ['p', 'Ich freue mich schon auf das nächste Mal. Infos zum nächsten Treffen und Fotos folgen in Kürze.'],
+    ['p', 'Bis bald und liebe Grüße,'],
+    ['k', 'P.S.: Wenn du Anregungen für unsere nächsten Treffen hast oder selbst einmal ein Thema vorstellen möchtest, schreib mir gern: {Feedback-Link: Feedback geben} · {Referent-Link: Als Referent:in eintragen}'],
+
+    ['h', 'Rückblick – nicht da'],
+    ['p', 'Betreff: Schade, dass du nicht dabei warst – NBK Treffen {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'schade, dass du es {Eventtag} nicht zum NewBuild Kollektiv Treffen geschafft hast. Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass ich dich dann begrüßen darf.'],
+    ['p', 'Du warst **doch da**, hast dich nur vergessen am Eingang einzuchecken? Dann vermerken wir das und du bekommst gleich die Rückblick-Mail zum Abend. {Ich-war-da-Link: Ja, ich war da →}'],
+    ['p', 'Liebe Grüße und bis bald,'],
+  ]
+  // Bestehende individuelle Texte (vor den Docs im Code gepflegt) uebernehmen.
+  if (slug === 'session-03-ordner-zum-tool') {
+    const i = vorlage.findIndex(function (z) { return z[1] === 'Rückblick – war da' })
+    const j = vorlage.findIndex(function (z) { return z[1] === 'Rückblick – nicht da' })
+    vorlage.splice(i + 1, j - i - 1,
+      ['p', 'Betreff: Danke fürs Kommen – NBK Treffen – {Kurztitel}'],
+      ['p', '{Anrede},'],
+      ['p', 'es war sehr schön, dass du {Eventtag} bei unserem NBK Treffen dabei warst und wir uns dadurch wiedersehen konnten.'],
+      ['p', 'Ich hoffe, du konntest einige neue Gedanken und Impulse aus Niklas’ Vortrag, aber auch aus den Gesprächen mit den anderen Teilnehmer:innen mitnehmen.'],
+      ['p', 'Hier teile ich noch den Link zu **Amenda**, falls du dir das Tool noch etwas genauer anschauen möchtest: [www.amenda.app](https://www.amenda.app)\nIch selbst kannte Amenda vor meinem Austausch mit Niklas nicht und fand es umso spannender, dass es eine Projektmanagement-Lösung gibt, die speziell auf die Bedürfnisse von großen Architekturbüros zugeschnitten ist.'],
+      ['p', 'In Kürze werde ich außerdem die Fotos vom Abend mit euch teilen.'],
+      ['p', 'Ich freue mich jetzt schon auf unser nächstes **NewBuild Kollektiv Treffen**, das voraussichtlich Ende November stattfinden wird.'],
+      ['p', 'I’ll keep you updated.'],
+      ['p', 'Lieben Gruß und bis bald!\nAnn-Kathrin'],
+      ['k', 'P.S.: Wenn du Anregungen für unsere nächsten Treffen hast oder selbst einmal ein Thema vorstellen möchtest, schreib mir gern: {Feedback-Link: Feedback geben} · {Referent-Link: Als Referent:in eintragen}'],
+    )
+    const k = vorlage.findIndex(function (z) { return /^schade, dass du es/.test(z[1]) })
+    vorlage[k] = ['p', 'schade, dass du es {Eventtag} nicht zum NewBuild Kollektiv Treffen geschafft hast. Unser nächstes Treffen findet voraussichtlich Ende November statt. Die Infos dazu kommen bald. Ich hoffe sehr, dass ich dich dann begrüßen darf.']
+  }
+  return vorlage
+}
+
+// Haengt einen Absatz an. Setzt Schrift explizit, damit nichts vom vorigen
+// Absatz "erbt" (Docs uebernimmt sonst z. B. die kleine Schrift).
+function docAbsatz_(body, art, roh, link) {
+  const D = DocumentApp
+  const linkRe = /\[([^\]]+)\]\((https?:[^)]+)\)/g
+  const fette = []
+  const links = []
+  let plain = ''
+  // **fett** und [text](url) aufloesen
+  String(roh).split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(https?:[^)]+\))/).forEach(function (teil) {
+    if (!teil) return
+    let m
+    if (/^\*\*[^*]+\*\*$/.test(teil)) {
+      const t = teil.slice(2, -2)
+      fette.push([plain.length, plain.length + t.length - 1])
+      plain += t
+    } else if ((m = /^\[([^\]]+)\]\((https?:[^)]+)\)$/.exec(teil))) {
+      links.push([plain.length, plain.length + m[1].length - 1, m[2]])
+      plain += m[1]
+    } else {
+      plain += teil
+    }
+  })
+  linkRe.lastIndex = 0
+  const el = art === 'li' ? body.appendListItem(plain) : body.appendParagraph(plain)
+  el.setHeading(
+    art === 'h' ? D.ParagraphHeading.HEADING1
+      : art === 'h2' ? D.ParagraphHeading.HEADING2
+      : art === 'titel' ? D.ParagraphHeading.TITLE
+      : D.ParagraphHeading.NORMAL,
+  )
+  if (!plain) return el
+  const t = el.editAsText()
+  t.setBold(false).setItalic(false).setLinkUrl(null)
+  t.setFontSize(art === 'titel' ? 24 : art === 'h' ? 18 : art === 'h2' ? 13 : art === 'k' ? 9 : 11)
+  t.setForegroundColor(art === 'k' ? '#666666' : '#000000')
+  if (art === 'h' || art === 'h2') t.setBold(true)
+  fette.forEach(function (f) { t.setBold(f[0], f[1], true) })
+  links.forEach(function (l) { t.setLinkUrl(l[0], l[1], l[2]) })
+  if (link) t.setLinkUrl(link)
+  if (art === 'h') el.setSpacingBefore(28)
+  return el
+}
+
+function mailTexteOrdner_() {
+  const parent = getOrCreateFolder()
+  const it = parent.getFoldersByName(MAILTEXTE_ORDNER)
+  return it.hasNext() ? it.next() : parent.createFolder(MAILTEXTE_ORDNER)
+}
+
+function mailVorschauLink_(slug) {
+  return WEBAPP_URL + '?action=mailvorschau&slug=' + encodeURIComponent(slug)
+}
+
+function mailTestLink_(slug) {
+  return WEBAPP_URL + '?action=mailtest&slug=' + encodeURIComponent(slug)
+}
+
+function mailTexteDocAnlegen_(ev) {
+  const slug = String(ev.slug)
+  const name = 'Mail-Texte · ' + (ev.number ? String(ev.number).trim() + ' — ' : '') + String(ev.title || slug).trim()
+  const doc = DocumentApp.create(name)
+  const file = DriveApp.getFileById(doc.getId())
+  moveFileIntoFolder(file, mailTexteOrdner_())
+  const body = doc.getBody()
+  const karte = 'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(slug) + '-karte.png'
+
+  body.getChild(0).asParagraph().setText(name).setHeading(DocumentApp.ParagraphHeading.TITLE)
+  ;[
+    ['p', 'Hier stehen alle automatischen E-Mails zu diesem Event. Einfach den Text ändern – das Doc speichert von selbst, und die nächste Mail übernimmt den neuen Text automatisch. Kein Code, kein Bereitstellen.'],
+    ['p', '→ Vorschau aller Mails ansehen (mit Bild, Anhängen und Signatur)', mailVorschauLink_(slug)],
+    ['p', '→ Alle Mails als Testmail an mich schicken', mailTestLink_(slug)],
+    ['p', '→ Eventkarte (Bild) – wird automatisch aus Titel, Datum und Ort im CMS erzeugt', karte],
+    ['h2', 'So funktioniert’s'],
+    ['li', 'Die Überschriften (Bestätigung, 1 Woche vorher …) nicht umbenennen. Ist ein Abschnitt leer, geht der Standardtext raus.'],
+    ['li', 'Die erste Zeile „Betreff: …“ ist der Betreff der Mail.'],
+    ['li', '[EVENTKARTE] in einer eigenen Zeile = Eventbild mit Datum, Ort und Google-Maps-Link.'],
+    ['li', 'Kleine Schrift (9 pt) = kleine graue Schrift in der Mail, z. B. für das P.S.'],
+    ['li', 'Fett, kursiv und normale Links aus dem Doc werden übernommen.'],
+    ['li', 'Platzhalter: {Anrede} (z. B. „Liebe Maria“) · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} („gestern“ / „am Dienstag“) · {Minuten}'],
+    ['li', 'Links mit eigenem Text: {Abmelde-Link: Text} · {Feedback-Link: Text} · {Referent-Link: Text} · {Maps-Link: Text} · {Eventseite-Link: Text} · {Ich-war-da-Link: Text} (der Absatz wird zum grauen Kasten).'],
+    ['li', 'Kalenderdatei (.ics) und Signatur hängen automatisch an. Datum, Zeit und Ort kommen immer aktuell aus dem CMS.'],
+    ['li', 'Versand: Bestätigung sofort · 1 Woche und 1 Tag vorher ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr · ca. 3 Std. vorher · Rückblick am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Am Vortag kommt jede Mail als [VORSCHAU] an dich.'],
+  ].concat(mailDocVorlage_(slug)).forEach(function (z) {
+    docAbsatz_(body, z[0], z[1], z[2])
+  })
+  doc.saveAndClose()
+
+  try {
+    file.addEditor(VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    Logger.log('Mail-Texte-Doc — Freigabe fehlgeschlagen: ' + err)
+  }
+  PropertiesService.getScriptProperties().setProperty('mailDoc_' + slug, doc.getId())
+  delete MAILDOC_CACHE[slug]
+
+  try {
+    GmailApp.sendEmail(
+      VORSCHAU_EMPFAENGER,
+      'Mail-Texte angelegt: ' + kurzTitel_(ev.title || slug),
+      'Für „' + (ev.title || slug) + '“ sind die Mail-Texte angelegt:\n' + doc.getUrl() +
+        '\n\nVorschau aller Mails: ' + mailVorschauLink_(slug),
+      {
+        name: SENDER_NAME,
+        from: SENDER_EMAIL,
+        htmlBody: wrapMail_(
+          '<p>Für <strong>„' + escapeHtml_(ev.title || slug) + '“</strong> sind die Mail-Texte angelegt. ' +
+            'Dort kannst du alle automatischen Mails zu diesem Event anpassen – ohne Code.</p>' +
+            '<p><a href="' + doc.getUrl() + '" style="color:#3d5a80">Mail-Texte öffnen</a> · ' +
+            '<a href="' + mailVorschauLink_(slug) + '" style="color:#3d5a80">Vorschau aller Mails</a></p>',
+        ),
+      },
+    )
+  } catch (err) {
+    Logger.log('Mail-Texte-Doc — Info-Mail fehlgeschlagen: ' + err)
+  }
+  Logger.log('Mail-Texte-Doc angelegt fuer ' + slug + ': ' + doc.getUrl())
+  return doc.getUrl()
+}
+
+// Legt fuer jedes CMS-Event ohne Doc eines an (kommende Events und solche, die
+// hoechstens MAILDOC_VORLAUF_TAGE zurueckliegen).
+function mailTexteDocsAnlegen_(cmsEvents) {
+  const heute = new Date()
+  cmsEvents.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    if (!slug || mailDocId_(slug)) return
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    if (!start || tagesDifferenz_(heute, start) < -MAILDOC_VORLAUF_TAGE) return
+    try {
+      mailTexteDocAnlegen_(ev)
+    } catch (err) {
+      Logger.log('Mail-Texte-Doc fuer ' + slug + ' fehlgeschlagen: ' + err)
+    }
+  })
+}
+
+// EINMALIG im Editor ausfuehren (fragt die Berechtigung fuer Google Docs ab und
+// legt die Docs fuer alle aktuellen Events sofort an).
+function mailTexteDocsJetztAnlegen() {
+  mailTexteDocsAnlegen_(ladeCmsEvents_())
+  ladeCmsEvents_().forEach(function (ev) {
+    const id = mailDocId_(String(ev.slug || ''))
+    if (id) Logger.log(ev.slug + ': https://docs.google.com/document/d/' + id + '/edit')
+  })
+}
+
+// ── Vorschau im Browser + Testmail ──────────────────────────────────────────
+function vorschauEventDaten_(slug) {
+  const ev = ladeCmsEvents_().filter(function (x) { return x.slug === slug })[0]
+  if (!ev) return null
+  const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+  return {
+    anrede: anrede_('w', 'Ann-Kathrin'),
+    slug: slug,
+    sid: '',
+    email: VORSCHAU_EMPFAENGER,
+    titel: String(ev.title || '').trim(),
+    referent: referentText_(ev.speakerName, ev.speakerRole, ev.speakerCompany),
+    datum: datumAnzeige_(String(ev.date || '')),
+    zeit: String(ev.time || ''),
+    ort: String(ev.location || ''),
+    start: start,
+    ende: start ? parseEventEnde_(start, String(ev.time || '')) : null,
+    checkinGenutzt: true,
+    anwesend: true,
+  }
+}
+
+function mailVorschauSeite_(p) {
+  const slug = String(p.slug || '')
+  const e = vorschauEventDaten_(slug)
+  if (!e) return HtmlService.createHtmlOutput('<p>Event „' + escapeHtml_(slug) + '“ nicht gefunden.</p>')
+  const docId = mailDocId_(slug)
+  let html =
+    '<base target="_blank"><style>body{font-family:Arial,Helvetica,sans-serif;background:#ececea;margin:0;padding:24px 16px;color:#111}' +
+    '.w{max-width:680px;margin:0 auto}.k{background:#fff;border-radius:12px;padding:20px 22px;margin:0 0 26px}' +
+    '.m{font-size:13px;color:#555;border-bottom:1px solid #e3e3e0;padding-bottom:12px;margin-bottom:16px}' +
+    'h1{font-size:22px;font-weight:500}h2{font-size:17px;margin:0 0 6px}a{color:#3d5a80}.tag{font-size:11px;padding:2px 7px;border-radius:9px;background:#e3ecf5}</style>' +
+    '<div class="w"><h1>Mail-Vorschau · ' + escapeHtml_(e.titel) + '</h1><p>' +
+    (docId ? '<a href="https://docs.google.com/document/d/' + docId + '/edit">Texte bearbeiten (Google Doc)</a> · ' : 'Noch kein Mail-Texte-Doc – es gelten die Standardtexte. · ') +
+    '<a href="' + mailTestLink_(slug) + '">Alle als Testmail an mich schicken</a></p>' +
+    '<p style="font-size:13px;color:#555">Beispiel-Empfängerin: Ann-Kathrin. Diese Seite zeigt immer den aktuellen Stand des Docs – nach einer Änderung einfach neu laden.</p>'
+  mailArten_().forEach(function (art) {
+    let m
+    try {
+      m = art[3](e)
+    } catch (err) {
+      html += '<div class="k"><h2>' + escapeHtml_(art[1]) + '</h2><p style="color:#b00">Fehler: ' + escapeHtml_(err) + '</p></div>'
+      return
+    }
+    const anh = (m.attachments || []).map(function (b) { return b.getName ? b.getName() : 'Anhang' })
+    html +=
+      '<div class="k"><div class="m"><h2>' + escapeHtml_(art[1]) + ' <span class="tag">' +
+      (m.ausDoc ? 'Text aus dem Doc' : 'Standardtext') + '</span></h2>' +
+      'Versand: ' + escapeHtml_(art[2]) + '<br><strong>Betreff:</strong> ' + escapeHtml_(m.subject) +
+      (anh.length ? '<br><strong>Anhang:</strong> 📎 ' + escapeHtml_(anh.join(', ')) : '') +
+      '</div>' + m.htmlBody + signaturHtml_() + '</div>'
+  })
+  return HtmlService.createHtmlOutput(html + '</div>')
+    .setTitle('Mail-Vorschau – NewBuild Kollektiv')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+}
+
+function mailTestSenden_(p) {
+  const slug = String(p.slug || '')
+  const e = vorschauEventDaten_(slug)
+  if (!e) return HtmlService.createHtmlOutput('<p>Event nicht gefunden.</p>')
+  const cache = CacheService.getScriptCache()
+  if (cache.get('mailtest_' + slug)) {
+    return HtmlService.createHtmlOutput('<p style="font-family:Arial">Die Testmails sind gerade erst rausgegangen – schau in dein Postfach (' + VORSCHAU_EMPFAENGER + ').</p>')
+  }
+  cache.put('mailtest_' + slug, '1', 60)
+  let n = 0
+  mailArten_().forEach(function (art) {
+    try {
+      const m = art[3](e)
+      sendeTeilnehmerMail_(VORSCHAU_EMPFAENGER, '[TEST · ' + art[1] + '] ' + m.subject, m.htmlBody, m.attachments)
+      n++
+      Utilities.sleep(300)
+    } catch (err) {
+      Logger.log('Testmail ' + art[1] + ' fehlgeschlagen: ' + err)
+    }
+  })
+  return HtmlService.createHtmlOutput(
+    '<p style="font-family:Arial,Helvetica,sans-serif;font-size:16px">' + n + ' Testmails sind an ' +
+      VORSCHAU_EMPFAENGER + ' unterwegs.</p>',
+  ).setTitle('Testmail – NewBuild Kollektiv')
 }
 
 const ERINNERUNG_STUFEN = [
