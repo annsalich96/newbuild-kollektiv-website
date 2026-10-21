@@ -132,6 +132,6 @@ Die Texte aller automatischen Mails stehen pro Event in einem **Google Doc „Ma
 - Platzhalter `{Anrede} {Titel} {Kurztitel} {Datum} {Zeit} {Ort} {Referent} {Eventtag} {Minuten}`, Links `{Abmelde-Link: Text}` `{Feedback-Link: …}` `{Referent-Link: …}` `{Maps-Link: …}` `{Eventseite-Link: …}` `{Ich-war-da-Link: …}` (Absatz wird grauer Kasten).
 - Fehlt Doc/Abschnitt oder ist er leer → Standardtext aus den `*Standard_`-Funktionen. `.ics` und Signatur kommen immer aus dem Code.
 - Neue Docs legt `sendeErinnerungen` automatisch an (jedes CMS-Event, das höchstens 2 Tage zurückliegt), Info-Mail an salich@. Doc-ID in Skript-Eigenschaft `mailDoc_<slug>`.
-- **Vorschau im Browser:** `WEBAPP_URL?action=mailvorschau&slug=<slug>` (Link steht oben im Doc) · **Testmail aller Mails an salich@:** `?action=mailtest&slug=<slug>`.
+- **Vorschau im Browser:** `newbuild-kollektiv.com/f/?do=mailvorschau&slug=<slug>` (Link steht oben im Doc) · **Testmail aller Mails an salich@:** `…/f/?do=mailtest&slug=<slug>`. Bewusst über die Website: direkte `script.google.com`-Links scheitern bei mehreren angemeldeten Google-Konten.
 
 Einmalig nach dem Einspielen: `mailTexteDocsJetztAnlegen` ausführen (fragt die Google-Docs-Berechtigung ab) und neue Version bereitstellen (für die Vorschau-/Testmail-Links).

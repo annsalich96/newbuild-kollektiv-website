@@ -174,6 +174,8 @@ function doPost(e) {
         if (data.action === 'feedback') return jsonResponse(feedbackVerarbeiten_(data))
         if (data.action === 'referent') return jsonResponse(referentVerarbeiten_(data))
         if (data.action === 'fotowiderspruch') return jsonResponse(fotoWiderspruchVerarbeiten_(data))
+        if (data.action === 'mailvorschau') return jsonResponse({ ok: true, html: mailVorschauHtml_(String(data.slug || '')) })
+        if (data.action === 'mailtest') return jsonResponse({ ok: true, html: mailTestHtml_(String(data.slug || '')) })
         return jsonResponse({ ok: false, html: '<h1>Unbekannt</h1><p>Aktion nicht erkannt.</p>' })
       } finally {
         FORM_JSON = false
@@ -1596,6 +1598,7 @@ function sendeErinnerungen() {
   }
 
   try {
+    mailDocLinksAktualisieren_()
     mailTexteDocsAnlegen_(cmsEvents)
   } catch (err) {
     Logger.log('Mail-Texte-Doc — Fehler: ' + err)
@@ -2293,7 +2296,7 @@ function nachfassDaMailStandard_(e) {
 //
 //  Neue Docs entstehen automatisch in sendeErinnerungen fuer jedes Event im
 //  CMS, das hoechstens MAILDOC_VORLAUF_TAGE zurueckliegt.
-//  Vorschau im Browser: WEBAPP_URL?action=mailvorschau&slug=<slug>
+//  Vorschau: newbuild-kollektiv.com/f/?do=mailvorschau&slug=<slug> (Testmail: do=mailtest)
 // ═══════════════════════════════════════════════════════════════════════════
 const MAILTEXTE_ORDNER = 'Mail-Texte'
 const MAILDOC_VORLAUF_TAGE = 2
@@ -2615,12 +2618,42 @@ function mailTexteOrdner_() {
   return it.hasNext() ? it.next() : parent.createFolder(MAILTEXTE_ORDNER)
 }
 
+// Ueber die Website (newbuild-kollektiv.com/f/), nicht direkt script.google.com:
+// direkte Skript-Links scheitern, wenn im Browser mehrere Google-Konten
+// angemeldet sind ("Datei kann derzeit nicht geöffnet werden").
 function mailVorschauLink_(slug) {
-  return WEBAPP_URL + '?action=mailvorschau&slug=' + encodeURIComponent(slug)
+  return SITE_FORM_URL + '?do=mailvorschau&slug=' + encodeURIComponent(slug)
 }
 
 function mailTestLink_(slug) {
-  return WEBAPP_URL + '?action=mailtest&slug=' + encodeURIComponent(slug)
+  return SITE_FORM_URL + '?do=mailtest&slug=' + encodeURIComponent(slug)
+}
+
+// Einmalig: Links in bereits angelegten Docs auf die Website-Links umstellen.
+function mailDocLinksAktualisieren_() {
+  const props = PropertiesService.getScriptProperties()
+  if (props.getProperty('mailDocLinks_v2')) return
+  const alle = props.getProperties()
+  Object.keys(alle).forEach(function (k) {
+    if (k.indexOf('mailDoc_') !== 0) return
+    const slug = k.slice('mailDoc_'.length)
+    try {
+      const doc = DocumentApp.openById(alle[k])
+      const body = doc.getBody()
+      for (let i = 0; i < Math.min(body.getNumChildren(), 12); i++) {
+        const el = body.getChild(i)
+        if (el.getType() !== DocumentApp.ElementType.PARAGRAPH) continue
+        const t = el.editAsText()
+        const url = t.getText() ? String(t.getLinkUrl(0) || '') : ''
+        if (url.indexOf('action=mailvorschau') >= 0) t.setLinkUrl(mailVorschauLink_(slug))
+        if (url.indexOf('action=mailtest') >= 0) t.setLinkUrl(mailTestLink_(slug))
+      }
+      doc.saveAndClose()
+    } catch (err) {
+      Logger.log('Mail-Texte-Doc Links (' + slug + '): ' + err)
+    }
+  })
+  props.setProperty('mailDocLinks_v2', '1')
 }
 
 function mailTexteDocAnlegen_(ev) {
@@ -2748,16 +2781,25 @@ function vorschauEventDaten_(slug) {
 }
 
 function mailVorschauSeite_(p) {
-  const slug = String(p.slug || '')
+  return HtmlService.createHtmlOutput(
+    '<base target="_blank"><style>body{font-family:Arial,Helvetica,sans-serif;background:#ececea;margin:0;padding:24px 16px;color:#111}</style>' +
+      mailVorschauHtml_(String(p.slug || '')),
+  )
+    .setTitle('Mail-Vorschau – NewBuild Kollektiv')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+}
+
+// Inhalt der Vorschau (auch fuer newbuild-kollektiv.com/f/?do=mailvorschau).
+function mailVorschauHtml_(slug) {
   const e = vorschauEventDaten_(slug)
-  if (!e) return HtmlService.createHtmlOutput('<p>Event „' + escapeHtml_(slug) + '“ nicht gefunden.</p>')
+  if (!e) return '<p>Event „' + escapeHtml_(slug) + '“ nicht gefunden.</p>'
   const docId = mailDocId_(slug)
   let html =
-    '<base target="_blank"><style>body{font-family:Arial,Helvetica,sans-serif;background:#ececea;margin:0;padding:24px 16px;color:#111}' +
-    '.w{max-width:680px;margin:0 auto}.k{background:#fff;border-radius:12px;padding:20px 22px;margin:0 0 26px}' +
-    '.m{font-size:13px;color:#555;border-bottom:1px solid #e3e3e0;padding-bottom:12px;margin-bottom:16px}' +
-    'h1{font-size:22px;font-weight:500}h2{font-size:17px;margin:0 0 6px}a{color:#3d5a80}.tag{font-size:11px;padding:2px 7px;border-radius:9px;background:#e3ecf5}</style>' +
-    '<div class="w"><h1>Mail-Vorschau · ' + escapeHtml_(e.titel) + '</h1><p>' +
+    '<style>.nbkv{text-align:left}.nbkv .k{background:#fff;border-radius:12px;padding:20px 22px;margin:0 0 26px}' +
+    '.nbkv .m{font-size:13px;color:#555;border-bottom:1px solid #e3e3e0;padding-bottom:12px;margin-bottom:16px}' +
+    '.nbkv h1{font-size:22px;font-weight:500}.nbkv h2{font-size:17px;margin:0 0 6px}.nbkv a{color:#3d5a80}' +
+    '.nbkv .tag{font-size:11px;padding:2px 7px;border-radius:9px;background:#e3ecf5}</style>' +
+    '<div class="nbkv"><h1>Mail-Vorschau · ' + escapeHtml_(e.titel) + '</h1><p>' +
     (docId ? '<a href="https://docs.google.com/document/d/' + docId + '/edit">Texte bearbeiten (Google Doc)</a> · ' : 'Noch kein Mail-Texte-Doc – es gelten die Standardtexte. · ') +
     '<a href="' + mailTestLink_(slug) + '">Alle als Testmail an mich schicken</a></p>' +
     '<p style="font-size:13px;color:#555">Beispiel-Empfängerin: Ann-Kathrin. Diese Seite zeigt immer den aktuellen Stand des Docs – nach einer Änderung einfach neu laden.</p>'
@@ -2777,18 +2819,21 @@ function mailVorschauSeite_(p) {
       (anh.length ? '<br><strong>Anhang:</strong> 📎 ' + escapeHtml_(anh.join(', ')) : '') +
       '</div>' + m.htmlBody + signaturHtml_() + '</div>'
   })
-  return HtmlService.createHtmlOutput(html + '</div>')
-    .setTitle('Mail-Vorschau – NewBuild Kollektiv')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+  return html + '</div>'
 }
 
 function mailTestSenden_(p) {
-  const slug = String(p.slug || '')
+  return HtmlService.createHtmlOutput(
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px">' + mailTestHtml_(String(p.slug || '')) + '</div>',
+  ).setTitle('Testmail – NewBuild Kollektiv')
+}
+
+function mailTestHtml_(slug) {
   const e = vorschauEventDaten_(slug)
-  if (!e) return HtmlService.createHtmlOutput('<p>Event nicht gefunden.</p>')
+  if (!e) return '<p>Event nicht gefunden.</p>'
   const cache = CacheService.getScriptCache()
   if (cache.get('mailtest_' + slug)) {
-    return HtmlService.createHtmlOutput('<p style="font-family:Arial">Die Testmails sind gerade erst rausgegangen – schau in dein Postfach (' + VORSCHAU_EMPFAENGER + ').</p>')
+    return '<h1>Schon unterwegs</h1><p>Die Testmails sind gerade erst rausgegangen – schau in dein Postfach (' + VORSCHAU_EMPFAENGER + ').</p>'
   }
   cache.put('mailtest_' + slug, '1', 60)
   let n = 0
@@ -2802,10 +2847,7 @@ function mailTestSenden_(p) {
       Logger.log('Testmail ' + art[1] + ' fehlgeschlagen: ' + err)
     }
   })
-  return HtmlService.createHtmlOutput(
-    '<p style="font-family:Arial,Helvetica,sans-serif;font-size:16px">' + n + ' Testmails sind an ' +
-      VORSCHAU_EMPFAENGER + ' unterwegs.</p>',
-  ).setTitle('Testmail – NewBuild Kollektiv')
+  return '<h1>Testmails verschickt</h1><p>' + n + ' Testmails sind an ' + VORSCHAU_EMPFAENGER + ' unterwegs.</p>'
 }
 
 const ERINNERUNG_STUFEN = [

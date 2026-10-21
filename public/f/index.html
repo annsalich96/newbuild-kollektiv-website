@@ -215,8 +215,34 @@
       });
   }
 
+  // Mail-Vorschau / Testmail aus dem Mail-Texte-Doc (nur fuer das Team).
+  function mailAktion(action) {
+    if (action === 'mailvorschau') {
+      card.style.maxWidth = '720px';
+      document.body.style.alignItems = 'flex-start';
+    }
+    card.innerHTML = '<h1>Einen Moment …</h1><p>' +
+      (action === 'mailtest' ? 'Die Testmails werden verschickt.' : 'Die Vorschau wird geladen.') + '</p>' + foot;
+    fetch(EXEC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, slug: slug })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res || !res.html) throw new Error('Unerwartete Antwort');
+        card.innerHTML = res.html + foot;
+        Array.prototype.forEach.call(card.querySelectorAll('a'), function (a) { a.target = '_blank'; });
+      })
+      .catch(function () {
+        card.innerHTML = '<h1>Hm</h1><p class="err">Das hat nicht geklappt. Bitte Seite neu laden.</p>' + foot;
+      });
+  }
+
   if (doo === 'fotoinfo') {
     showInfo();
+  } else if (doo === 'mailvorschau' || doo === 'mailtest') {
+    mailAktion(doo);
   } else if (doo === 'warda') {
     autoSubmit('warda');
   } else if (CFG[doo]) {
