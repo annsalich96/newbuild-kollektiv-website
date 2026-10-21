@@ -97,9 +97,9 @@ function signaturText_() {
 }
 
 // Stunde (0–23, Europe/Berlin), ab der die tagesbasierten Erinnerungen
-// (1 Woche / 1 Tag) rausgehen; Nachfass erst ab 16:30 (siehe ERINNERUNG_STUFEN). Der Trigger laeuft stuendlich,
+// (1 Woche / 1 Tag / Nachfass) und die Vorschauen rausgehen. Der Trigger laeuft alle 15 Min.,
 // verschickt diese Stufen aber fruehestens ab dieser Uhrzeit.
-const ERINNERUNG_SENDESTUNDE = 8
+const ERINNERUNG_SENDESTUNDE = 9
 
 // Tagesstufe mit eigener Uhrzeit ("ab" in ERINNERUNG_STUFEN, z. B. '16:30'),
 // sonst ab ERINNERUNG_SENDESTUNDE. Uhrzeit Europe/Berlin.
@@ -1730,12 +1730,12 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
     }
   }
 
-  sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten)
+  sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten, eventSlug, jetzt)
 
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     const faellig =
       stufe.modus === 'tage'
-        ? tageBis === stufe.wert && sendezeitErreicht_(jetzt, stufe)
+        ? stufeFaelligAm_(stufe, eventSlug, tageBis, datumStr_(jetzt, 0)) && sendezeitErreicht_(jetzt, stufe)
         : stundenBis > 0 && stundenBis <= stufe.wert
     if (!faellig) return
     Logger.log('Erinnerung — "' + sheetName + '": Stufe "' + stufe.spalte + '" faellig.')
@@ -1800,7 +1800,7 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
 // nur einmal raus (gemerkt in den Skript-Eigenschaften).
 const VORSCHAU_EMPFAENGER = 'salich@annarchitecture-studio.com'
 
-function sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten) {
+function sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten, eventSlug, jetzt) {
   if (stunde < ERINNERUNG_SENDESTUNDE) return
   // Empfaengerzahl (eindeutige E-Mails, nicht abgemeldet) fuer den Betreff.
   const empf = {}
@@ -1819,10 +1819,15 @@ function sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventD
   const sid = sheet.getParent().getId()
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     // Tagesstufen: Vorschau am Vortag. 3-Std-Stufe: Vorschau am Tag vor dem Event.
-    const vorschauTag = stufe.modus === 'tage' ? stufe.wert + 1 : 1
-    if (tageBis !== vorschauTag) return
+    const morgenFaellig =
+      stufe.modus === 'tage'
+        ? stufeFaelligAm_(stufe, eventSlug, tageBis - 1, datumStr_(jetzt, 1))
+        : tageBis === 1
+    if (!morgenFaellig) return
     const e = eventDaten(beispiel, VORSCHAU_EMPFAENGER)
-    const key = 'vorschau_' + sid + '_' + stufe.spalte + '_' + Utilities.formatDate(e.start, 'Europe/Berlin', 'yyyyMMdd')
+    // Pro Stufe und Versandtag einmal (bei verschobenem Versand kommt die
+    // Vorschau also erneut).
+    const key = 'vorschau_' + sid + '_' + stufe.spalte + '_' + datumStr_(jetzt, 1)
     if (props.getProperty(key)) return
     const varianten =
       stufe.bauen === mailNachfass_
@@ -2103,6 +2108,66 @@ function mailDreiStunden_(e) {
   }
 }
 
+// Abweichender Versandtag fuer die Rueckblick-Mail (sonst: Tag nach dem
+// Event). slug -> 'TT.MM.JJJJ'. Uhrzeit wie in ERINNERUNG_STUFEN ("ab").
+const NACHFASS_TERMIN = {
+  'session-03-ordner-zum-tool': '22.10.2026',
+}
+
+// true, wenn die Tagesstufe an dem Tag faellig ist, fuer den tageBis/datum gelten.
+function stufeFaelligAm_(stufe, slug, tageBis, datum) {
+  if (stufe.bauen === mailNachfass_ && NACHFASS_TERMIN[slug]) return datum === NACHFASS_TERMIN[slug]
+  return tageBis === stufe.wert
+}
+
+// Datum (Europe/Berlin) heute + plusTage als 'TT.MM.JJJJ'.
+function datumStr_(jetzt, plusTage) {
+  return Utilities.formatDate(new Date(jetzt.getTime() + plusTage * 86400000), 'Europe/Berlin', 'dd.MM.yyyy')
+}
+
+// "gestern" / "heute" / "am Dienstag" relativ zum Versandzeitpunkt, '' ohne Datum.
+function eventTagWort_(start) {
+  if (!start) return ''
+  const diff = tagesDifferenz_(start, new Date())
+  if (diff === 0) return 'heute'
+  if (diff === 1) return 'gestern'
+  return 'am ' + ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][start.getDay()]
+}
+
+// Individueller Rueckblick-Text ("war da") pro Event; ersetzt den Standardtext
+// nach der Anrede. Bekommt das Mail-Objekt e.
+const NACHFASS_DA_TEXT = {
+  'session-03-ordner-zum-tool': function (e) {
+    const tag = eventTagWort_(e.start)
+    return (
+      '<p>es war richtig schön, dass du' + (tag ? ' ' + tag : '') +
+      ' bei unserem NBK Treffen dabei warst und wir uns dadurch wiedersehen konnten.</p>' +
+      '<p>Ich hoffe, du konntest einige neue Gedanken und Impulse aus Niklas’ Vortrag, ' +
+      'aber auch aus den Gesprächen mit den anderen Teilnehmer:innen mitnehmen.</p>' +
+      '<p>Hier teile ich noch den Link zu <strong>Amenda</strong>, falls du dir das Tool noch ' +
+      'etwas genauer anschauen möchtest: <a href="https://www.amenda.app" style="color:#3d5a80">www.amenda.app</a><br>' +
+      'Ich selbst kannte Amenda vor meinem Austausch mit Niklas nicht und fand es umso spannender, ' +
+      'dass es eine Projektmanagement-Lösung gibt, die speziell auf die Bedürfnisse von ' +
+      'Architekturbüros zugeschnitten ist.</p>' +
+      '<p>In Kürze werde ich außerdem die Fotos vom Abend mit euch teilen.</p>' +
+      '<p>Ich freue mich jetzt schon auf unser nächstes <strong>NewBuild Kollektiv Treffen</strong>, ' +
+      'das voraussichtlich Ende November stattfinden wird.</p>' +
+      '<p>I’ll keep you updated.</p>' +
+      '<p>Lieben Gruß und bis bald!<br>Ann-Kathrin</p>' +
+      '<p style="color:#666;font-size:13px;margin-top:20px">P.S.: Wenn du Anregungen für unsere ' +
+      'nächsten Treffen hast oder selbst einmal ein Thema vorstellen möchtest, schreib mir gern: ' +
+      '<a href="' + feedbackLink_(e.slug, e.titel) + '" style="color:#3d5a80">Feedback geben</a> · ' +
+      '<a href="' + referentLink_() + '" style="color:#3d5a80">Als Referent:in eintragen</a></p>'
+    )
+  },
+}
+
+// Satz zum naechsten Treffen in der "nicht da"-Mail, pro Event (sonst Standard).
+const NACHFASS_NAECHSTES_TREFFEN = {
+  'session-03-ordner-zum-tool':
+    'Unser nächstes Treffen findet voraussichtlich Ende November statt. Die Infos dazu kommen bald.',
+}
+
 // Optionaler Zusatz-Absatz in der "war da"-Nachfassmail, pro Event.
 // slug -> fertiges <p>…</p> (z. B. Hinweis aufs naechste Treffen).
 const NACHFASS_ZUSATZ = {
@@ -2129,9 +2194,10 @@ function nachfassNichtDaMail_(e) {
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>schade, dass du es gestern nicht zum NewBuild Kollektiv Treffen geschafft ' +
-        'hast. Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass ich ' +
-        'dich dann begrüßen darf.</p>' +
+        '<p>schade, dass du es' + (eventTagWort_(e.start) ? ' ' + eventTagWort_(e.start) : '') +
+        ' nicht zum NewBuild Kollektiv Treffen geschafft ' +
+        'hast. ' + (NACHFASS_NAECHSTES_TREFFEN[e.slug] || 'Die Infos zum nächsten Treffen kommen bald.') +
+        ' Ich hoffe sehr, dass ich dich dann begrüßen darf.</p>' +
         '<p style="margin:0 0 18px;padding:14px 16px;background:#f4f4f2;border-radius:8px">' +
         'Du warst <strong>doch da</strong>, hast dich nur vergessen am Eingang ' +
         'einzuchecken? Dann vermerken wir das und du bekommst gleich die ' +
@@ -2139,20 +2205,28 @@ function nachfassNichtDaMail_(e) {
         '<a href="' + wardaLink_(e.sid, e.slug, e.email) +
         '" style="color:#3d5a80">Ja, ich war da →</a>' +
         '</p>' +
-        '<p>Bis bald und liebe Grüße,</p>',
+        '<p>Liebe Grüße und bis bald,</p>',
     ),
   }
 }
 
 function nachfassDaMail_(e) {
+  const individuell = NACHFASS_DA_TEXT[e.slug]
+  if (individuell) {
+    return {
+      subject: 'Danke fürs Kommen – NBK Treffen – ' + kurzTitel_(e.titel),
+      htmlBody: wrapMail_('<p>' + escapeHtml_(e.anrede) + ',</p>' + individuell(e)),
+    }
+  }
+  const tag = eventTagWort_(e.start)
   return {
     subject: 'Danke fürs Kommen – NBK Treffen – ' + kurzTitel_(e.titel),
     htmlBody: wrapMail_(
       '<p>' +
         escapeHtml_(e.anrede) +
         ',</p>' +
-        '<p>was für ein schöner Abend gestern!<br>' +
-        'Ich habe mich sehr gefreut, dass du bei unserem gestrigen NewBuild Kollektiv ' +
+        '<p>was für ein schöner Abend' + (tag ? ' ' + tag : '') + '!<br>' +
+        'Ich habe mich sehr gefreut, dass du bei unserem NewBuild Kollektiv ' +
         'Abend dabei gewesen bist.</p>' +
         '<p>Ich hoffe, du hast ' +
         (e.referent
@@ -2177,7 +2251,7 @@ const ERINNERUNG_STUFEN = [
   { spalte: 'Erinnerung 1 Woche', modus: 'tage', wert: 7, bauen: mailEineWoche_ },
   { spalte: 'Erinnerung 1 Tag', modus: 'tage', wert: 1, bauen: mailEinTag_ },
   { spalte: 'Erinnerung 3 Std', modus: 'stunden', wert: 3, bauen: mailDreiStunden_ },
-  { spalte: 'Nachfass E-Mail', modus: 'tage', wert: -1, ab: '16:30', bauen: mailNachfass_ },
+  { spalte: 'Nachfass E-Mail', modus: 'tage', wert: -1, bauen: mailNachfass_ },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────

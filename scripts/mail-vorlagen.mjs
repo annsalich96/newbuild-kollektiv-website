@@ -81,18 +81,18 @@ async function karteDataUri(slug) {
 function stufen(e) {
   return [
     { name: 'Anmeldebestätigung', wann: 'Sofort nach der Anmeldung auf der Website', mail: gs.bestaetigungMail_(e) },
-    { name: 'Erinnerung 1 Woche', wann: '7 Tage vorher, ab 8 Uhr', vorschau: '8 Tage vorher', mail: gs.mailEineWoche_(e) },
-    { name: 'Erinnerung 1 Tag', wann: 'Am Vortag, ab 8 Uhr', vorschau: '2 Tage vorher', mail: gs.mailEinTag_(e) },
+    { name: 'Erinnerung 1 Woche', wann: '7 Tage vorher, ab 9 Uhr', vorschau: '8 Tage vorher', mail: gs.mailEineWoche_(e) },
+    { name: 'Erinnerung 1 Tag', wann: 'Am Vortag, ab 9 Uhr', vorschau: '2 Tage vorher', mail: gs.mailEinTag_(e) },
     { name: 'Erinnerung 3 Std', wann: 'Am Eventtag, ca. 3 Stunden vor Beginn', vorschau: 'am Vortag', mail: gs.mailDreiStunden_(e) },
     {
       name: 'Rückblick „war da“',
-      wann: 'Am Tag nach dem Event, ab 16:30 Uhr – an alle, die eingecheckt haben (oder an alle, wenn der Check-in nicht genutzt wurde)',
+      wann: 'Am Tag nach dem Event, ab 9 Uhr – an alle, die eingecheckt haben (oder an alle, wenn der Check-in nicht genutzt wurde)',
       vorschau: 'am Eventtag',
       mail: gs.nachfassDaMail_(e),
     },
     {
       name: 'Rückblick „nicht da“',
-      wann: 'Am Tag nach dem Event, ab 16:30 Uhr – an alle, die nicht eingecheckt haben',
+      wann: 'Am Tag nach dem Event, ab 9 Uhr – an alle, die nicht eingecheckt haben',
       vorschau: 'am Eventtag',
       mail: gs.nachfassNichtDaMail_(e),
     },
