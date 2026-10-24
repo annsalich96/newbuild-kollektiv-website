@@ -2354,6 +2354,34 @@ function medienAbgleichen_(cmsEvents) {
     })
   })
   SpreadsheetApp.flush()
+  medienEventsInKontakte_(kontakte, einsaetze)
+}
+
+// Spalte "Events" in "Kontakte": bei welchen Events die Person eingesetzt war
+// bzw. ist (aus "Einsätze" — also nach Zusage oder wenn Ann sie einträgt).
+// Wird bei jedem Lauf neu berechnet; "Notizen" bleibt unangetastet.
+function medienEventsInKontakte_(kontakte, einsaetze) {
+  const ew = einsaetze.getDataRange().getValues()
+  const ek = ew[0]
+  const proName = {}
+  for (let r = 1; r < ew.length; r++) {
+    const event = String(ew[r][ek.indexOf('Event')] || '').trim()
+    if (!event) continue
+    ;['Fotograf:in', 'Videograf:in'].forEach(function (sp) {
+      const n = String(ew[r][ek.indexOf(sp)] || '').trim().toLowerCase()
+      if (!n) return
+      ;(proName[n] = proName[n] || []).push(event)
+    })
+  }
+  const spalte = ensureColumn_(kontakte, 'Events')
+  const kw = kontakte.getDataRange().getValues()
+  const iName = kw[0].indexOf('Name')
+  for (let r = 1; r < kw.length; r++) {
+    const n = String(kw[r][iName] || '').trim().toLowerCase()
+    if (!n) continue
+    const neu = (proName[n] || []).join('\n')
+    if (String(kw[r][spalte - 1] || '') !== neu) kontakte.getRange(r + 1, spalte).setValue(neu)
+  }
 }
 
 // EINMALIG im Editor ausfuehren: legt "Media Contacts" und die Event-Ordner
