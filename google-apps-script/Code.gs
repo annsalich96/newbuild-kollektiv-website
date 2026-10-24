@@ -1388,10 +1388,11 @@ function wardaVerarbeiten_(p) {
 // Verschickt eine Mail an eine:n Teilnehmer:in ueber den verifizierten
 // "Senden als"-Alias (GmailApp, damit "from" gesetzt werden kann) und haengt
 // automatisch die Signatur an — HTML plus Text-Fallback. Optional: attachments
-// (Array von Blobs, z.B. die .ics-Datei). Setzt voraus, dass SENDER_EMAIL in
+// (Array von Blobs, z.B. die .ics-Datei); kopieAnAnn = BCC an VORSCHAU_EMPFAENGER
+// fuer Mails ohne vorherige Vorschau. Setzt voraus, dass SENDER_EMAIL in
 // Gmail unter Einstellungen > Konten > "Senden als" als verifizierter Alias
 // hinterlegt ist (sonst "Invalid sender email").
-function sendeTeilnehmerMail_(to, subject, htmlBody, attachments) {
+function sendeTeilnehmerMail_(to, subject, htmlBody, attachments, kopieAnAnn) {
   const opts = {
     name: SENDER_NAME,
     from: SENDER_EMAIL,
@@ -1399,6 +1400,7 @@ function sendeTeilnehmerMail_(to, subject, htmlBody, attachments) {
     htmlBody: htmlBody + signaturHtml_(),
   }
   if (attachments && attachments.length) opts.attachments = attachments
+  if (kopieAnAnn && to !== VORSCHAU_EMPFAENGER) opts.bcc = VORSCHAU_EMPFAENGER
   GmailApp.sendEmail(to, subject, htmlToPlain_(htmlBody) + signaturText_(), opts)
 }
 
@@ -1609,6 +1611,12 @@ function sendeErinnerungen() {
     medienAbgleichen_(cmsEvents)
   } catch (err) {
     Logger.log('Medien — Fehler: ' + err)
+  }
+
+  try {
+    sponsorAbgleichen_(cmsEvents)
+  } catch (err) {
+    Logger.log('Sponsoren — Fehler: ' + err)
   }
 
   const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
@@ -2234,7 +2242,7 @@ function medienHonorarText_(zeile, kopf) {
 function medienEinladungMail_(kontakt, rolle, ev, folder) {
   const m = medienMail_('upload', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() }))
   const ics = medienIcs_(ev, rolle, folder.getUrl())
-  sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined)
+  sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined, true)
   PropertiesService.getScriptProperties().setProperty(medienStandKey_(ev, kontakt), medienStand_(ev))
 }
 
@@ -2273,6 +2281,12 @@ function medienNachlauf_(anfragen, kontakt, rolle, ev, folder, start, jetzt) {
   const props = PropertiesService.getScriptProperties()
   const slug = String(ev.slug)
   if (start.getTime() > jetzt.getTime()) {
+    // Am Eventtag: Vorschau der Danke-Mail an Ann.
+    if (tagesDifferenz_(jetzt, start) === 0 && Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE) {
+      vorschauAnAnn_('medienDankeVorschau_' + slug + '_' + String(kontakt.email).toLowerCase(),
+        medienMail_('danke', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() })),
+        'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + kontakt.name, mailGruppe_('medien'), slug)
+    }
     const key = medienStandKey_(ev, kontakt)
     const alt = props.getProperty(key)
     const neu = medienStand_(ev)
@@ -2285,7 +2299,7 @@ function medienNachlauf_(anfragen, kontakt, rolle, ev, folder, start, jetzt) {
       vorher: a[0] + (a[1] ? ' · ' + a[1] + ' Uhr' : '') + (a[2] ? ' · ' + a[2] : ''),
     }))
     const ics = medienIcs_(ev, rolle, folder.getUrl())
-    sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined)
+    sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined, true)
     props.setProperty(key, neu)
     Logger.log('Medien — Aenderungs-Mail ' + rolle + ' an ' + kontakt.email + ' (' + slug + ')')
     return
@@ -2370,7 +2384,7 @@ function medienAbgleichen_(cmsEvents) {
     props.setProperty('medienPrioritaeten', MEDIEN_PRIORITAETEN.join(''))
   }
   try {
-    medienMailDoc_() // Texte-Doc sofort anlegen, damit Ann es vor der ersten Anfrage sieht
+    grundvorlageDoc_(mailGruppe_('medien')) // Grundvorlage sofort anlegen
   } catch (err) {
     Logger.log('Medien-Mail-Doc — ' + err)
   }
@@ -2478,14 +2492,14 @@ function medienAbgleichen_(cmsEvents) {
 // Spalte "Events" in "Kontakte": bei welchen Events die Person eingesetzt war
 // bzw. ist (aus "Einsätze" — also nach Zusage oder wenn Ann sie einträgt).
 // Wird bei jedem Lauf neu berechnet; "Notizen" bleibt unangetastet.
-function medienEventsInKontakte_(kontakte, einsaetze) {
+function medienEventsInKontakte_(kontakte, einsaetze, spalten) {
   const ew = einsaetze.getDataRange().getValues()
   const ek = ew[0]
   const proName = {}
   for (let r = 1; r < ew.length; r++) {
     const event = String(ew[r][ek.indexOf('Event')] || '').trim()
     if (!event) continue
-    ;['Fotograf:in', 'Videograf:in'].forEach(function (sp) {
+    ;(spalten || ['Fotograf:in', 'Videograf:in']).forEach(function (sp) {
       const n = String(ew[r][ek.indexOf(sp)] || '').trim().toLowerCase()
       if (!n) return
       ;(proName[n] = proName[n] || []).push(event)
@@ -2518,8 +2532,8 @@ function medienJetztEinrichten() {
 //   3. Zusage -> Name in "Einsätze"; der Abgleich gibt dann Zugang zum Ordner
 //      und schickt den Upload-Link. Absage -> naechster Kontakt.
 //   4. Niemand mehr uebrig -> einmal Mail an Ann, nichts weiter.
-// Verlauf im Blatt "Anfragen". Texte im Doc "Mail-Texte · Fotograf:innen &
-// Videograf:innen" (Ordner Mail-Texte), sonst die Standardtexte unten.
+// Verlauf im Blatt "Anfragen". Texte im Event-Doc "Mail-Texte Foto & Video"
+// (sonst Grundvorlage, sonst die Standardtexte unten, siehe MAIL-GRUPPEN).
 const MEDIEN_ERINNERUNG_TAGE = 2
 // Foto/Video sollen so viele Minuten vor Eventbeginn da sein (Platzhalter {Ankunft}).
 const MEDIEN_VORLAUF_MIN = 30
@@ -2567,10 +2581,15 @@ function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
   if (offen !== undefined) {
     const tage = (jetzt.getTime() - Number(werte[offen][c('Seit')] || 0)) / 86400000
     if (tage < MEDIEN_FRIST_TAGE) {
+      const k = kontaktListe.filter(function (x) {
+        return x.email.toLowerCase() === String(werte[offen][c('E-Mail')]).toLowerCase()
+      })[0] || { name: werte[offen][c('Name')], email: werte[offen][c('E-Mail')], honorar: '' }
+      if (tage >= MEDIEN_ERINNERUNG_TAGE - 1 && tage < MEDIEN_ERINNERUNG_TAGE && werte[offen][c('Status')] === 'angefragt') {
+        vorschauAnAnn_('medienErinnVorschau_' + werte[offen][c('Token')],
+          medienMail_('erinnerung', medienMailDaten_(k, rolle, ev, { token: 'VORSCHAU' })),
+          'in etwa einem Tag an ' + k.name + ' (falls bis dahin keine Antwort kommt)', mailGruppe_('medien'), slug)
+      }
       if (tage >= MEDIEN_ERINNERUNG_TAGE && werte[offen][c('Status')] === 'angefragt') {
-        const k = kontaktListe.filter(function (x) {
-          return x.email.toLowerCase() === String(werte[offen][c('E-Mail')]).toLowerCase()
-        })[0] || { name: werte[offen][c('Name')], email: werte[offen][c('E-Mail')], honorar: '' }
         const m = medienMail_('erinnerung', medienMailDaten_(k, rolle, ev, { token: werte[offen][c('Token')] }))
         sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
         sh.getRange(offen + 1, c('Status') + 1).setValue('erinnert')
@@ -2597,9 +2616,27 @@ function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
 
   if (kandidaten.length) {
     const k = kandidaten[0]
+    // Erste Anfrage je Event+Rolle: heute Vorschau an Ann, Versand morgen ab
+    // ERINNERUNG_SENDESTUNDE (Ann kann den Text im Event-Doc noch anpassen).
+    // Weitere Personen (B, C) und knappe Termine: sofort, mit Kopie an Ann.
+    const erste = !eigene.length
+    const evStart = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    const knapp = !evStart || evStart.getTime() - jetzt.getTime() < 2 * 86400000
+    const pr = PropertiesService.getScriptProperties()
+    const planKey = 'medienAnfragePlan_' + slug + '_' + rolle
+    if (erste && !knapp) {
+      const plan = Number(pr.getProperty(planKey) || 0)
+      if (!plan) {
+        vorschauAnAnn_(planKey + '_vorschau', medienMail_('anfrage', medienMailDaten_(k, rolle, ev, { token: 'VORSCHAU' })),
+          'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + k.name, mailGruppe_('medien'), slug)
+        pr.setProperty(planKey, String(morgenUm_(jetzt)))
+        return null
+      }
+      if (jetzt.getTime() < plan) return null
+    }
     const token = Utilities.getUuid()
     const m = medienMail_('anfrage', medienMailDaten_(k, rolle, ev, { token: token }))
-    sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
+    sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, undefined, !erste || knapp)
     sh.appendRow([
       medienOrdnerName_(ev), rolle, k.name, k.email, k.prioritaet, 'angefragt', jetztText_(), '', '', slug, token, jetzt.getTime(),
     ])
@@ -2714,6 +2751,320 @@ function medienAntwortVerarbeiten_(p) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  SPONSOREN
+//
+//  Tabelle "Sponsor Contacts" (Ordner DRIVE_FOLDER_NAME):
+//    Kontakte — eine Zeile pro Ansprechperson (Name, Firma, Anrede w/m, E-Mail …)
+//    Einsätze — eine Zeile pro CMS-Event (legt das Skript an); Ann waehlt dort
+//               bis zu drei Personen (Sponsor 1–3). "Versand" protokolliert.
+//  Mails je Person und Event (Texte im Event-Doc "Mail-Texte Sponsoren"):
+//    Info      — Vorschau an Ann beim ersten Lauf nach dem Eintragen, Versand
+//                am naechsten Tag ab ERINNERUNG_SENDESTUNDE (mit .ics)
+//    1 Woche   — 7 Tage vorher (Vorschau am Vortag), mit Anmeldezahl + .ics
+//    Änderung  — sofort bei geaendertem Datum/Zeit/Ort im CMS (Kopie an Ann)
+//    Danke     — SPONSOR_DANKE_NACH_TAGEN nach dem Event (Vorschau am Vortag)
+//  Gemerkt in den Skript-Eigenschaften (spons_<slug>_<email>_…), keine
+//  Personendaten im Code — dieses Repo ist oeffentlich.
+// ═══════════════════════════════════════════════════════════════════════════
+const SPONSOR_SHEET_NAME = 'Sponsor Contacts'
+const SPONSOR_KONTAKTE_HEADERS = ['Name', 'Firma', 'Anrede (w/m)', 'E-Mail', 'Position', 'Telefon', 'Notizen']
+const SPONSOR_SPALTEN = ['Sponsor 1', 'Sponsor 2', 'Sponsor 3']
+const SPONSOR_EINSAETZE_HEADERS = ['Event', 'Datum'].concat(SPONSOR_SPALTEN).concat(['Versand', 'Slug'])
+const SPONSOR_DANKE_NACH_TAGEN = 1
+
+function sponsorSpreadsheet_() {
+  const props = PropertiesService.getScriptProperties()
+  const id = props.getProperty('sponsorSheetId')
+  if (id) {
+    try {
+      return SpreadsheetApp.openById(id)
+    } catch (err) {
+      props.deleteProperty('sponsorSheetId')
+    }
+  }
+  const ordner = getOrCreateFolder()
+  const vorhanden = ordner.getFilesByName(SPONSOR_SHEET_NAME)
+  if (vorhanden.hasNext()) {
+    const ss = SpreadsheetApp.open(vorhanden.next())
+    props.setProperty('sponsorSheetId', ss.getId())
+    return ss
+  }
+  const ss = SpreadsheetApp.create(SPONSOR_SHEET_NAME)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
+  const kontakte = ss.getSheets()[0].setName('Kontakte')
+  kontakte.appendRow(SPONSOR_KONTAKTE_HEADERS)
+  kontakte
+    .getRange(2, SPONSOR_KONTAKTE_HEADERS.indexOf('Anrede (w/m)') + 1, 500, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['w', 'm'], true).build())
+  const einsaetze = ss.insertSheet('Einsätze')
+  einsaetze.appendRow(SPONSOR_EINSAETZE_HEADERS)
+  const namen = SpreadsheetApp.newDataValidation().requireValueInRange(kontakte.getRange('A2:A'), true).build()
+  SPONSOR_SPALTEN.forEach(function (sp) {
+    einsaetze.getRange(2, SPONSOR_EINSAETZE_HEADERS.indexOf(sp) + 1, 200, 1).setDataValidation(namen)
+  })
+  ;[kontakte, einsaetze].forEach(function (sh) {
+    sh.setFrozenRows(1)
+    sh.getRange(1, 1, 1, sh.getLastColumn()).setFontWeight('bold')
+  })
+  einsaetze.hideColumns(SPONSOR_EINSAETZE_HEADERS.indexOf('Slug') + 1)
+  einsaetze.getRange(2, SPONSOR_EINSAETZE_HEADERS.indexOf('Datum') + 1, 200, 1).setNumberFormat('@')
+  einsaetze.setColumnWidth(1, 320)
+  einsaetze.setColumnWidth(SPONSOR_EINSAETZE_HEADERS.indexOf('Versand') + 1, 360)
+  try {
+    DriveApp.getFileById(ss.getId()).addEditor(VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    Logger.log('Sponsor Contacts — Freigabe fehlgeschlagen: ' + err)
+  }
+  props.setProperty('sponsorSheetId', ss.getId())
+  Logger.log('Sponsor Contacts angelegt: ' + ss.getUrl())
+  return ss
+}
+
+// Laeuft mit sendeErinnerungen.
+function sponsorAbgleichen_(cmsEvents) {
+  const ss = sponsorSpreadsheet_()
+  const kontakte = ss.getSheetByName('Kontakte')
+  const einsaetze = ss.getSheetByName('Einsätze')
+  if (!kontakte || !einsaetze) throw new Error('Tabellenblatt "Kontakte" oder "Einsätze" fehlt')
+  try {
+    grundvorlageDoc_(mailGruppe_('sponsoren'))
+  } catch (err) {
+    Logger.log('Grundvorlage Sponsoren — ' + err)
+  }
+
+  const kw = kontakte.getDataRange().getValues()
+  const kk = kw[0]
+  const perName = {}
+  for (let r = 1; r < kw.length; r++) {
+    const w = function (n) {
+      const i = kk.indexOf(n)
+      return i >= 0 ? String(kw[r][i] == null ? '' : kw[r][i]).trim() : ''
+    }
+    const name = w('Name')
+    if (name) perName[name.toLowerCase()] = { name: name, firma: w('Firma'), anrede: w('Anrede (w/m)'), email: w('E-Mail') }
+  }
+
+  const jetzt = new Date()
+  const ew = einsaetze.getDataRange().getValues()
+  const ek = ew[0]
+  const col = function (name) { return ek.indexOf(name) + 1 }
+  const zeileProSlug = {}
+  for (let r = 1; r < ew.length; r++) {
+    const s = String(ew[r][col('Slug') - 1] || '').trim()
+    if (s) zeileProSlug[s] = r + 1
+  }
+  const vermerk = function (zeile, text) {
+    const zelle = einsaetze.getRange(zeile, col('Versand'))
+    const alt = String(zelle.getValue() || '')
+    if (alt.split('\n').indexOf(text) >= 0) return
+    zelle.setValue(alt ? alt + '\n' + text : text)
+  }
+
+  cmsEvents.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    if (!slug) return
+    let zeile = zeileProSlug[slug]
+    if (!zeile) {
+      const neu = SPONSOR_EINSAETZE_HEADERS.map(function () { return '' })
+      neu[SPONSOR_EINSAETZE_HEADERS.indexOf('Slug')] = slug
+      einsaetze.appendRow(neu)
+      zeile = einsaetze.getLastRow()
+      zeileProSlug[slug] = zeile
+    }
+    einsaetze.getRange(zeile, col('Event')).setValue(medienOrdnerName_(ev))
+    einsaetze.getRange(zeile, col('Datum')).setValue(String(ev.date || ''))
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    if (!start) return
+    const z = einsaetze.getRange(zeile, 1, 1, ek.length).getValues()[0]
+    SPONSOR_SPALTEN.forEach(function (sp) {
+      const name = String(z[col(sp) - 1] || '').trim()
+      if (!name) return
+      const k = perName[name.toLowerCase()]
+      if (!k || !k.email) {
+        vermerk(zeile, name + ': E-Mail fehlt in „Kontakte“')
+        return
+      }
+      try {
+        const getan = sponsorNachlauf_(k, ev, start, jetzt)
+        if (getan) vermerk(zeile, k.name + ': ' + getan + ' · ' + jetztText_())
+      } catch (err) {
+        Logger.log('Sponsoren — ' + k.email + ' (' + slug + '): ' + err)
+        vermerk(zeile, k.name + ': FEHLER ' + err)
+      }
+    })
+  })
+  SpreadsheetApp.flush()
+  medienEventsInKontakte_(kontakte, einsaetze, SPONSOR_SPALTEN)
+}
+
+function sponsorMailDaten_(k, ev, extra) {
+  const vorname = String(k.name || '').trim().split(' ')[0]
+  const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+  const referent = referentText_(ev.speakerName, ev.speakerRole, ev.speakerCompany)
+  return {
+    slug: String(ev.slug || ''),
+    anrede: anrede_(k.anrede, vorname),
+    vorname: vorname,
+    firma: String(k.firma || ''),
+    titel: String(ev.title || '').trim(),
+    kurztitel: kurzTitel_(ev.title),
+    datum: String(ev.date || ''),
+    zeit: String(ev.time || ''),
+    ort: String(ev.location || ''),
+    referent: referent,
+    eventtag: eventTagWort_(start),
+    anmeldungen: String(extra.anmeldungen || ''),
+    teilnehmende: String(extra.teilnehmende || ''),
+    vorher: String(extra.vorher || ''),
+    karte: {
+      slug: String(ev.slug || ''), titel: String(ev.title || '').trim(), referent: referent,
+      datum: String(ev.date || ''), zeit: String(ev.time || ''), ort: String(ev.location || ''),
+    },
+    links: {
+      maps: ev.location ? mapsLink_(ev.location) : '',
+      eventseite: eventSeiteUrl_(ev.slug),
+    },
+  }
+}
+
+// Anmeldungen (ohne Abmeldungen) und Anwesende laut Event-Tabelle, '' bei 0.
+function eventZahlen_(slug) {
+  const sh = findeEventSheetPerSlug_(slug)
+  if (!sh) return {}
+  const w = sh.getDataRange().getValues()
+  const k = w[0]
+  const iE = k.indexOf('E-Mail'), iS = k.indexOf('Status'), iA = k.indexOf('Anwesend')
+  const iV = k.indexOf('Vorname'), iN = k.indexOf('Nachname')
+  const angemeldet = {}, da = {}
+  for (let r = 1; r < w.length; r++) {
+    if (iS >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(w[r][iS] || ''))) continue
+    const id = String((iE >= 0 && w[r][iE]) || ((iV >= 0 ? w[r][iV] : '') + ' ' + (iN >= 0 ? w[r][iN] : ''))).trim().toLowerCase()
+    if (!id) continue
+    angemeldet[id] = true
+    if (iA >= 0 && String(w[r][iA] || '').trim()) da[id] = true
+  }
+  const n = Object.keys(angemeldet).length, d = Object.keys(da).length
+  return { anmeldungen: n ? String(n) : '', teilnehmende: d ? String(d) : '' }
+}
+
+// Eine Person, ein Event: faellige Mail/Vorschau verschicken. Rueckgabe =
+// kurzer Vermerk fuer die Spalte "Versand" ('' = nichts getan).
+function sponsorNachlauf_(k, ev, start, jetzt) {
+  const g = mailGruppe_('sponsoren')
+  const props = PropertiesService.getScriptProperties()
+  const slug = String(ev.slug)
+  const base = 'spons_' + slug + '_' + k.email.toLowerCase()
+  const tage = tagesDifferenz_(jetzt, start)
+  const ab = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE
+  const infoMs = Number(props.getProperty(base + '_info') || 0)
+  const mail = function (key, extra) { return gruppenMail_(g, key, sponsorMailDaten_(k, ev, extra || {})) }
+  const ics = function () {
+    return [icsDatei_(ev.title, start, parseEventEnde_(start, String(ev.time || '')), String(ev.location || ''), slug)]
+  }
+  const wer = k.name + (k.firma ? ' (' + k.firma + ')' : '')
+  const morgen = 'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + wer
+  const getan = []
+
+  if (start.getTime() > jetzt.getTime()) {
+    if (!infoMs) {
+      const plan = Number(props.getProperty(base + '_infoPlan') || 0)
+      const knapp = start.getTime() - jetzt.getTime() < 2 * 86400000
+      if (!plan && !knapp) {
+        vorschauAnAnn_(base + '_infoVorschau', mail('info'), morgen, g, slug, ics())
+        props.setProperty(base + '_infoPlan', String(morgenUm_(jetzt)))
+        return 'Vorschau „Info“ an dich'
+      }
+      if (plan && jetzt.getTime() < plan) return ''
+      const m = mail('info')
+      sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, ics(), !plan)
+      props.setProperty(base + '_info', String(jetzt.getTime()))
+      props.setProperty(base + '_stand', medienStand_(ev))
+      return 'Info verschickt'
+    }
+    const alt = props.getProperty(base + '_stand')
+    const neu = medienStand_(ev)
+    if (alt && alt !== neu) {
+      const a = JSON.parse(alt)
+      const m = mail('aenderung', { vorher: a[0] + (a[1] ? ' · ' + a[1] + ' Uhr' : '') + (a[2] ? ' · ' + a[2] : '') })
+      sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, ics(), true)
+      props.setProperty(base + '_stand', neu)
+      getan.push('Änderung verschickt')
+    }
+    if (!alt) props.setProperty(base + '_stand', neu)
+    if (!ab) return getan.join(', ')
+    // "1 Woche vorher" nur, wenn die Info nicht gerade erst rausging.
+    if (tage === 8 && jetzt.getTime() - infoMs >= 86400000) {
+      if (vorschauAnAnn_(base + '_wocheVorschau', mail('woche', eventZahlen_(slug)), morgen, g, slug, ics())) getan.push('Vorschau „1 Woche“ an dich')
+    }
+    if (tage === 7 && !props.getProperty(base + '_woche') && jetzt.getTime() - infoMs >= 2 * 86400000) {
+      const m = mail('woche', eventZahlen_(slug))
+      sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, ics())
+      props.setProperty(base + '_woche', jetztText_())
+      getan.push('1 Woche verschickt')
+    }
+    if (tage === 1 - SPONSOR_DANKE_NACH_TAGEN) {
+      const wann = (SPONSOR_DANKE_NACH_TAGEN === 1 ? 'morgen' : 'in ' + SPONSOR_DANKE_NACH_TAGEN + ' Tagen') +
+        ' ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + wer
+      if (vorschauAnAnn_(base + '_dankeVorschau', mail('danke', eventZahlen_(slug)), wann, g, slug)) getan.push('Vorschau „Danke“ an dich')
+    }
+    return getan.join(', ')
+  }
+  // Nach dem Event: Danke (nur wer vorher die Info bekommen hat).
+  if (!infoMs || props.getProperty(base + '_danke') || !ab) return ''
+  if (tage > -SPONSOR_DANKE_NACH_TAGEN || tage < -SPONSOR_DANKE_NACH_TAGEN - 2) return ''
+  const m = mail('danke', eventZahlen_(slug))
+  sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
+  props.setProperty(base + '_danke', jetztText_())
+  return 'Danke verschickt'
+}
+
+function sponsorMailKey_(t) {
+  t = String(t || '').toLowerCase()
+  if (t.indexOf('änderung') >= 0 || t.indexOf('aenderung') >= 0) return 'aenderung'
+  if (t.indexOf('woche') >= 0) return 'woche'
+  if (t.indexOf('nach dem event') >= 0 || t.indexOf('danke') >= 0) return 'danke'
+  if (t.indexOf('info') >= 0) return 'info'
+  return ''
+}
+
+function sponsorMailVorlage_() {
+  return [
+    ['h', 'Info zum Event'],
+    ['p', 'Betreff: NewBuild Kollektiv × {Firma}: {Kurztitel} am {Datum}'],
+    ['p', '{Anrede},'],
+    ['p', 'schön, dass {Firma} bei unserem nächsten NewBuild Kollektiv Treffen **„{Titel}“** dabei ist! Hier die Eckdaten für dich:'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht der Termin in deinem Kalender.'],
+    ['p', 'Eine Woche vorher melde ich mich noch einmal mit dem aktuellen Stand der Anmeldungen. Wenn du vorab Fragen hast, schreib mir jederzeit.'],
+    ['p', 'Liebe Grüße,'],
+    ['h', '1 Woche vorher'],
+    ['p', 'Betreff: In einer Woche: {Kurztitel} – NewBuild Kollektiv × {Firma}'],
+    ['p', '{Anrede},'],
+    ['p', 'in einer Woche ist es soweit: „{Titel}“ am {Datum}, {Zeit} Uhr.'],
+    ['p', 'Aktuell haben sich **{Anmeldungen} Personen** angemeldet.'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Falls ihr für den Abend noch etwas plant oder braucht, gib mir gern kurz Bescheid. Die Kalenderdatei hängt noch einmal an.'],
+    ['p', 'Ich freue mich auf den Abend mit euch!'],
+    ['p', 'Liebe Grüße,'],
+    ['h', 'Änderung (Datum, Zeit oder Ort)'],
+    ['p', 'Betreff: Änderung: {Kurztitel} am {Datum}'],
+    ['p', '{Anrede},'],
+    ['p', 'bei unserem Treffen „{Titel}“ hat sich etwas geändert. Hier der aktuelle Stand:'],
+    ['p', '**{Datum} · {Zeit} Uhr**\n{Ort}'],
+    ['p', 'Bisher: {Vorher}'],
+    ['p', 'Im Anhang findest du die aktualisierte Kalenderdatei (.ics) – einfach öffnen, dann wird der Termin angepasst. Wenn das für euch etwas ändert, melde dich gern kurz.'],
+    ['p', 'Liebe Grüße,'],
+    ['h', 'Nach dem Event'],
+    ['p', 'Betreff: Danke für {Kurztitel} – NewBuild Kollektiv × {Firma}'],
+    ['p', '{Anrede},'],
+    ['p', 'ich möchte mich noch einmal herzlich bei dir und {Firma} bedanken. Ohne euch hätte unser NewBuild Kollektiv Treffen {Eventtag} so nicht stattfinden können. Danke, dass du das möglich gemacht hast und die Zusammenarbeit so unkompliziert war.'],
+    ['p', 'Mit dabei waren **{Teilnehmende} Gäste** – es sind viele schöne Gespräche entstanden.'],
+    ['p', 'Ich würde mich freuen, wenn wir uns bald einmal dazu austauschen, wie wir die Zusammenarbeit weiterführen können. Hast du in den nächsten Wochen Zeit für ein kurzes Telefonat oder einen Kaffee?'],
+    ['p', 'Liebe Grüße,'],
+  ]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  PRIVATER KALENDER "NewBuild Kollektiv – Foto & Video" (Konto request@,
 //  freigegeben NUR fuer VORSCHAU_EMPFAENGER). Ein Termin pro CMS-Event mit der
 //  aktuellen Besetzung (Foto/Video) in der Beschreibung — keine Gaeste.
@@ -2774,6 +3125,7 @@ function kalenderTermin_(ev, start, ende, besetzung) {
 // ── Texte der Medien-Mails (Doc, sonst Standard) ─────────────────────────────
 function medienMailDaten_(kontakt, rolle, ev, extra) {
   const d = {
+    slug: String(ev.slug || ''),
     vorname: String(kontakt.name || '').trim().split(' ')[0],
     titel: String(ev.title || '').trim(),
     kurztitel: kurzTitel_(ev.title),
@@ -2859,125 +3211,390 @@ function medienMailVorlage_() {
 }
 
 function medienMailStandard_(key) {
-  const v = medienMailVorlage_()
-  const out = { betreff: '', absaetze: [] }
-  let drin = false
-  v.forEach(function (z) {
-    if (z[0] === 'h') { drin = medienMailKey_(z[1]) === key; return }
-    if (!drin) return
-    if (/^Betreff:/.test(z[1])) { out.betreff = z[1].replace(/^Betreff:\s*/, ''); return }
-    out.absaetze.push(escapeHtml_(z[1]).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'))
-  })
-  return out
+  return gruppenStandard_(mailGruppe_('medien'), key)
 }
 
-// Version der Standardtexte im Doc. Erhoehen, wenn sich die Vorlage aendert:
-// ein noch nie bearbeitetes Doc wird dann automatisch neu geschrieben, ein von
-// Ann bearbeitetes bleibt unangetastet.
-const MEDIEN_MAILDOC_VERSION = '4'
+// Version der Grundvorlage Foto & Video. Erhoehen, wenn sich die Vorlage
+// aendert: eine nie bearbeitete Grundvorlage wird dann neu geschrieben, eine
+// von Ann bearbeitete bleibt unangetastet.
+const MEDIEN_MAILDOC_VERSION = '5'
 
-function medienMailDoc_() {
+function medienMail_(key, d) {
+  return gruppenMail_(mailGruppe_('medien'), key, d)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIL-GRUPPEN: Gäste · Sponsoren · Foto & Video
+//
+//  Je Gruppe eine Grundvorlage (Doc in Mail-Texte/_Grundvorlagen) und pro Event
+//  ein eigenes Doc im Event-Ordner (Mail-Texte/<Nummer — Titel>/). Das Event-Doc
+//  entsteht beim ersten Lauf nach dem Anlegen im CMS als Kopie der
+//  Grundvorlage; Ann kann es danach nur fuer dieses Event anpassen.
+//  Versand liest: Event-Doc -> Grundvorlage -> Standardtext im Code.
+//  Gaeste lesen weiter ueber ausDoc_ (Event-Doc -> Code-Standard).
+// ═══════════════════════════════════════════════════════════════════════════
+function mailGruppe_(id) {
+  const g = {
+    gaeste: {
+      id: 'gaeste', titel: 'Gäste', docName: 'Mail-Texte Gäste', eventProp: 'mailDoc_',
+      grundProp: 'gaesteGrundDoc', version: '1', empfaenger: 'die angemeldeten Gäste',
+      keyFn: abschnittKey_, vorlage: function () { return mailDocVorlage_('') },
+      hinweise: gaesteHinweise_,
+      links: function (ev) {
+        return [['→ Eventkarte (Bild) – wird automatisch aus Titel, Datum und Ort im CMS erzeugt',
+          'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(String(ev.slug)) + '-karte.png']]
+      },
+    },
+    sponsoren: {
+      id: 'sponsoren', titel: 'Sponsoren', docName: 'Mail-Texte Sponsoren', eventProp: 'mailDocSponsoren_',
+      grundProp: 'sponsorGrundDoc', version: '1', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
+      keyFn: sponsorMailKey_, vorlage: sponsorMailVorlage_, hinweise: sponsorHinweise_,
+      links: function () { return [['→ Sponsor Contacts (wer bei welchem Event Sponsor ist)', sponsorSpreadsheet_().getUrl()]] },
+    },
+    medien: {
+      id: 'medien', titel: 'Foto & Video', docName: 'Mail-Texte Foto & Video', eventProp: 'mailDocMedien_',
+      grundProp: 'medienMailDoc', version: MEDIEN_MAILDOC_VERSION,
+      empfaenger: 'Fotograf:innen und Videograf:innen (aus „Media Contacts“)',
+      keyFn: medienMailKey_, vorlage: medienMailVorlage_, hinweise: medienHinweise_,
+      links: function () { return [['→ Media Contacts (Kontakte, Einsätze, Anfragen)', medienSpreadsheet_().getUrl()]] },
+    },
+  }
+  return id ? g[id] : [g.gaeste, g.sponsoren, g.medien]
+}
+
+function gemeinsameHinweise_() {
+  return [
+    'Die Überschriften nicht umbenennen. Ist ein Abschnitt leer, gilt der Text aus der Grundvorlage.',
+    'Die erste Zeile „Betreff: …“ ist der Betreff der Mail.',
+    'Fett, kursiv und normale Links werden übernommen. Kleine Schrift (9 pt) = kleine graue Schrift in der Mail.',
+    'Ist ein Platzhalter leer (z. B. kein Honorar eingetragen), entfällt der ganze Absatz.',
+    'Signatur hängt automatisch an. Datum, Zeit und Ort kommen immer aktuell aus dem CMS.',
+  ]
+}
+
+function gaesteHinweise_() {
+  return [
+    'Die Überschriften (Bestätigung, 1 Woche vorher …) nicht umbenennen. Ist ein Abschnitt leer, geht der Standardtext raus.',
+    'Die erste Zeile „Betreff: …“ ist der Betreff der Mail.',
+    '[EVENTKARTE] in einer eigenen Zeile = Eventbild mit Datum, Ort und Google-Maps-Link.',
+    'Kleine Schrift (9 pt) = kleine graue Schrift in der Mail, z. B. für das P.S.',
+    'Fett, kursiv und normale Links aus dem Doc werden übernommen.',
+    'Platzhalter: {Anrede} (z. B. „Liebe Maria“) · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} („gestern“ / „am Dienstag“) · {Minuten}',
+    'Links mit eigenem Text: {Abmelde-Link: Text} · {Feedback-Link: Text} · {Referent-Link: Text} · {Maps-Link: Text} · {Eventseite-Link: Text} · {Ich-war-da-Link: Text} (der Absatz wird zum grauen Kasten).',
+    'Kalenderdatei (.ics) und Signatur hängen automatisch an. Datum, Zeit und Ort kommen immer aktuell aus dem CMS.',
+    'Versand: Bestätigung sofort · 1 Woche und 1 Tag vorher ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr · ca. 3 Std. vorher · Rückblick am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Am Vortag kommt jede Mail als [VORSCHAU] an dich.',
+  ]
+}
+
+function medienHinweise_() {
+  return [
+    'Anfrage: sobald das Event im CMS steht, bekommst du sofort eine Vorschau. Am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht sie an Kontakt A der Rolle – bis dahin kannst du den Text hier anpassen.',
+    'Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen ohne Antwort (Vorschau etwa einen Tag vorher). Nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort oder bei Absage geht die Anfrage sofort an B, danach an C (Kopie an dich).',
+    'Upload-Link: direkt nach der Zusage bzw. wenn du jemanden in „Einsätze“ einträgst, mit Kalenderdatei (Kopie an dich).',
+    'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, an alle bereits Eingesetzten, mit neuer Kalenderdatei (Kopie an dich).',
+    'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an alle Eingesetzten, mit Upload-Link. Vorschau am Eventtag.',
+    'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Ankunft} (Beginn minus ' + MEDIEN_VORLAUF_MIN + ' Min.) · {Vorlauf} · {Begleitung} („fotografisch“ / „videografisch“) · {Eventtag} („gestern“) · {Vorher} (alter Termin, nur in „Änderung“) · {Honorar}',
+    'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}',
+  ].concat(gemeinsameHinweise_())
+}
+
+function sponsorHinweise_() {
+  return [
+    'Empfänger: die Personen, die du in „Sponsor Contacts“ → Einsätze bei diesem Event als Sponsor 1–3 auswählst.',
+    'Info zum Event: sobald du jemanden einträgst, bekommst du sofort eine Vorschau. Am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht sie raus, mit Kalenderdatei. Ist das Event weniger als 2 Tage entfernt, geht sie sofort raus (Kopie an dich).',
+    '1 Woche vorher: ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, mit aktueller Anmeldezahl und Kalenderdatei. Vorschau am Vortag.',
+    'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, mit neuer Kalenderdatei (Kopie an dich).',
+    'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Vorschau am Eventtag – ein persönlicher Satz zum Abend macht die Mail stärker.',
+    'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} · {Anmeldungen} · {Teilnehmende} (nur wenn der Check-in genutzt wurde) · {Vorher} (alter Termin, nur in „Änderung“)',
+    'Links: {Maps-Link: Text} · {Eventseite-Link: Text}. [EVENTKARTE] in einer eigenen Zeile = Eventbild.',
+  ].concat(gemeinsameHinweise_())
+}
+
+function eventName_(ev) {
+  return (ev.number ? String(ev.number).trim() + ' — ' : '') + String(ev.title || ev.slug || '').trim()
+}
+
+function grundvorlagenOrdner_() {
+  const parent = mailTexteOrdner_()
+  const it = parent.getFoldersByName('_Grundvorlagen')
+  return it.hasNext() ? it.next() : parent.createFolder('_Grundvorlagen')
+}
+
+// Ordner "Mail-Texte/<Nummer — Titel>" fuer die drei Docs eines Events.
+function eventMailOrdner_(ev) {
   const props = PropertiesService.getScriptProperties()
-  const id = props.getProperty('medienMailDoc')
+  const key = 'mailOrdner_' + String(ev.slug)
+  const name = eventName_(ev)
+  let f = null
+  const id = props.getProperty(key)
   if (id) {
     try {
-      const doc = DocumentApp.openById(id)
-      if (props.getProperty('medienMailDocVersion') !== MEDIEN_MAILDOC_VERSION) {
-        const f = DriveApp.getFileById(id)
-        const unbearbeitet = f.getLastUpdated().getTime() - f.getDateCreated().getTime() < 5 * 60000
-        if (unbearbeitet) {
-          doc.getBody().clear()
-          medienMailDocFuellen_(doc)
-          Logger.log('Medien-Mail-Doc auf neue Vorlage aktualisiert.')
-        } else {
-          Logger.log('Medien-Mail-Doc wurde bearbeitet — neue Vorlage NICHT uebernommen.')
-        }
-        props.setProperty('medienMailDocVersion', MEDIEN_MAILDOC_VERSION)
-        return DocumentApp.openById(id)
-      }
-      return doc
+      f = DriveApp.getFolderById(id)
+      if (f.isTrashed()) f = null
     } catch (err) {
-      props.deleteProperty('medienMailDoc')
+      f = null
     }
   }
-  const name = 'Mail-Texte · Fotograf:innen & Videograf:innen'
+  if (!f) {
+    const parent = mailTexteOrdner_()
+    const it = parent.getFoldersByName(name)
+    f = it.hasNext() ? it.next() : parent.createFolder(name)
+    props.setProperty(key, f.getId())
+  }
+  if (f.getName() !== name) f.setName(name)
+  return f
+}
+
+function grundvorlageDoc_(g) {
+  const props = PropertiesService.getScriptProperties()
+  const name = 'Grundvorlage · ' + g.docName
+  const id = props.getProperty(g.grundProp)
+  if (id) {
+    try {
+      const file = DriveApp.getFileById(id)
+      if (file.isTrashed()) throw new Error('im Papierkorb')
+      if (file.getName() !== name) file.setName(name)
+      if (!props.getProperty(g.grundProp + 'Ort')) {
+        file.moveTo(grundvorlagenOrdner_())
+        props.setProperty(g.grundProp + 'Ort', '1')
+      }
+      if (props.getProperty(g.grundProp + 'Version') !== g.version) {
+        // Unbearbeitet = seit dem letzten Schreiben durchs Skript nicht geaendert.
+        const stand = Number(props.getProperty(g.grundProp + 'Stand') || file.getDateCreated().getTime())
+        if (file.getLastUpdated().getTime() - stand < 5 * 60000) {
+          const doc = DocumentApp.openById(id)
+          doc.getBody().clear()
+          grundvorlageFuellen_(g, doc)
+          Logger.log('Grundvorlage ' + g.titel + ' auf neue Vorlage aktualisiert.')
+        } else {
+          Logger.log('Grundvorlage ' + g.titel + ' wurde bearbeitet — neue Vorlage NICHT uebernommen.')
+        }
+        props.setProperty(g.grundProp + 'Version', g.version)
+      }
+      return DocumentApp.openById(id)
+    } catch (err) {
+      Logger.log('Grundvorlage ' + g.titel + ' nicht lesbar, lege neu an: ' + err)
+      props.deleteProperty(g.grundProp)
+    }
+  }
   const doc = DocumentApp.create(name)
   const file = DriveApp.getFileById(doc.getId())
-  moveFileIntoFolder(file, mailTexteOrdner_())
-  medienMailDocFuellen_(doc)
+  file.moveTo(grundvorlagenOrdner_())
+  grundvorlageFuellen_(g, doc)
   try {
     file.addEditor(VORSCHAU_EMPFAENGER)
   } catch (err) {
-    Logger.log('Medien-Mail-Doc — Freigabe fehlgeschlagen: ' + err)
+    Logger.log('Grundvorlage — Freigabe fehlgeschlagen: ' + err)
   }
-  props.setProperty('medienMailDoc', doc.getId())
-  props.setProperty('medienMailDocVersion', MEDIEN_MAILDOC_VERSION)
+  props.setProperty(g.grundProp, doc.getId())
+  props.setProperty(g.grundProp + 'Version', g.version)
+  props.setProperty(g.grundProp + 'Ort', '1')
   return DocumentApp.openById(doc.getId())
 }
 
-function medienMailDocFuellen_(doc) {
-  const name = 'Mail-Texte · Fotograf:innen & Videograf:innen'
+function grundvorlageFuellen_(g, doc) {
+  const name = 'Grundvorlage · ' + g.docName
   const body = doc.getBody()
   const kopf = body.getChild(0).asParagraph()
   kopf.setText(name)
   kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
   ;[
-    ['p', 'Diese Mails gehen automatisch an Fotograf:innen und Videograf:innen aus „Media Contacts“ – für alle Events gleich. Text einfach hier ändern, die nächste Mail übernimmt ihn. Nach der Zusage hängt an der Upload-Mail eine Kalenderdatei (.ics) mit der Ankunftszeit.'],
+    ['p', 'Das ist die Grundvorlage für die Mails an ' + g.empfaenger + '. Für jedes neue Event im CMS entsteht daraus automatisch ein eigenes Doc im Event-Ordner unter „Mail-Texte“. Änderungen hier gelten für alle künftigen Events – bereits angelegte Event-Docs bleiben, wie sie sind.'],
     ['h2', 'So funktioniert’s'],
-    ['li', 'Anfrage: sobald ein Event im CMS steht, an Kontakt A der Rolle. Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen, nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort (oder bei Absage) geht die Anfrage an B, danach an C.'],
-    ['li', 'Upload-Link: direkt nach der Zusage (bzw. wenn du jemanden in „Einsätze“ einträgst), mit Kalenderdatei.'],
-    ['li', 'Änderung: sobald du Datum, Zeit oder Ort im CMS änderst, an alle bereits Eingesetzten, mit neuer Kalenderdatei (ersetzt den alten Termin).'],
-    ['li', 'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an alle Eingesetzten, mit dem Upload-Link.'],
-    ['li', 'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Ankunft} (Beginn minus ' + MEDIEN_VORLAUF_MIN + ' Min.) · {Vorlauf} · {Begleitung} („fotografisch“ / „videografisch“) · {Eventtag} („gestern“) · {Vorher} (alter Termin, nur in „Änderung“) · {Honorar} (Absatz entfällt, wenn kein Honorar eingetragen ist)'],
-    ['li', 'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}'],
-  ].concat(medienMailVorlage_()).forEach(function (z) { docAbsatz_(body, z[0], z[1]) })
+  ].concat(g.hinweise().map(function (t) { return ['li', t] }))
+    .concat(g.vorlage())
+    .forEach(function (z) { docAbsatz_(body, z[0], z[1]) })
   doc.saveAndClose()
+  PropertiesService.getScriptProperties().setProperty(g.grundProp + 'Stand', String(Date.now()))
 }
 
-let MEDIEN_DOC_CACHE = null
-
-function medienMail_(key, d) {
-  let a = null
+// Haengt die Mail-Abschnitte (ab der ersten Ueberschrift 1) der Grundvorlage
+// an; faellt auf die Vorlage im Code zurueck.
+function abschnitteAusGrundvorlage_(g, body) {
+  const T = DocumentApp.ElementType
   try {
-    if (!MEDIEN_DOC_CACHE) {
-      const roh = parseMailDoc_(medienMailDoc_().getBody(), medienMailKey_)
-      MEDIEN_DOC_CACHE = {}
-      Object.keys(roh).forEach(function (k) {
-        MEDIEN_DOC_CACHE[k] = { betreff: roh[k].betreff, absaetze: roh[k].absaetze.map(function (x) { return x.html }) }
-      })
+    const q = grundvorlageDoc_(g).getBody()
+    let drin = false
+    let n = 0
+    for (let i = 0; i < q.getNumChildren(); i++) {
+      const el = q.getChild(i)
+      const typ = el.getType()
+      if (!drin && typ === T.PARAGRAPH && el.asParagraph().getHeading() === DocumentApp.ParagraphHeading.HEADING1) drin = true
+      if (!drin) continue
+      if (typ === T.PARAGRAPH) body.appendParagraph(el.copy().asParagraph())
+      else if (typ === T.LIST_ITEM) body.appendListItem(el.copy().asListItem())
+      else if (typ === T.TABLE) body.appendTable(el.copy().asTable())
+      n++
     }
-    a = MEDIEN_DOC_CACHE[key]
+    if (n) return
   } catch (err) {
-    Logger.log('Medien-Mail-Doc nicht lesbar, Standardtext: ' + err)
+    Logger.log('Grundvorlage ' + g.titel + ' nicht kopierbar, Standardtext: ' + err)
   }
-  if (!a || !a.absaetze.length) a = medienMailStandard_(key)
+  g.vorlage().forEach(function (z) { docAbsatz_(body, z[0], z[1]) })
+}
 
+// Legt das Doc einer Gruppe fuer ein Event an. null, wenn es schon existiert.
+function eventGruppenDocAnlegen_(g, ev) {
+  const slug = String(ev.slug)
+  const props = PropertiesService.getScriptProperties()
+  if (props.getProperty(g.eventProp + slug)) return null
+  const name = g.docName + ' · ' + eventName_(ev)
+  const ordner = eventMailOrdner_(ev)
+  // Ein schon vorhandenes (z. B. halb angelegtes) Doc gleichen Namens wird
+  // wiederverwendet statt ein zweites anzulegen.
+  const vorhanden = ordner.getFilesByName(name)
+  let doc, file
+  if (vorhanden.hasNext()) {
+    file = vorhanden.next()
+    doc = DocumentApp.openById(file.getId())
+    doc.getBody().clear()
+  } else {
+    doc = DocumentApp.create(name)
+    file = DriveApp.getFileById(doc.getId())
+    file.moveTo(ordner)
+  }
+  const body = doc.getBody()
+  const kopf = body.getChild(0).asParagraph()
+  kopf.setText(name) // setText liefert nichts zurueck, nicht verketten
+  kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
+  ;[
+    ['p', 'Hier stehen alle automatischen E-Mails an ' + g.empfaenger + ' zu diesem Event. Der Text stammt aus der Grundvorlage und gilt nur für dieses Event – einfach ändern, das Doc speichert von selbst und die nächste Mail übernimmt ihn. Kein Code, kein Bereitstellen.'],
+    ['p', '→ Vorschau aller Mails dieses Events (Gäste, Sponsoren, Foto & Video)', mailVorschauLink_(slug)],
+    ['p', '→ Alle Mails als Testmail an mich schicken', mailTestLink_(slug)],
+  ]
+    .concat(g.links(ev).map(function (l) { return ['p', l[0], l[1]] }))
+    .concat([['h2', 'So funktioniert’s']])
+    .concat(g.hinweise().map(function (t) { return ['li', t] }))
+    .forEach(function (z) { docAbsatz_(body, z[0], z[1], z[2]) })
+  abschnitteAusGrundvorlage_(g, body)
+  doc.saveAndClose()
+  try {
+    file.addEditor(VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    Logger.log('Mail-Texte-Doc — Freigabe fehlgeschlagen: ' + err)
+  }
+  props.setProperty(g.eventProp + slug, doc.getId())
+  delete GRUPPEN_CACHE[g.id + '|' + slug]
+  if (g.id === 'gaeste') delete MAILDOC_CACHE[slug]
+  Logger.log('Mail-Texte ' + g.titel + ' angelegt fuer ' + slug + ': ' + doc.getUrl())
+  return { titel: g.titel, url: doc.getUrl() }
+}
+
+// Link zum Doc, das fuer dieses Event gilt (Event-Doc, sonst Grundvorlage).
+function gruppenDocUrl_(g, slug) {
+  const props = PropertiesService.getScriptProperties()
+  const id = (slug && props.getProperty(g.eventProp + slug)) || props.getProperty(g.grundProp)
+  return id ? 'https://docs.google.com/document/d/' + id + '/edit' : ''
+}
+
+// Pro Skriptlauf nur einmal lesen.
+let GRUPPEN_CACHE = {}
+
+function gruppenAbschnitte_(g, slug) {
+  const k = g.id + '|' + slug
+  if (Object.prototype.hasOwnProperty.call(GRUPPEN_CACHE, k)) return GRUPPEN_CACHE[k]
+  let res = null
+  try {
+    if (slug === '*') res = parseMailDoc_(grundvorlageDoc_(g).getBody(), g.keyFn)
+    else {
+      const id = slug ? PropertiesService.getScriptProperties().getProperty(g.eventProp + slug) : null
+      if (id) res = parseMailDoc_(DocumentApp.openById(id).getBody(), g.keyFn)
+    }
+  } catch (err) {
+    Logger.log('Mail-Texte ' + g.titel + ' (' + slug + ') nicht lesbar: ' + err)
+  }
+  GRUPPEN_CACHE[k] = res
+  return res
+}
+
+function gruppenAbschnitt_(g, slug, key) {
+  const a = (gruppenAbschnitte_(g, slug) || {})[key]
+  if (a && a.absaetze.length) return a
+  const b = (gruppenAbschnitte_(g, '*') || {})[key]
+  if (b && b.absaetze.length) return b
+  return gruppenStandard_(g, key)
+}
+
+// Standardtext eines Abschnitts aus der Vorlage im Code.
+function gruppenStandard_(g, key) {
+  const out = { betreff: '', absaetze: [] }
+  let drin = false
+  g.vorlage().forEach(function (z) {
+    if (z[0] === 'h') { drin = g.keyFn(z[1]) === key; return }
+    if (!drin) return
+    if (/^Betreff:/.test(z[1])) { out.betreff = z[1].replace(/^Betreff:\s*/, ''); return }
+    out.absaetze.push({
+      html: escapeHtml_(z[1])
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" style="color:#3d5a80">$1</a>')
+        .replace(/\n/g, '<br>'),
+      karte: /^\[\s*eventkarte\s*\]$/i.test(z[1].trim()),
+      klein: z[0] === 'k',
+    })
+  })
+  return out
+}
+
+// Baut eine Mail einer Gruppe. d: Platzhalterwerte (kleingeschrieben),
+// d.links (Name -> URL), d.slug, optional d.karte (fuer [EVENTKARTE]).
+// Absaetze mit leerem Platzhalter oder fehlendem Link entfallen.
+function gruppenMail_(g, key, d) {
+  const a = gruppenAbschnitt_(g, d.slug, key)
+  const istWert = function (k) {
+    return Object.prototype.hasOwnProperty.call(d, k) && (typeof d[k] === 'string' || typeof d[k] === 'number')
+  }
   const werte = function (text, html) {
     return String(text).replace(/\{\s*([A-Za-zÄÖÜäöü]+)\s*\}/g, function (m, n) {
       const k = n.toLowerCase()
-      if (!Object.prototype.hasOwnProperty.call(d, k) || k === 'links') return m
+      if (!istWert(k)) return m
       return html ? escapeHtml_(d[k]) : String(d[k])
     })
   }
   const absaetze = a.absaetze
-    .filter(function (h) { return d.honorar || !/\{\s*Honorar\s*\}/i.test(h) })
-    .filter(function (h) { return d.ankunft || !/\{\s*Ankunft\s*\}/i.test(h) })
-    .filter(function (h) { return d.vorher || !/\{\s*Vorher\s*\}/i.test(h) })
-    .filter(function (h) {
-      const re = /\{\s*([A-Za-zÄÖÜäöü]+?)-Link\s*:/g
+    .filter(function (x) {
+      const h = x.html
       let m
-      while ((m = re.exec(h))) if (!d.links[m[1].toLowerCase()]) return false
+      const re = /\{\s*([A-Za-zÄÖÜäöü]+)\s*\}/g
+      while ((m = re.exec(h))) if (istWert(m[1].toLowerCase()) && !String(d[m[1].toLowerCase()])) return false
+      const reL = /\{\s*([A-Za-zÄÖÜäöü]+?)-Link\s*:/g
+      while ((m = reL.exec(h))) if (!(d.links || {})[m[1].toLowerCase()]) return false
       return true
     })
-    .map(function (h) {
-      const mitLinks = h.replace(/\{\s*([A-Za-zÄÖÜäöü]+?)-Link\s*:\s*((?:[^{}]|\{[^{}]*\})*)\}/g, function (m, n, text) {
-        const url = d.links[n.toLowerCase()]
+    .map(function (x) {
+      if (x.karte) return d.karte ? eckdatenBlock_(d.karte) : ''
+      const mitLinks = x.html.replace(/\{\s*([A-Za-zÄÖÜäöü]+?)-Link\s*:\s*((?:[^{}]|\{[^{}]*\})*)\}/g, function (m, n, text) {
+        const url = (d.links || {})[n.toLowerCase()]
         const t = werte(text.trim(), true)
         return url ? '<a href="' + url + '" style="color:#3d5a80;font-weight:600">' + t + '</a>' : t
       })
-      return '<p>' + werte(mitLinks, true) + '</p>'
+      const inhalt = werte(mitLinks, true)
+      if (x.klein) return '<p style="color:#666;font-size:13px;margin:20px 0 18px">' + inhalt + '</p>'
+      return '<p>' + (x.liste ? '• ' : '') + inhalt + '</p>'
     })
-  return { subject: werte(a.betreff || medienMailStandard_(key).betreff, false), htmlBody: wrapMail_(absaetze.join('')) }
+  return {
+    subject: werte(a.betreff || gruppenStandard_(g, key).betreff, false),
+    htmlBody: wrapMail_(absaetze.join('')),
+  }
+}
+
+// Vorschau einer geplanten Mail an Ann (einmal je key). true = verschickt.
+function vorschauAnAnn_(key, m, wann, g, slug, attachments) {
+  const props = PropertiesService.getScriptProperties()
+  if (props.getProperty(key)) return false
+  const doc = gruppenDocUrl_(g, slug)
+  const hinweis =
+    '<p style="margin:0 0 18px;padding:10px 14px;background:#fff4d6;border-radius:8px;font-size:13px;color:#555;font-family:Arial,Helvetica,sans-serif">' +
+    '<strong>Vorschau</strong> – geht ' + escapeHtml_(wann) + ' raus.' +
+    (doc ? ' <a href="' + doc + '" style="color:#3d5a80">Text für dieses Event anpassen</a>' : '') + '</p>'
+  sendeTeilnehmerMail_(VORSCHAU_EMPFAENGER, '[VORSCHAU – ' + wann + '] ' + m.subject, hinweis + m.htmlBody, attachments)
+  props.setProperty(key, jetztText_())
+  Logger.log('Vorschau ' + g.titel + ' an ' + VORSCHAU_EMPFAENGER + ': ' + m.subject)
+  return true
+}
+
+// Zeitpunkt morgen um ERINNERUNG_SENDESTUNDE (Skript-Zeitzone Europe/Berlin).
+function morgenUm_(jetzt) {
+  return new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate() + 1, ERINNERUNG_SENDESTUNDE, 0, 0).getTime()
 }
 
 // ── Mailtexte der einzelnen Stufen ────────────────────────────────────────
@@ -3597,62 +4214,39 @@ function mailDocLinksAktualisieren_() {
   props.setProperty('mailDocLinks_v2', '1')
 }
 
-function mailTexteDocAnlegen_(ev) {
-  const slug = String(ev.slug)
-  const name = 'Mail-Texte · ' + (ev.number ? String(ev.number).trim() + ' — ' : '') + String(ev.title || slug).trim()
-  // Ein schon vorhandenes (z. B. halb angelegtes) Doc gleichen Namens wird
-  // wiederverwendet statt ein zweites anzulegen.
-  const ordner = mailTexteOrdner_()
-  const vorhanden = ordner.getFilesByName(name)
-  let doc, file
-  if (vorhanden.hasNext()) {
-    file = vorhanden.next()
-    doc = DocumentApp.openById(file.getId())
-    doc.getBody().clear()
-  } else {
-    doc = DocumentApp.create(name)
-    file = DriveApp.getFileById(doc.getId())
-    moveFileIntoFolder(file, ordner)
-  }
-  const body = doc.getBody()
-  const karte = 'https://newbuild-kollektiv.com/mail/' + encodeURIComponent(slug) + '-karte.png'
-
-  const kopf = body.getChild(0).asParagraph()
-  kopf.setText(name) // setText liefert nichts zurueck, nicht verketten
-  kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
-  ;[
-    ['p', 'Hier stehen alle automatischen E-Mails zu diesem Event. Einfach den Text ändern – das Doc speichert von selbst, und die nächste Mail übernimmt den neuen Text automatisch. Kein Code, kein Bereitstellen.'],
-    ['p', '→ Vorschau aller Mails ansehen (mit Bild, Anhängen und Signatur)', mailVorschauLink_(slug)],
-    ['p', '→ Alle Mails als Testmail an mich schicken', mailTestLink_(slug)],
-    ['p', '→ Eventkarte (Bild) – wird automatisch aus Titel, Datum und Ort im CMS erzeugt', karte],
-    ['h2', 'So funktioniert’s'],
-    ['li', 'Die Überschriften (Bestätigung, 1 Woche vorher …) nicht umbenennen. Ist ein Abschnitt leer, geht der Standardtext raus.'],
-    ['li', 'Die erste Zeile „Betreff: …“ ist der Betreff der Mail.'],
-    ['li', '[EVENTKARTE] in einer eigenen Zeile = Eventbild mit Datum, Ort und Google-Maps-Link.'],
-    ['li', 'Kleine Schrift (9 pt) = kleine graue Schrift in der Mail, z. B. für das P.S.'],
-    ['li', 'Fett, kursiv und normale Links aus dem Doc werden übernommen.'],
-    ['li', 'Platzhalter: {Anrede} (z. B. „Liebe Maria“) · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} („gestern“ / „am Dienstag“) · {Minuten}'],
-    ['li', 'Links mit eigenem Text: {Abmelde-Link: Text} · {Feedback-Link: Text} · {Referent-Link: Text} · {Maps-Link: Text} · {Eventseite-Link: Text} · {Ich-war-da-Link: Text} (der Absatz wird zum grauen Kasten).'],
-    ['li', 'Kalenderdatei (.ics) und Signatur hängen automatisch an. Datum, Zeit und Ort kommen immer aktuell aus dem CMS.'],
-    ['li', 'Versand: Bestätigung sofort · 1 Woche und 1 Tag vorher ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr · ca. 3 Std. vorher · Rückblick am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Am Vortag kommt jede Mail als [VORSCHAU] an dich.'],
-  ].concat(mailDocVorlage_(slug)).forEach(function (z) {
-    docAbsatz_(body, z[0], z[1], z[2])
+// Legt fuer jedes CMS-Event die drei Docs (Gäste, Sponsoren, Foto & Video)
+// an — fuer kommende Events und solche, die hoechstens MAILDOC_VORLAUF_TAGE
+// zurueckliegen — und schickt Ann einmal eine Mail mit den Links.
+function mailTexteDocsAnlegen_(cmsEvents) {
+  const heute = new Date()
+  const props = PropertiesService.getScriptProperties()
+  cmsEvents.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    if (!slug) return
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    if (!start || tagesDifferenz_(heute, start) < -MAILDOC_VORLAUF_TAGE) return
+    const neu = []
+    mailGruppe_().forEach(function (g) {
+      if (props.getProperty(g.eventProp + slug)) return
+      try {
+        const r = eventGruppenDocAnlegen_(g, ev)
+        if (r) neu.push(r)
+      } catch (err) {
+        Logger.log('Mail-Texte ' + g.titel + ' fuer ' + slug + ' fehlgeschlagen: ' + err)
+      }
+    })
+    if (neu.length) mailDocsInfo_(ev, neu)
   })
-  doc.saveAndClose()
+}
 
-  try {
-    file.addEditor(VORSCHAU_EMPFAENGER)
-  } catch (err) {
-    Logger.log('Mail-Texte-Doc — Freigabe fehlgeschlagen: ' + err)
-  }
-  PropertiesService.getScriptProperties().setProperty('mailDoc_' + slug, doc.getId())
-  delete MAILDOC_CACHE[slug]
-
+function mailDocsInfo_(ev, neu) {
+  const slug = String(ev.slug)
   try {
     GmailApp.sendEmail(
       VORSCHAU_EMPFAENGER,
       'Mail-Texte angelegt: ' + kurzTitel_(ev.title || slug),
-      'Für „' + (ev.title || slug) + '“ sind die Mail-Texte angelegt:\n' + doc.getUrl() +
+      'Für „' + (ev.title || slug) + '“ sind die Mail-Texte angelegt:\n' +
+        neu.map(function (n) { return n.titel + ': ' + n.url }).join('\n') +
         '\n\nVorschau aller Mails: ' + mailVorschauLink_(slug),
       {
         name: SENDER_NAME,
@@ -3660,42 +4254,31 @@ function mailTexteDocAnlegen_(ev) {
         htmlBody: wrapMail_(
           '<p>Für <strong>„' + escapeHtml_(ev.title || slug) + '“</strong> sind die Mail-Texte angelegt. ' +
             'Dort kannst du alle automatischen Mails zu diesem Event anpassen – ohne Code.</p>' +
-            '<p><a href="' + doc.getUrl() + '" style="color:#3d5a80">Mail-Texte öffnen</a> · ' +
-            '<a href="' + mailVorschauLink_(slug) + '" style="color:#3d5a80">Vorschau aller Mails</a></p>',
+            '<p>' + neu.map(function (n) {
+              return '<a href="' + n.url + '" style="color:#3d5a80">Mail-Texte ' + escapeHtml_(n.titel) + '</a>'
+            }).join(' · ') + '</p>' +
+            '<p><a href="' + mailVorschauLink_(slug) + '" style="color:#3d5a80">Vorschau aller Mails</a></p>' +
+            '<p style="color:#666;font-size:13px">Anfragen an Foto/Video und die Info an Sponsoren gehen frühestens ' +
+            'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr raus – vorher bekommst du jeweils eine Vorschau.</p>',
         ),
       },
     )
   } catch (err) {
-    Logger.log('Mail-Texte-Doc — Info-Mail fehlgeschlagen: ' + err)
+    Logger.log('Mail-Texte — Info-Mail fehlgeschlagen: ' + err)
   }
-  Logger.log('Mail-Texte-Doc angelegt fuer ' + slug + ': ' + doc.getUrl())
-  return doc.getUrl()
-}
-
-// Legt fuer jedes CMS-Event ohne Doc eines an (kommende Events und solche, die
-// hoechstens MAILDOC_VORLAUF_TAGE zurueckliegen).
-function mailTexteDocsAnlegen_(cmsEvents) {
-  const heute = new Date()
-  cmsEvents.forEach(function (ev) {
-    const slug = String(ev.slug || '').trim()
-    if (!slug || mailDocId_(slug)) return
-    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
-    if (!start || tagesDifferenz_(heute, start) < -MAILDOC_VORLAUF_TAGE) return
-    try {
-      mailTexteDocAnlegen_(ev)
-    } catch (err) {
-      Logger.log('Mail-Texte-Doc fuer ' + slug + ' fehlgeschlagen: ' + err)
-    }
-  })
 }
 
 // EINMALIG im Editor ausfuehren (fragt die Berechtigung fuer Google Docs ab und
 // legt die Docs fuer alle aktuellen Events sofort an).
 function mailTexteDocsJetztAnlegen() {
-  mailTexteDocsAnlegen_(ladeCmsEvents_())
-  ladeCmsEvents_().forEach(function (ev) {
-    const id = mailDocId_(String(ev.slug || ''))
-    if (id) Logger.log(ev.slug + ': https://docs.google.com/document/d/' + id + '/edit')
+  const events = ladeCmsEvents_()
+  mailGruppe_().forEach(function (g) { Logger.log('Grundvorlage ' + g.titel + ': ' + grundvorlageDoc_(g).getUrl()) })
+  mailTexteDocsAnlegen_(events)
+  events.forEach(function (ev) {
+    mailGruppe_().forEach(function (g) {
+      const id = PropertiesService.getScriptProperties().getProperty(g.eventProp + String(ev.slug || ''))
+      if (id) Logger.log(ev.slug + ' · ' + g.titel + ': https://docs.google.com/document/d/' + id + '/edit')
+    })
   })
 }
 
@@ -3730,20 +4313,92 @@ function mailVorschauSeite_(p) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
 }
 
+// Beispiel-Mails an Sponsoren und Foto/Video fuer Vorschau und Testmail
+// (Empfaengerin Ann, Zusage-Links ohne gueltigen Token).
+function gruppenBeispielMails_(slug) {
+  const ev = ladeCmsEvents_().filter(function (x) { return x.slug === slug })[0]
+  if (!ev) return []
+  const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+  let upload = 'https://drive.google.com/'
+  try {
+    const m = medienEventOrdner_(ev, false)
+    if (m) upload = m.unter.Photos.getUrl()
+  } catch (err) {}
+  const vorher = 'Di., 17.11.2026 · 18:30 Uhr · Beispielort (nur Beispiel)'
+  const out = []
+  const mk = { name: 'Ann-Kathrin Salich', email: VORSCHAU_EMPFAENGER, honorar: '300 € netto (2 Std. à 150 €) – Beispiel' }
+  const md = medienMailDaten_(mk, 'Foto', ev, { token: 'VORSCHAU', upload: upload, vorher: vorher })
+  const mIcs = medienIcs_(ev, 'Foto', upload)
+  ;[
+    ['anfrage', 'Anfrage', 'sobald das Event im CMS steht: Vorschau an dich, Versand am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an Kontakt A', false],
+    ['erinnerung', 'Erinnerung', MEDIEN_ERINNERUNG_TAGE + ' Tage nach der Anfrage ohne Antwort', false],
+    ['upload', 'Upload-Link', 'direkt nach der Zusage', true],
+    ['aenderung', 'Änderung', 'sofort, wenn Datum, Zeit oder Ort im CMS geändert werden', true],
+    ['danke', 'Nach dem Event', 'am Tag nach dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', false],
+  ].forEach(function (a) {
+    const m = medienMail_(a[0], md)
+    if (a[3] && mIcs) m.attachments = [mIcs]
+    out.push({ gruppe: 'Foto & Video', titel: a[1], wann: a[2], m: m })
+  })
+
+  let firma = 'Beispiel GmbH'
+  try {
+    const ss = sponsorSpreadsheet_()
+    const ew = ss.getSheetByName('Einsätze').getDataRange().getValues()
+    const kw = ss.getSheetByName('Kontakte').getDataRange().getValues()
+    const zeile = ew.filter(function (z) { return String(z[ew[0].indexOf('Slug')]) === slug })[0]
+    const name = zeile ? String(zeile[ew[0].indexOf('Sponsor 1')] || '').trim().toLowerCase() : ''
+    const k = name && kw.filter(function (z) { return String(z[kw[0].indexOf('Name')]).trim().toLowerCase() === name })[0]
+    if (k && k[kw[0].indexOf('Firma')]) firma = String(k[kw[0].indexOf('Firma')])
+  } catch (err) {}
+  const sk = { name: 'Ann-Kathrin', firma: firma, anrede: 'w', email: VORSCHAU_EMPFAENGER }
+  let zahlen = {}
+  try {
+    zahlen = eventZahlen_(slug)
+  } catch (err) {}
+  const sIcs = start ? icsDatei_(ev.title, start, parseEventEnde_(start, String(ev.time || '')), String(ev.location || ''), slug) : null
+  ;[
+    ['info', 'Info zum Event', 'nach dem Eintragen in „Sponsor Contacts“: Vorschau an dich, Versand am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', true],
+    ['woche', '1 Woche vorher', '7 Tage vor dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', true],
+    ['aenderung', 'Änderung', 'sofort, wenn Datum, Zeit oder Ort im CMS geändert werden', true],
+    ['danke', 'Nach dem Event', (SPONSOR_DANKE_NACH_TAGEN === 1 ? 'am Tag' : SPONSOR_DANKE_NACH_TAGEN + ' Tage') + ' nach dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', false],
+  ].forEach(function (a) {
+    const m = gruppenMail_(mailGruppe_('sponsoren'), a[0], sponsorMailDaten_(sk, ev, {
+      anmeldungen: zahlen.anmeldungen || '24', teilnehmende: zahlen.teilnehmende || '18', vorher: vorher,
+    }))
+    if (a[3] && sIcs) m.attachments = [sIcs]
+    out.push({ gruppe: 'Sponsoren', titel: a[1], wann: a[2], m: m })
+  })
+  return out
+}
+
+function vorschauKarte_(titel, tag, wann, m) {
+  const anh = (m.attachments || []).map(function (b) { return b.getName ? b.getName() : 'Anhang' })
+  return (
+    '<div class="k"><div class="m"><h2>' + escapeHtml_(titel) + (tag ? ' <span class="tag">' + escapeHtml_(tag) + '</span>' : '') + '</h2>' +
+    'Versand: ' + escapeHtml_(wann) + '<br><strong>Betreff:</strong> ' + escapeHtml_(m.subject) +
+    (anh.length ? '<br><strong>Anhang:</strong> 📎 ' + escapeHtml_(anh.join(', ')) : '') +
+    '</div>' + m.htmlBody + signaturHtml_() + '</div>'
+  )
+}
+
 // Inhalt der Vorschau (auch fuer newbuild-kollektiv.com/f/?do=mailvorschau).
 function mailVorschauHtml_(slug) {
   const e = vorschauEventDaten_(slug)
   if (!e) return '<p>Event „' + escapeHtml_(slug) + '“ nicht gefunden.</p>'
-  const docId = mailDocId_(slug)
   let html =
     '<style>.nbkv{text-align:left}.nbkv .k{background:#fff;border-radius:12px;padding:20px 22px;margin:0 0 26px}' +
     '.nbkv .m{font-size:13px;color:#555;border-bottom:1px solid #e3e3e0;padding-bottom:12px;margin-bottom:16px}' +
     '.nbkv h1{font-size:22px;font-weight:500}.nbkv h2{font-size:17px;margin:0 0 6px}.nbkv a{color:#3d5a80}' +
     '.nbkv .tag{font-size:11px;padding:2px 7px;border-radius:9px;background:#e3ecf5}</style>' +
-    '<div class="nbkv"><h1>Mail-Vorschau · ' + escapeHtml_(e.titel) + '</h1><p>' +
-    (docId ? '<a href="https://docs.google.com/document/d/' + docId + '/edit">Texte bearbeiten (Google Doc)</a> · ' : 'Noch kein Mail-Texte-Doc – es gelten die Standardtexte. · ') +
+    '<div class="nbkv"><h1>Mail-Vorschau · ' + escapeHtml_(e.titel) + '</h1><p>Texte bearbeiten: ' +
+    mailGruppe_().map(function (g) {
+      const url = gruppenDocUrl_(g, slug)
+      return url ? '<a href="' + url + '">' + escapeHtml_(g.titel) + '</a>' : escapeHtml_(g.titel) + ' (Standardtext)'
+    }).join(' · ') + ' — ' +
     '<a href="' + mailTestLink_(slug) + '">Alle als Testmail an mich schicken</a></p>' +
-    '<p style="font-size:13px;color:#555">Beispiel-Empfängerin: Ann-Kathrin. Diese Seite zeigt immer den aktuellen Stand des Docs – nach einer Änderung einfach neu laden.</p>'
+    '<p style="font-size:13px;color:#555">Beispiel-Empfängerin: Ann-Kathrin. Diese Seite zeigt immer den aktuellen Stand der Docs – nach einer Änderung einfach neu laden.</p>' +
+    '<h1 style="margin-top:34px">Gäste</h1>'
   mailArten_().forEach(function (art) {
     let m
     try {
@@ -3760,6 +4415,18 @@ function mailVorschauHtml_(slug) {
       (anh.length ? '<br><strong>Anhang:</strong> 📎 ' + escapeHtml_(anh.join(', ')) : '') +
       '</div>' + m.htmlBody + signaturHtml_() + '</div>'
   })
+  let gruppe = ''
+  try {
+    gruppenBeispielMails_(slug).forEach(function (b) {
+      if (b.gruppe !== gruppe) {
+        gruppe = b.gruppe
+        html += '<h1 style="margin-top:34px">' + escapeHtml_(gruppe) + '</h1>'
+      }
+      html += vorschauKarte_(b.titel, '', b.wann, b.m)
+    })
+  } catch (err) {
+    html += '<p style="color:#b00">Sponsoren/Foto & Video: ' + escapeHtml_(err) + '</p>'
+  }
   return html + '</div>'
 }
 
@@ -3788,6 +4455,15 @@ function mailTestHtml_(slug) {
       Logger.log('Testmail ' + art[1] + ' fehlgeschlagen: ' + err)
     }
   })
+  try {
+    gruppenBeispielMails_(slug).forEach(function (b) {
+      sendeTeilnehmerMail_(VORSCHAU_EMPFAENGER, '[TEST · ' + b.gruppe + ' · ' + b.titel + '] ' + b.m.subject, b.m.htmlBody, b.m.attachments)
+      n++
+      Utilities.sleep(300)
+    })
+  } catch (err) {
+    Logger.log('Testmail Sponsoren/Foto & Video fehlgeschlagen: ' + err)
+  }
   return '<h1>Testmails verschickt</h1><p>' + n + ' Testmails sind an ' + VORSCHAU_EMPFAENGER + ' unterwegs.</p>'
 }
 
