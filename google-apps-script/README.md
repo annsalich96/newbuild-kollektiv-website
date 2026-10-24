@@ -152,3 +152,9 @@ Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)*
 - Links: `newbuild-kollektiv.com/f/?do=medien&t=<token>&a=ja|nein` (Seite mit Bestätigungs-Knopf, damit Link-Vorschauen nichts auslösen) → `doPost` action `medien` → `medienAntwortVerarbeiten_`. Zusage trägt den Namen in „Einsätze“ ein; der nächste Lauf gibt Zugang und schickt den Upload-Link. Späte Zusage, wenn die Rolle schon vergeben ist → Info an Ann statt Doppelbuchung. Absage nach Zusage → Name wird geleert, nächste Person angefragt (Ordnerzugriff bleibt, ggf. von Hand entziehen).
 - Verlauf im Blatt **Anfragen** (Media Contacts). Texte (Anfrage, Erinnerung, Upload-Link) im Doc **„Mail-Texte · Fotograf:innen & Videograf:innen“** (Ordner Mail-Texte), Platzhalter siehe Doc.
 - Einspielen: Code.gs kopieren → **neue Version bereitstellen** (doPost geändert) → `medienJetztEinrichten` einmal ausführen (legt Blatt „Anfragen“ und das Doc an).
+
+### Kalender + .ics für Foto/Video (24.10.2026)
+
+- Privater Kalender **„NewBuild Kollektiv – Foto & Video“** (Konto request@, nur für salich@ freigegeben, braucht Dienst „Google Calendar API“): ein Termin pro CMS-Event mit der Besetzung („Foto: … / Video: …“) in der Beschreibung. **Keine Gäste** – Fotograf:innen/Videograf:innen und Teilnehmende sehen ihn nicht.
+- Anfrage-Mail enthält Termin, Ort, Ankunftszeit ({Ankunft} = Beginn − 30 Min., `MEDIEN_VORLAUF_MIN`) und Honorar.
+- Nach der Zusage: Upload-Mail mit **eigener .ics** (Beginn = Ankunftszeit, eigene UID `<slug>-foto|video@…`, kollidiert nicht mit der .ics der Teilnehmenden).

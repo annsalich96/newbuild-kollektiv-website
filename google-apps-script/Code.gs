@@ -2233,7 +2233,42 @@ function medienHonorarText_(zeile, kopf) {
 
 function medienEinladungMail_(kontakt, rolle, ev, folder) {
   const m = medienMail_('upload', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() }))
-  sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody)
+  const ics = medienIcs_(ev, rolle, folder.getUrl())
+  sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined)
+}
+
+// Kalenderdatei fuer Foto/Video nach der Zusage: Beginn = Ankunftszeit
+// (Eventbeginn minus MEDIEN_VORLAUF_MIN), Ende = Eventende. Eigene UID je
+// Event+Rolle, damit sie nicht mit der .ics der Teilnehmenden kollidiert.
+function medienIcs_(ev, rolle, uploadUrl) {
+  const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+  if (!start) return null
+  const ende = parseEventEnde_(start, String(ev.time || ''))
+  const ankunft = new Date(start.getTime() - MEDIEN_VORLAUF_MIN * 60000)
+  const utc = function (d) { return Utilities.formatDate(d, 'UTC', "yyyyMMdd'T'HHmmss'Z'") }
+  const esc = function (x) { return String(x || '').replace(/([,;\\])/g, '\\$1').replace(/\r?\n/g, '\\n') }
+  const ort = String(ev.location || '')
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NewBuild Kollektiv//Foto Video//DE',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:' + String(ev.slug) + '-' + (rolle === 'Foto' ? 'foto' : 'video') + '@newbuild-kollektiv.com',
+    'SEQUENCE:' + Math.floor(Date.now() / 1000),
+    'DTSTAMP:' + utc(new Date()),
+    'DTSTART:' + utc(ankunft),
+    'DTEND:' + utc(ende),
+    'SUMMARY:' + esc((rolle === 'Foto' ? 'Fotografie' : 'Video') + ' · NewBuild Kollektiv – ' + kurzTitel_(ev.title)),
+    'LOCATION:' + esc(ort),
+    'DESCRIPTION:' + esc(
+      'Ankunft ' + MEDIEN_VORLAUF_MIN + ' Minuten vor Beginn, Eventbeginn ' + String(ev.time || '') + ' Uhr.' +
+      (ort ? '\n\nAnfahrt (Google Maps): ' + mapsLink_(ort) : '') +
+      (uploadUrl ? '\nUpload-Ordner: ' + uploadUrl : '') +
+      '\nInfos zum Event: ' + eventSeiteUrl_(ev.slug),
+    ),
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc('Zeit zum Aufbrechen – NewBuild Kollektiv'),
+    'TRIGGER:-PT' + AUFBRUCH_VORLAUF_MIN + 'M', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ]
+  return Utilities.newBlob(lines.join('\r\n'), 'text/calendar; charset=utf-8; method=PUBLISH', 'newbuild-kollektiv-' + (rolle === 'Foto' ? 'foto' : 'video') + '.ics')
 }
 
 // Laeuft mit sendeErinnerungen: Ordner anlegen, Einsätze-Zeilen pflegen,
@@ -2352,6 +2387,17 @@ function medienAbgleichen_(cmsEvents) {
         einsaetze.getRange(zeile, col(rolle[2])).setValue('FEHLER: ' + err)
       }
     })
+
+    // Eigener Uebersichtstermin im privaten Kalender (nur Ann), mit Besetzung.
+    if (start) {
+      try {
+        kalenderTermin_(ev, start, parseEventEnde_(start, String(ev.time || '')),
+          'Foto: ' + (String(z[col('Fotograf:in') - 1] || '').trim() || 'offen') +
+          '\nVideo: ' + (String(z[col('Videograf:in') - 1] || '').trim() || 'offen'))
+      } catch (err) {
+        Logger.log('Kalender — ' + slug + ': ' + err)
+      }
+    }
   })
   SpreadsheetApp.flush()
   medienEventsInKontakte_(kontakte, einsaetze)
@@ -2403,6 +2449,8 @@ function medienJetztEinrichten() {
 // Verlauf im Blatt "Anfragen". Texte im Doc "Mail-Texte · Fotograf:innen &
 // Videograf:innen" (Ordner Mail-Texte), sonst die Standardtexte unten.
 const MEDIEN_ERINNERUNG_TAGE = 2
+// Foto/Video sollen so viele Minuten vor Eventbeginn da sein (Platzhalter {Ankunft}).
+const MEDIEN_VORLAUF_MIN = 30
 const MEDIEN_FRIST_TAGE = 3
 const ANFRAGEN_HEADERS = [
   'Event', 'Rolle', 'Name', 'E-Mail', 'Priorität', 'Status', 'Angefragt am', 'Erinnert am', 'Antwort am', 'Slug', 'Token', 'Seit',
@@ -2411,7 +2459,9 @@ const MEDIEN_OFFEN = ['angefragt', 'erinnert']
 
 function medienAnfragenSheet_(ss) {
   let sh = ss.getSheetByName('Anfragen')
-  if (sh) return sh
+  if (sh) {
+    return sh
+  }
   sh = ss.insertSheet('Anfragen')
   sh.appendRow(ANFRAGEN_HEADERS)
   sh.setFrozenRows(1)
@@ -2591,6 +2641,64 @@ function medienAntwortVerarbeiten_(p) {
   )
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  PRIVATER KALENDER "NewBuild Kollektiv – Foto & Video" (Konto request@,
+//  freigegeben NUR fuer VORSCHAU_EMPFAENGER). Ein Termin pro CMS-Event mit der
+//  aktuellen Besetzung (Foto/Video) in der Beschreibung — keine Gaeste.
+//  Fotograf:innen/Videograf:innen sehen den Kalender nicht; sie bekommen nach
+//  der Zusage eine eigene .ics mit ihrer Ankunftszeit (medienIcs_). Teilnehmende
+//  bekommen wie bisher nur die .ics in ihren Mails.
+//  Freigabe an Ann braucht den erweiterten Dienst "Google Calendar API".
+// ═══════════════════════════════════════════════════════════════════════════
+const KALENDER_NAME = 'NewBuild Kollektiv – Foto & Video'
+
+function nbkKalender_() {
+  const props = PropertiesService.getScriptProperties()
+  const id = props.getProperty('kalenderId')
+  let kal = id ? CalendarApp.getCalendarById(id) : null
+  if (!kal) {
+    const vorhanden = CalendarApp.getOwnedCalendarsByName(KALENDER_NAME)
+    kal = vorhanden.length ? vorhanden[0] : CalendarApp.createCalendar(KALENDER_NAME, { timeZone: 'Europe/Berlin' })
+    props.setProperty('kalenderId', kal.getId())
+    Logger.log('Kalender angelegt/gefunden: ' + KALENDER_NAME)
+  }
+  if (!props.getProperty('kalenderFreigabe')) {
+    try {
+      Calendar.Acl.insert(
+        { role: 'writer', scope: { type: 'user', value: VORSCHAU_EMPFAENGER } },
+        kal.getId(),
+        { sendNotifications: true },
+      )
+      props.setProperty('kalenderFreigabe', jetztText_())
+      Logger.log('Kalender freigegeben fuer ' + VORSCHAU_EMPFAENGER)
+    } catch (err) {
+      Logger.log('Kalender-Freigabe fehlgeschlagen (Dienst "Google Calendar API" hinzugefuegt?): ' + err)
+    }
+  }
+  return kal
+}
+
+function kalenderTermin_(ev, start, ende, besetzung) {
+  const kal = nbkKalender_()
+  const props = PropertiesService.getScriptProperties()
+  const key = 'kalEvent_' + String(ev.slug)
+  const titel = 'NBK · ' + medienOrdnerName_(ev)
+  const ort = String(ev.location || '')
+  const beschreibung = (besetzung ? besetzung + '\n\n' : '') + String(ev.title || '').trim() + '\n' + eventSeiteUrl_(ev.slug)
+  const id = props.getProperty(key)
+  let t = id ? kal.getEventById(id) : null
+  if (!t) {
+    t = kal.createEvent(titel, start, ende, { location: ort, description: beschreibung })
+    props.setProperty(key, t.getId())
+    return t
+  }
+  if (t.getStartTime().getTime() !== start.getTime() || t.getEndTime().getTime() !== ende.getTime()) t.setTime(start, ende)
+  if (t.getTitle() !== titel) t.setTitle(titel)
+  if (t.getLocation() !== ort) t.setLocation(ort)
+  if (t.getDescription() !== beschreibung) t.setDescription(beschreibung)
+  return t
+}
+
 // ── Texte der Medien-Mails (Doc, sonst Standard) ─────────────────────────────
 function medienMailDaten_(kontakt, rolle, ev, extra) {
   const d = {
@@ -2603,6 +2711,8 @@ function medienMailDaten_(kontakt, rolle, ev, extra) {
     aufgabe: rolle === 'Foto' ? 'die Fotos' : 'das Video',
     medien: rolle === 'Foto' ? 'Fotos' : 'Videos',
     honorar: String(kontakt.honorar || ''),
+    ankunft: medienAnkunft_(ev),
+    vorlauf: String(MEDIEN_VORLAUF_MIN),
     links: {
       zusage: extra.token ? medienZusageLink_(extra.token, true) : '',
       absage: extra.token ? medienZusageLink_(extra.token, false) : '',
@@ -2611,6 +2721,16 @@ function medienMailDaten_(kontakt, rolle, ev, extra) {
     },
   }
   return d
+}
+
+// Ankunftszeit "18:00" = Eventbeginn minus MEDIEN_VORLAUF_MIN, '' ohne Uhrzeit.
+function medienAnkunft_(ev) {
+  const t = String(ev.time || '').match(/(\d{1,2}):(\d{2})/)
+  if (!t) return ''
+  const min = Number(t[1]) * 60 + Number(t[2]) - MEDIEN_VORLAUF_MIN
+  const h = Math.floor(((min % 1440) + 1440) % 1440 / 60)
+  const m = ((min % 60) + 60) % 60
+  return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2)
 }
 
 function medienMailKey_(t) {
@@ -2628,6 +2748,7 @@ function medienMailVorlage_() {
     ['p', 'Hallo {Vorname},'],
     ['p', 'wir planen unser nächstes NewBuild Kollektiv Treffen **„{Titel}“** und würden uns freuen, wenn du {Aufgabe} übernimmst.'],
     ['p', '**{Datum} · {Zeit} Uhr**\n{Ort}'],
+    ['p', 'Bitte sei um **{Ankunft} Uhr** da, also {Vorlauf} Minuten vor Beginn, damit du in Ruhe ankommen und dich einrichten kannst.'],
     ['p', 'Honorar: {Honorar}'],
     ['p', 'Hast du Zeit? Ein Klick genügt: {Zusage-Link: Ja, ich bin dabei} · {Absage-Link: Leider nein}'],
     ['p', 'Danke dir und liebe Grüße,'],
@@ -2639,7 +2760,8 @@ function medienMailVorlage_() {
     ['h', 'Upload-Link'],
     ['p', 'Betreff: Upload-Ordner {Medien}: {Kurztitel}'],
     ['p', 'Hallo {Vorname},'],
-    ['p', 'schön, dass du bei „{Titel}“ am {Datum} dabei bist! Hier ist dein Ordner für die {Medien}. Lade sie dort einfach hoch, sobald sie fertig sind: {Upload-Link: {Medien} hochladen →}'],
+    ['p', 'schön, dass du bei „{Titel}“ am {Datum} dabei bist! Kurz zur Erinnerung: Bitte sei um **{Ankunft} Uhr** vor Ort – {Ort}.'],
+    ['p', 'Hier ist dein Ordner für die {Medien}. Lade sie dort einfach hoch, sobald sie fertig sind: {Upload-Link: {Medien} hochladen →}'],
     ['p', 'Danke dir und liebe Grüße,'],
   ]
 }
@@ -2657,12 +2779,31 @@ function medienMailStandard_(key) {
   return out
 }
 
+// Version der Standardtexte im Doc. Erhoehen, wenn sich die Vorlage aendert:
+// ein noch nie bearbeitetes Doc wird dann automatisch neu geschrieben, ein von
+// Ann bearbeitetes bleibt unangetastet.
+const MEDIEN_MAILDOC_VERSION = '3'
+
 function medienMailDoc_() {
   const props = PropertiesService.getScriptProperties()
   const id = props.getProperty('medienMailDoc')
   if (id) {
     try {
-      return DocumentApp.openById(id)
+      const doc = DocumentApp.openById(id)
+      if (props.getProperty('medienMailDocVersion') !== MEDIEN_MAILDOC_VERSION) {
+        const f = DriveApp.getFileById(id)
+        const unbearbeitet = f.getLastUpdated().getTime() - f.getDateCreated().getTime() < 5 * 60000
+        if (unbearbeitet) {
+          doc.getBody().clear()
+          medienMailDocFuellen_(doc)
+          Logger.log('Medien-Mail-Doc auf neue Vorlage aktualisiert.')
+        } else {
+          Logger.log('Medien-Mail-Doc wurde bearbeitet — neue Vorlage NICHT uebernommen.')
+        }
+        props.setProperty('medienMailDocVersion', MEDIEN_MAILDOC_VERSION)
+        return DocumentApp.openById(id)
+      }
+      return doc
     } catch (err) {
       props.deleteProperty('medienMailDoc')
     }
@@ -2671,26 +2812,32 @@ function medienMailDoc_() {
   const doc = DocumentApp.create(name)
   const file = DriveApp.getFileById(doc.getId())
   moveFileIntoFolder(file, mailTexteOrdner_())
-  const body = doc.getBody()
-  const kopf = body.getChild(0).asParagraph()
-  kopf.setText(name)
-  kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
-  ;[
-    ['p', 'Diese Mails gehen automatisch an Fotograf:innen und Videograf:innen aus „Media Contacts“ – für alle Events gleich. Text einfach hier ändern, die nächste Mail übernimmt ihn.'],
-    ['h2', 'So funktioniert’s'],
-    ['li', 'Anfrage: sobald ein Event im CMS steht, an Kontakt A der Rolle. Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen, nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort (oder bei Absage) geht die Anfrage an B, danach an C.'],
-    ['li', 'Upload-Link: direkt nach der Zusage (bzw. wenn du jemanden in „Einsätze“ einträgst).'],
-    ['li', 'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Honorar} (Absatz entfällt, wenn kein Honorar eingetragen ist)'],
-    ['li', 'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}'],
-  ].concat(medienMailVorlage_()).forEach(function (z) { docAbsatz_(body, z[0], z[1]) })
-  doc.saveAndClose()
+  medienMailDocFuellen_(doc)
   try {
     file.addEditor(VORSCHAU_EMPFAENGER)
   } catch (err) {
     Logger.log('Medien-Mail-Doc — Freigabe fehlgeschlagen: ' + err)
   }
   props.setProperty('medienMailDoc', doc.getId())
+  props.setProperty('medienMailDocVersion', MEDIEN_MAILDOC_VERSION)
   return DocumentApp.openById(doc.getId())
+}
+
+function medienMailDocFuellen_(doc) {
+  const name = 'Mail-Texte · Fotograf:innen & Videograf:innen'
+  const body = doc.getBody()
+  const kopf = body.getChild(0).asParagraph()
+  kopf.setText(name)
+  kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
+  ;[
+    ['p', 'Diese Mails gehen automatisch an Fotograf:innen und Videograf:innen aus „Media Contacts“ – für alle Events gleich. Text einfach hier ändern, die nächste Mail übernimmt ihn. Nach der Zusage hängt an der Upload-Mail eine Kalenderdatei (.ics) mit der Ankunftszeit.'],
+    ['h2', 'So funktioniert’s'],
+    ['li', 'Anfrage: sobald ein Event im CMS steht, an Kontakt A der Rolle. Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen, nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort (oder bei Absage) geht die Anfrage an B, danach an C.'],
+    ['li', 'Upload-Link: direkt nach der Zusage (bzw. wenn du jemanden in „Einsätze“ einträgst).'],
+    ['li', 'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Ankunft} (Beginn minus ' + MEDIEN_VORLAUF_MIN + ' Min.) · {Vorlauf} · {Honorar} (Absatz entfällt, wenn kein Honorar eingetragen ist)'],
+    ['li', 'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}'],
+  ].concat(medienMailVorlage_()).forEach(function (z) { docAbsatz_(body, z[0], z[1]) })
+  doc.saveAndClose()
 }
 
 let MEDIEN_DOC_CACHE = null
@@ -2720,6 +2867,7 @@ function medienMail_(key, d) {
   }
   const absaetze = a.absaetze
     .filter(function (h) { return d.honorar || !/\{\s*Honorar\s*\}/i.test(h) })
+    .filter(function (h) { return d.ankunft || !/\{\s*Ankunft\s*\}/i.test(h) })
     .map(function (h) {
       const mitLinks = h.replace(/\{\s*([A-Za-zÄÖÜäöü]+?)-Link\s*:\s*((?:[^{}]|\{[^{}]*\})*)\}/g, function (m, n, text) {
         const url = d.links[n.toLowerCase()]
