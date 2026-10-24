@@ -2760,7 +2760,8 @@ function medienAntwortVerarbeiten_(p) {
 //  Mails je Person und Event (Texte im Event-Doc "Mail-Texte Sponsoren"):
 //    Info      — Vorschau an Ann beim ersten Lauf nach dem Eintragen, Versand
 //                am naechsten Tag ab ERINNERUNG_SENDESTUNDE (mit .ics)
-//    1 Woche   — 7 Tage vorher (Vorschau am Vortag), mit Anmeldezahl + .ics
+//    1 Woche   — 7 Tage vorher (Vorschau am Vortag), mit .ics. Bewusst KEINE
+//                Anmelde-/Teilnehmerzahlen an Sponsoren (Ann, 24.10.2026).
 //    Änderung  — sofort bei geaendertem Datum/Zeit/Ort im CMS (Kopie an Ann)
 //    Danke     — SPONSOR_DANKE_NACH_TAGEN nach dem Event (Vorschau am Vortag)
 //  Gemerkt in den Skript-Eigenschaften (spons_<slug>_<email>_…), keine
@@ -2913,8 +2914,6 @@ function sponsorMailDaten_(k, ev, extra) {
     ort: String(ev.location || ''),
     referent: referent,
     eventtag: eventTagWort_(start),
-    anmeldungen: String(extra.anmeldungen || ''),
-    teilnehmende: String(extra.teilnehmende || ''),
     vorher: String(extra.vorher || ''),
     karte: {
       slug: String(ev.slug || ''), titel: String(ev.title || '').trim(), referent: referent,
@@ -2925,26 +2924,6 @@ function sponsorMailDaten_(k, ev, extra) {
       eventseite: eventSeiteUrl_(ev.slug),
     },
   }
-}
-
-// Anmeldungen (ohne Abmeldungen) und Anwesende laut Event-Tabelle, '' bei 0.
-function eventZahlen_(slug) {
-  const sh = findeEventSheetPerSlug_(slug)
-  if (!sh) return {}
-  const w = sh.getDataRange().getValues()
-  const k = w[0]
-  const iE = k.indexOf('E-Mail'), iS = k.indexOf('Status'), iA = k.indexOf('Anwesend')
-  const iV = k.indexOf('Vorname'), iN = k.indexOf('Nachname')
-  const angemeldet = {}, da = {}
-  for (let r = 1; r < w.length; r++) {
-    if (iS >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(w[r][iS] || ''))) continue
-    const id = String((iE >= 0 && w[r][iE]) || ((iV >= 0 ? w[r][iV] : '') + ' ' + (iN >= 0 ? w[r][iN] : ''))).trim().toLowerCase()
-    if (!id) continue
-    angemeldet[id] = true
-    if (iA >= 0 && String(w[r][iA] || '').trim()) da[id] = true
-  }
-  const n = Object.keys(angemeldet).length, d = Object.keys(da).length
-  return { anmeldungen: n ? String(n) : '', teilnehmende: d ? String(d) : '' }
 }
 
 // Eine Person, ein Event: faellige Mail/Vorschau verschicken. Rueckgabe =
@@ -2994,10 +2973,10 @@ function sponsorNachlauf_(k, ev, start, jetzt) {
     if (!ab) return getan.join(', ')
     // "1 Woche vorher" nur, wenn die Info nicht gerade erst rausging.
     if (tage === 8 && jetzt.getTime() - infoMs >= 86400000) {
-      if (vorschauAnAnn_(base + '_wocheVorschau', mail('woche', eventZahlen_(slug)), morgen, g, slug, ics())) getan.push('Vorschau „1 Woche“ an dich')
+      if (vorschauAnAnn_(base + '_wocheVorschau', mail('woche'), morgen, g, slug, ics())) getan.push('Vorschau „1 Woche“ an dich')
     }
     if (tage === 7 && !props.getProperty(base + '_woche') && jetzt.getTime() - infoMs >= 2 * 86400000) {
-      const m = mail('woche', eventZahlen_(slug))
+      const m = mail('woche')
       sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, ics())
       props.setProperty(base + '_woche', jetztText_())
       getan.push('1 Woche verschickt')
@@ -3005,14 +2984,14 @@ function sponsorNachlauf_(k, ev, start, jetzt) {
     if (tage === 1 - SPONSOR_DANKE_NACH_TAGEN) {
       const wann = (SPONSOR_DANKE_NACH_TAGEN === 1 ? 'morgen' : 'in ' + SPONSOR_DANKE_NACH_TAGEN + ' Tagen') +
         ' ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + wer
-      if (vorschauAnAnn_(base + '_dankeVorschau', mail('danke', eventZahlen_(slug)), wann, g, slug)) getan.push('Vorschau „Danke“ an dich')
+      if (vorschauAnAnn_(base + '_dankeVorschau', mail('danke'), wann, g, slug)) getan.push('Vorschau „Danke“ an dich')
     }
     return getan.join(', ')
   }
   // Nach dem Event: Danke (nur wer vorher die Info bekommen hat).
   if (!infoMs || props.getProperty(base + '_danke') || !ab) return ''
   if (tage > -SPONSOR_DANKE_NACH_TAGEN || tage < -SPONSOR_DANKE_NACH_TAGEN - 2) return ''
-  const m = mail('danke', eventZahlen_(slug))
+  const m = mail('danke')
   sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
   props.setProperty(base + '_danke', jetztText_())
   return 'Danke verschickt'
@@ -3035,13 +3014,12 @@ function sponsorMailVorlage_() {
     ['p', 'schön, dass {Firma} bei unserem nächsten NewBuild Kollektiv Treffen **„{Titel}“** dabei ist! Hier die Eckdaten für dich:'],
     ['p', '[EVENTKARTE]'],
     ['p', 'Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht der Termin in deinem Kalender.'],
-    ['p', 'Eine Woche vorher melde ich mich noch einmal mit dem aktuellen Stand der Anmeldungen. Wenn du vorab Fragen hast, schreib mir jederzeit.'],
+    ['p', 'Eine Woche vorher melde ich mich noch einmal kurz. Wenn du vorab Fragen hast, schreib mir jederzeit.'],
     ['p', 'Liebe Grüße,'],
     ['h', '1 Woche vorher'],
     ['p', 'Betreff: In einer Woche: {Kurztitel} – NewBuild Kollektiv × {Firma}'],
     ['p', '{Anrede},'],
     ['p', 'in einer Woche ist es soweit: „{Titel}“ am {Datum}, {Zeit} Uhr.'],
-    ['p', 'Aktuell haben sich **{Anmeldungen} Personen** angemeldet.'],
     ['p', '[EVENTKARTE]'],
     ['p', 'Falls ihr für den Abend noch etwas plant oder braucht, gib mir gern kurz Bescheid. Die Kalenderdatei hängt noch einmal an.'],
     ['p', 'Ich freue mich auf den Abend mit euch!'],
@@ -3058,7 +3036,6 @@ function sponsorMailVorlage_() {
     ['p', 'Betreff: Danke für {Kurztitel} – NewBuild Kollektiv × {Firma}'],
     ['p', '{Anrede},'],
     ['p', 'ich möchte mich noch einmal herzlich bei dir und {Firma} bedanken. Ohne euch hätte unser NewBuild Kollektiv Treffen {Eventtag} so nicht stattfinden können. Danke, dass du das möglich gemacht hast und die Zusammenarbeit so unkompliziert war.'],
-    ['p', 'Mit dabei waren **{Teilnehmende} Gäste** – es sind viele schöne Gespräche entstanden.'],
     ['p', 'Ich würde mich freuen, wenn wir uns bald einmal dazu austauschen, wie wir die Zusammenarbeit weiterführen können. Hast du in den nächsten Wochen Zeit für ein kurzes Telefonat oder einen Kaffee?'],
     ['p', 'Liebe Grüße,'],
   ]
@@ -3247,7 +3224,7 @@ function mailGruppe_(id) {
     },
     sponsoren: {
       id: 'sponsoren', titel: 'Sponsoren', docName: 'Mail-Texte Sponsoren', eventProp: 'mailDocSponsoren_',
-      grundProp: 'sponsorGrundDoc', version: '1', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
+      grundProp: 'sponsorGrundDoc', version: '2', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
       keyFn: sponsorMailKey_, vorlage: sponsorMailVorlage_, hinweise: sponsorHinweise_,
       links: function () { return [['→ Sponsor Contacts (wer bei welchem Event Sponsor ist)', sponsorSpreadsheet_().getUrl()]] },
     },
@@ -3302,10 +3279,10 @@ function sponsorHinweise_() {
   return [
     'Empfänger: die Personen, die du in „Sponsor Contacts“ → Einsätze bei diesem Event als Sponsor 1–3 auswählst.',
     'Info zum Event: sobald du jemanden einträgst, bekommst du sofort eine Vorschau. Am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht sie raus, mit Kalenderdatei. Ist das Event weniger als 2 Tage entfernt, geht sie sofort raus (Kopie an dich).',
-    '1 Woche vorher: ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, mit aktueller Anmeldezahl und Kalenderdatei. Vorschau am Vortag.',
+    '1 Woche vorher: ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, kurze Erinnerung mit Kalenderdatei. Vorschau am Vortag.',
     'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, mit neuer Kalenderdatei (Kopie an dich).',
     'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Vorschau am Eventtag – ein persönlicher Satz zum Abend macht die Mail stärker.',
-    'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} · {Anmeldungen} · {Teilnehmende} (nur wenn der Check-in genutzt wurde) · {Vorher} (alter Termin, nur in „Änderung“)',
+    'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} · {Vorher} (alter Termin, nur in „Änderung“)',
     'Links: {Maps-Link: Text} · {Eventseite-Link: Text}. [EVENTKARTE] in einer eigenen Zeile = Eventbild.',
   ].concat(gemeinsameHinweise_())
 }
@@ -4352,10 +4329,6 @@ function gruppenBeispielMails_(slug) {
     if (k && k[kw[0].indexOf('Firma')]) firma = String(k[kw[0].indexOf('Firma')])
   } catch (err) {}
   const sk = { name: 'Ann-Kathrin', firma: firma, anrede: 'w', email: VORSCHAU_EMPFAENGER }
-  let zahlen = {}
-  try {
-    zahlen = eventZahlen_(slug)
-  } catch (err) {}
   const sIcs = start ? icsDatei_(ev.title, start, parseEventEnde_(start, String(ev.time || '')), String(ev.location || ''), slug) : null
   ;[
     ['info', 'Info zum Event', 'nach dem Eintragen in „Sponsor Contacts“: Vorschau an dich, Versand am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', true],
@@ -4363,9 +4336,7 @@ function gruppenBeispielMails_(slug) {
     ['aenderung', 'Änderung', 'sofort, wenn Datum, Zeit oder Ort im CMS geändert werden', true],
     ['danke', 'Nach dem Event', (SPONSOR_DANKE_NACH_TAGEN === 1 ? 'am Tag' : SPONSOR_DANKE_NACH_TAGEN + ' Tage') + ' nach dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', false],
   ].forEach(function (a) {
-    const m = gruppenMail_(mailGruppe_('sponsoren'), a[0], sponsorMailDaten_(sk, ev, {
-      anmeldungen: zahlen.anmeldungen || '24', teilnehmende: zahlen.teilnehmende || '18', vorher: vorher,
-    }))
+    const m = gruppenMail_(mailGruppe_('sponsoren'), a[0], sponsorMailDaten_(sk, ev, { vorher: vorher }))
     if (a[3] && sIcs) m.attachments = [sIcs]
     out.push({ gruppe: 'Sponsoren', titel: a[1], wann: a[2], m: m })
   })
