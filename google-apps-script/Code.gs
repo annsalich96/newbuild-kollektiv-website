@@ -2072,7 +2072,7 @@ const MEDIEN_EINLADUNG_TAGE = 2
 // Reihenfolge der Anfragen je Rolle: erst A, dann B, dann C (bis zu drei Personen).
 const MEDIEN_PRIORITAETEN = ['A', 'B', 'C']
 const KONTAKTE_HEADERS = [
-  'Name', 'Rolle', 'E-Mail', 'Priorität', 'Aktiv', 'Credit im Wasserzeichen', 'Telefon', 'Honorar', 'Notizen',
+  'Name', 'Rolle', 'E-Mail', 'Priorität', 'Aktiv', 'Credit im Wasserzeichen', 'Telefon', 'Abrechnungsart', 'Menge', 'Netto Satz', 'Gesamt Netto', 'Notizen',
 ]
 const EINSAETZE_HEADERS = [
   'Event', 'Datum', 'Fotograf:in', 'Videograf:in', 'Fotos-Ordner', 'Videos-Ordner', 'Zugang Foto', 'Zugang Video', 'Slug',
@@ -2100,7 +2100,7 @@ function medienSpreadsheet_() {
   moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
   const kontakte = ss.getSheets()[0].setName('Kontakte')
   kontakte.appendRow(KONTAKTE_HEADERS)
-  kontakte.appendRow(['Ruthe Zuntz', 'Foto', '', 'A', 'Ja', '© Ruthe Zuntz', '', '', 'Session 01'])
+  kontakte.appendRow(['Ruthe Zuntz', 'Foto', '', 'A', 'Ja', '© Ruthe Zuntz', '', '', '', '', '', 'Session 01'])
   const auswahl = function (spalte, werte) {
     kontakte
       .getRange(2, KONTAKTE_HEADERS.indexOf(spalte) + 1, 500, 1)
@@ -2205,6 +2205,32 @@ function medienZugangGeben_(folder, email) {
   }
 }
 
+// Honorar fuer die Anfrage-Mail aus den Spalten Abrechnungsart / Menge /
+// Netto Satz / Gesamt Netto (z. B. "300 € netto (2 Std. à 150 €)" oder
+// "700 € netto, pauschal"). Fallback: alte Spalte "Honorar". Leer -> der
+// Honorar-Absatz entfaellt in der Mail.
+function medienHonorarText_(zeile, kopf) {
+  const wert = function (n) {
+    const i = kopf.indexOf(n)
+    return i >= 0 ? String(zeile[i] == null ? '' : zeile[i]).trim() : ''
+  }
+  const euro = function (v) {
+    const n = Number(String(v).replace(',', '.'))
+    if (isNaN(n) || v === '') return String(v)
+    return (n % 1 ? n.toFixed(2) : String(n)).replace('.', ',') + ' €'
+  }
+  const art = wert('Abrechnungsart')
+  const menge = wert('Menge')
+  const satz = wert('Netto Satz')
+  let gesamt = wert('Gesamt Netto')
+  if (!gesamt && menge && satz) gesamt = String(Number(menge) * Number(String(satz).replace(',', '.')))
+  if (!gesamt) return wert('Honorar')
+  if (/stunde/i.test(art) && menge && satz) {
+    return euro(gesamt) + ' netto (' + String(menge).replace('.', ',') + ' Std. à ' + euro(satz) + ')'
+  }
+  return euro(gesamt) + ' netto' + (art ? ', ' + art : '')
+}
+
 function medienEinladungMail_(kontakt, rolle, ev, folder) {
   const m = medienMail_('upload', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() }))
   sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody)
@@ -2231,7 +2257,7 @@ function medienAbgleichen_(cmsEvents) {
       credit: String(kWerte[r][kk.indexOf('Credit im Wasserzeichen')] || '').trim(),
       prioritaet: String(kWerte[r][kk.indexOf('Priorität')] || '').trim().toUpperCase(),
       aktiv: String(kWerte[r][kk.indexOf('Aktiv')] || '').trim(),
-      honorar: String(kWerte[r][kk.indexOf('Honorar')] || '').trim(),
+      honorar: medienHonorarText_(kWerte[r], kk),
     }
   }
   const kontaktListe = Object.keys(perName).map(function (k) { return perName[k] })
