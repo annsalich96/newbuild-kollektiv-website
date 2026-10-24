@@ -1604,6 +1604,12 @@ function sendeErinnerungen() {
     Logger.log('Mail-Texte-Doc — Fehler: ' + err)
   }
 
+  try {
+    medienAbgleichen_(cmsEvents)
+  } catch (err) {
+    Logger.log('Medien — Fehler: ' + err)
+  }
+
   const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
   while (files.hasNext()) {
     const file = files.next()
@@ -2038,6 +2044,269 @@ function fotosInHistoryEintragen() {
   }
   if (n) SpreadsheetApp.flush()
   Logger.log('Fotos/LinkedIn in History eingetragen: ' + n + ' Zellen.')
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FOTOS + VIDEOS: Ordner pro Event und Zugang fuer Fotograf:innen/Videograf:innen
+//
+//  Drive-Ordner BILDER_VIDEOS (Konto request@) enthaelt pro Event einen Ordner
+//  "<Nummer>: <Kurztitel>" mit Photos / Photos_watermarked / Videos.
+//  sendeErinnerungen (alle 15 min) legt ihn fuer jedes neue CMS-Event an
+//  (bestehende Ordner werden ueber den Namensanfang "<Nummer>:" gefunden).
+//
+//  Tabelle "Media Contacts" (im selben Ordner):
+//    Kontakte  — eine Zeile pro Person: Name, Rolle (Foto/Video), E-Mail, Credit …
+//    Einsätze  — eine Zeile pro Event (legt das Skript an); Ann waehlt dort
+//                Fotograf:in und Videograf:in aus der Kontaktliste aus.
+//  Ist eine Person eingetragen, bekommt sie Bearbeitungszugriff auf Photos bzw.
+//  Videos dieses Events (ohne Google-Benachrichtigung) und — wenn das Event
+//  hoechstens MEDIEN_EINLADUNG_TAGE zurueckliegt — eine kurze Mail mit dem
+//  Upload-Link. Spalte "Zugang Foto/Video" merkt, wer schon Zugang hat; Zugang
+//  wird nie automatisch entzogen.
+// ═══════════════════════════════════════════════════════════════════════════
+const MEDIEN_ORDNER_ID = '1uVkvQlUi07UCx3CV8aEaKAdzXPzCX0PO' // BILDER_VIDEOS
+const MEDIEN_SHEET_NAME = 'Media Contacts'
+const MEDIEN_UNTERORDNER = ['Photos', 'Photos_watermarked', 'Videos']
+const MEDIEN_EINLADUNG_TAGE = 2
+const KONTAKTE_HEADERS = [
+  'Name', 'Rolle', 'E-Mail', 'Priorität', 'Aktiv', 'Credit im Wasserzeichen', 'Telefon', 'Honorar', 'Notizen',
+]
+const EINSAETZE_HEADERS = [
+  'Event', 'Datum', 'Fotograf:in', 'Videograf:in', 'Fotos-Ordner', 'Videos-Ordner', 'Zugang Foto', 'Zugang Video', 'Slug',
+]
+
+function medienSpreadsheet_() {
+  const props = PropertiesService.getScriptProperties()
+  const id = props.getProperty('medienSheetId')
+  if (id) {
+    try {
+      return SpreadsheetApp.openById(id)
+    } catch (err) {
+      props.deleteProperty('medienSheetId')
+    }
+  }
+  const ordner = DriveApp.getFolderById(MEDIEN_ORDNER_ID)
+  const vorhanden = ordner.getFilesByName(MEDIEN_SHEET_NAME)
+  if (vorhanden.hasNext()) {
+    const ss = SpreadsheetApp.open(vorhanden.next())
+    props.setProperty('medienSheetId', ss.getId())
+    return ss
+  }
+
+  const ss = SpreadsheetApp.create(MEDIEN_SHEET_NAME)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
+  const kontakte = ss.getSheets()[0].setName('Kontakte')
+  kontakte.appendRow(KONTAKTE_HEADERS)
+  kontakte.appendRow(['Ruthe Zuntz', 'Foto', '', 'A', 'Ja', '© Ruthe Zuntz', '', '', 'Session 01'])
+  const auswahl = function (spalte, werte) {
+    kontakte
+      .getRange(2, KONTAKTE_HEADERS.indexOf(spalte) + 1, 500, 1)
+      .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(werte, true).build())
+  }
+  auswahl('Rolle', ['Foto', 'Video'])
+  auswahl('Priorität', ['A', 'B'])
+  auswahl('Aktiv', ['Ja', 'Nein'])
+
+  const einsaetze = ss.insertSheet('Einsätze')
+  einsaetze.appendRow(EINSAETZE_HEADERS)
+  const namen = SpreadsheetApp.newDataValidation()
+    .requireValueInRange(kontakte.getRange('A2:A'), true)
+    .build()
+  ;['Fotograf:in', 'Videograf:in'].forEach(function (spalte) {
+    einsaetze.getRange(2, EINSAETZE_HEADERS.indexOf(spalte) + 1, 200, 1).setDataValidation(namen)
+  })
+  ;[kontakte, einsaetze].forEach(function (sh) {
+    sh.setFrozenRows(1)
+    sh.getRange(1, 1, 1, sh.getLastColumn()).setFontWeight('bold')
+  })
+  einsaetze.hideColumns(EINSAETZE_HEADERS.indexOf('Slug') + 1)
+  einsaetze.getRange(2, EINSAETZE_HEADERS.indexOf('Datum') + 1, 200, 1).setNumberFormat('@')
+  einsaetze.setColumnWidth(1, 320)
+
+  try {
+    DriveApp.getFileById(ss.getId()).addEditor(VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    Logger.log('Media Contacts — Freigabe fehlgeschlagen: ' + err)
+  }
+  props.setProperty('medienSheetId', ss.getId())
+  Logger.log('Media Contacts angelegt: ' + ss.getUrl())
+  return ss
+}
+
+function medienOrdnerName_(ev) {
+  const nr = String(ev.number || '').trim()
+  const titel = kurzTitel_(String(ev.title || ev.slug || '').trim())
+  return nr ? nr + ': ' + titel : titel
+}
+
+// Event-Ordner (mit Unterordnern) zu einem CMS-Event. anlegen=false -> nur
+// suchen. null, wenn keiner existiert und nicht angelegt werden soll.
+function medienEventOrdner_(ev, anlegen) {
+  const slug = String(ev.slug || '')
+  const props = PropertiesService.getScriptProperties()
+  const key = 'medienOrdner_' + slug
+  let ordner = null
+  const id = props.getProperty(key)
+  if (id) {
+    try {
+      ordner = DriveApp.getFolderById(id)
+      if (ordner.isTrashed()) ordner = null
+    } catch (err) {
+      ordner = null
+    }
+  }
+  const basis = DriveApp.getFolderById(MEDIEN_ORDNER_ID)
+  if (!ordner) {
+    // Von Hand angelegte Ordner ("Session 03: …") ueber den Namensanfang finden.
+    const nr = String(ev.number || '').trim()
+    const treffer = []
+    const alle = basis.getFolders()
+    while (alle.hasNext()) {
+      const f = alle.next()
+      const name = f.getName()
+      if (name === medienOrdnerName_(ev) || (nr && name.indexOf(nr + ':') === 0)) treffer.push(f)
+    }
+    if (treffer.length === 1) ordner = treffer[0]
+    else if (treffer.length > 1) {
+      Logger.log('Medien — mehrere Ordner fuer "' + nr + '", bitte einen umbenennen. Uebersprungen.')
+      return null
+    }
+  }
+  if (!ordner && !anlegen) return null
+  if (!ordner) {
+    ordner = basis.createFolder(medienOrdnerName_(ev))
+    Logger.log('Medien — Ordner angelegt: ' + ordner.getName())
+  }
+  props.setProperty(key, ordner.getId())
+
+  const unter = {}
+  MEDIEN_UNTERORDNER.forEach(function (name) {
+    const it = ordner.getFoldersByName(name)
+    unter[name] = it.hasNext() ? it.next() : ordner.createFolder(name)
+  })
+  return { ordner: ordner, unter: unter }
+}
+
+// Bearbeitungszugriff ohne Googles eigene Benachrichtigungsmail (erweiterter
+// Dienst "Drive API"); fehlt der Dienst, geht es ueber DriveApp.
+function medienZugangGeben_(folder, email) {
+  if (typeof Drive !== 'undefined') {
+    Drive.Permissions.create(
+      { role: 'writer', type: 'user', emailAddress: email },
+      folder.getId(),
+      { sendNotificationEmail: false },
+    )
+  } else {
+    folder.addEditor(email)
+  }
+}
+
+function medienEinladungMail_(kontakt, rolle, ev, folder) {
+  const was = rolle === 'Foto' ? 'Fotos' : 'Videos'
+  const vorname = String(kontakt.name).split(' ')[0]
+  const html = wrapMail_(
+    '<p>Hallo ' + escapeHtml_(vorname) + ',</p>' +
+      '<p>für unser NewBuild Kollektiv Treffen <strong>„' + escapeHtml_(String(ev.title || '').trim()) + '“</strong>' +
+      (ev.date ? ' am ' + escapeHtml_(String(ev.date)) : '') +
+      ' habe ich dir einen Ordner für deine ' + was + ' angelegt. Lade sie dort einfach hoch, ' +
+      'sobald sie fertig sind:</p>' +
+      '<p><a href="' + folder.getUrl() + '" style="color:#3d5a80">' + was + ' hochladen →</a></p>' +
+      (ev.location ? '<p>Ort: ' + escapeHtml_(String(ev.location)) + (ev.time ? ' · ' + escapeHtml_(String(ev.time)) + ' Uhr' : '') + '</p>' : '') +
+      '<p>Danke dir und liebe Grüße,</p>',
+  )
+  sendeTeilnehmerMail_(kontakt.email, 'Upload-Ordner ' + was + ': ' + kurzTitel_(ev.title), html)
+}
+
+// Laeuft mit sendeErinnerungen: Ordner anlegen, Einsätze-Zeilen pflegen,
+// Zugang vergeben.
+function medienAbgleichen_(cmsEvents) {
+  const ss = medienSpreadsheet_()
+  const kontakte = ss.getSheetByName('Kontakte')
+  const einsaetze = ss.getSheetByName('Einsätze')
+  if (!kontakte || !einsaetze) throw new Error('Tabellenblatt "Kontakte" oder "Einsätze" fehlt')
+
+  const kWerte = kontakte.getDataRange().getValues()
+  const kk = kWerte[0]
+  const perName = {}
+  for (let r = 1; r < kWerte.length; r++) {
+    const name = String(kWerte[r][kk.indexOf('Name')] || '').trim()
+    if (!name) continue
+    perName[name.toLowerCase()] = {
+      name: name,
+      rolle: String(kWerte[r][kk.indexOf('Rolle')] || '').trim(),
+      email: String(kWerte[r][kk.indexOf('E-Mail')] || '').trim(),
+      credit: String(kWerte[r][kk.indexOf('Credit im Wasserzeichen')] || '').trim(),
+    }
+  }
+
+  const heute = new Date()
+  let werte = einsaetze.getDataRange().getValues()
+  const ek = werte[0]
+  const col = function (name) { return ek.indexOf(name) + 1 }
+  const zeileProSlug = {}
+  for (let r = 1; r < werte.length; r++) {
+    const s = String(werte[r][col('Slug') - 1] || '').trim()
+    if (s) zeileProSlug[s] = r + 1
+  }
+
+  cmsEvents.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    if (!slug) return
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    const neu = !!start && tagesDifferenz_(heute, start) >= -MAILDOC_VORLAUF_TAGE
+    const m = medienEventOrdner_(ev, neu)
+    if (!m) return
+
+    let zeile = zeileProSlug[slug]
+    if (!zeile) {
+      einsaetze.appendRow([medienOrdnerName_(ev), '', '', '', '', '', '', '', slug])
+      zeile = einsaetze.getLastRow()
+      zeileProSlug[slug] = zeile
+    }
+    // Name, Datum, Ordner-Links immer aktuell halten (Datum kommt aus dem CMS).
+    einsaetze.getRange(zeile, col('Event')).setValue(medienOrdnerName_(ev))
+    einsaetze.getRange(zeile, col('Datum')).setValue(String(ev.date || ''))
+    einsaetze.getRange(zeile, col('Fotos-Ordner')).setValue(m.unter.Photos.getUrl())
+    einsaetze.getRange(zeile, col('Videos-Ordner')).setValue(m.unter.Videos.getUrl())
+
+    const z = einsaetze.getRange(zeile, 1, 1, ek.length).getValues()[0]
+    ;[
+      ['Foto', 'Fotograf:in', 'Zugang Foto', m.unter.Photos],
+      ['Video', 'Videograf:in', 'Zugang Video', m.unter.Videos],
+    ].forEach(function (rolle) {
+      const name = String(z[col(rolle[1]) - 1] || '').trim()
+      if (!name) return
+      const kontakt = perName[name.toLowerCase()]
+      if (!kontakt || !kontakt.email) {
+        einsaetze.getRange(zeile, col(rolle[2])).setValue('E-Mail fehlt in „Kontakte“')
+        return
+      }
+      const bisher = String(z[col(rolle[2]) - 1] || '')
+      if (bisher.toLowerCase().indexOf(kontakt.email.toLowerCase()) >= 0) return
+      try {
+        medienZugangGeben_(rolle[3], kontakt.email)
+        let vermerk = kontakt.email + ' · ' + Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy')
+        if (start && tagesDifferenz_(heute, start) >= -MEDIEN_EINLADUNG_TAGE) {
+          medienEinladungMail_(kontakt, rolle[0], ev, rolle[3])
+          vermerk += ' · Mail'
+        }
+        // Mehrere Personen nacheinander: alte Vermerke behalten.
+        const alt = /E-Mail fehlt/.test(bisher) ? '' : bisher
+        einsaetze.getRange(zeile, col(rolle[2])).setValue(alt ? alt + '\n' + vermerk : vermerk)
+        Logger.log('Medien — Zugang ' + rolle[0] + ' fuer ' + kontakt.email + ' (' + slug + ')')
+      } catch (err) {
+        einsaetze.getRange(zeile, col(rolle[2])).setValue('FEHLER: ' + err)
+      }
+    })
+  })
+  SpreadsheetApp.flush()
+}
+
+// EINMALIG im Editor ausfuehren: legt "Media Contacts" und die Event-Ordner
+// sofort an (statt beim naechsten 15-Minuten-Lauf) und fragt die Berechtigungen ab.
+function medienJetztEinrichten() {
+  medienAbgleichen_(ladeCmsEvents_())
+  Logger.log('Media Contacts: ' + medienSpreadsheet_().getUrl())
 }
 
 // ── Mailtexte der einzelnen Stufen ────────────────────────────────────────
