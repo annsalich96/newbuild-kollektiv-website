@@ -2051,7 +2051,7 @@ function fotosInHistoryEintragen() {
 //
 //  Drive-Ordner BILDER_VIDEOS (Konto request@) enthaelt pro Event einen Ordner
 //  "<Nummer>: <Kurztitel>" mit Photos / Photos_watermarked / Videos.
-//  sendeErinnerungen (alle 15 min) legt ihn fuer jedes neue CMS-Event an
+//  sendeErinnerungen (alle 15 min) legt ihn fuer jedes CMS-Event an
 //  (bestehende Ordner werden ueber den Namensanfang "<Nummer>:" gefunden).
 //
 //  Tabelle "Media Contacts" (im selben Ordner):
@@ -2135,7 +2135,8 @@ function medienSpreadsheet_() {
 
 function medienOrdnerName_(ev) {
   const nr = String(ev.number || '').trim()
-  const titel = kurzTitel_(String(ev.title || ev.slug || '').trim())
+  // Kurztitel; ohne ":" im Titel bis zum ersten " - " (DAZ EVENT: ARCHITECTURE INTELLIGENCE)
+  const titel = kurzTitel_(String(ev.title || ev.slug || '').trim()).split(' - ')[0].trim()
   return nr ? nr + ': ' + titel : titel
 }
 
@@ -2253,8 +2254,7 @@ function medienAbgleichen_(cmsEvents) {
     const slug = String(ev.slug || '').trim()
     if (!slug) return
     const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
-    const neu = !!start && tagesDifferenz_(heute, start) >= -MAILDOC_VORLAUF_TAGE
-    const m = medienEventOrdner_(ev, neu)
+    const m = medienEventOrdner_(ev, true) // jedes CMS-Event bekommt einen Ordner, auch vergangene
     if (!m) return
 
     let zeile = zeileProSlug[slug]

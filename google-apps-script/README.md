@@ -138,7 +138,7 @@ Einmalig nach dem Einspielen: `mailTexteDocsJetztAnlegen` ausführen (fragt die 
 
 ## Update 2026-10-24: Foto-/Video-Ordner und Media Contacts
 
-- Drive-Ordner **BILDER_VIDEOS** (request@, ID in `MEDIEN_ORDNER_ID`): pro Event `"<Nummer>: <Kurztitel>"` mit `Photos` · `Photos_watermarked` · `Videos`. `sendeErinnerungen` legt ihn für jedes neue CMS-Event an (höchstens 2 Tage zurückliegend); vorhandene, von Hand angelegte Ordner werden über den Namensanfang `"<Nummer>:"` gefunden und nur um fehlende Unterordner ergänzt. Ordner-ID in Skript-Eigenschaft `medienOrdner_<slug>`.
+- Drive-Ordner **BILDER_VIDEOS** (request@, ID in `MEDIEN_ORDNER_ID`): pro Event `"<Nummer>: <Kurztitel>"` mit `Photos` · `Photos_watermarked` · `Videos`. `sendeErinnerungen` legt ihn für jedes CMS-Event an (auch vergangene; Name bis zum ersten „:“ bzw. „ - “ des Titels); vorhandene, von Hand angelegte Ordner werden über den Namensanfang `"<Nummer>:"` gefunden und nur um fehlende Unterordner ergänzt. Ordner-ID in Skript-Eigenschaft `medienOrdner_<slug>`.
 - Tabelle **Media Contacts** (im selben Ordner, freigegeben für salich@):
   - `Kontakte`: Name · Rolle (Foto/Video) · E-Mail · Priorität (A/B) · Aktiv · Credit im Wasserzeichen · Telefon · Honorar · Notizen
   - `Einsätze`: eine Zeile pro Event (legt das Skript an). Ann wählt **Fotograf:in** / **Videograf:in** per Dropdown → Person bekommt Bearbeitungszugriff auf `Photos` bzw. `Videos` (ohne Google-Benachrichtigung, Drive-API-Dienst) und, falls das Event höchstens 2 Tage zurückliegt, eine Mail mit Upload-Link. `Zugang Foto/Video` merkt, wer Zugang hat; Zugang wird nie automatisch entzogen.
