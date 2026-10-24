@@ -4008,12 +4008,14 @@ function absaetzeZuHtml_(absaetze, e) {
     .join('')
 }
 
-// Text aus dem Doc, sonst Standard. Anhaenge (.ics) immer vom Standard.
+// Text aus dem Event-Doc, sonst aus der Grundvorlage Gäste, sonst Standard im
+// Code. Anhaenge (.ics) immer vom Standard.
 function ausDoc_(key, e, standard) {
   const m = standard(e)
   try {
     const abschnitte = e.slug ? mailDocAbschnitte_(e.slug) : null
-    const a = abschnitte && abschnitte[key]
+    let a = abschnitte && abschnitte[key]
+    if (!a || !a.absaetze.length) a = (gruppenAbschnitte_(mailGruppe_('gaeste'), '*') || {})[key]
     if (!a || !a.absaetze.length) return m
     return {
       subject: a.betreff ? platzhalterText_(a.betreff, e) : m.subject,
