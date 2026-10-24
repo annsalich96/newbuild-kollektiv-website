@@ -182,3 +182,11 @@ Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)*
 3. **Nach dem Event** mit Upload-Link, Vorschau am Eventtag.
 - Dazu nur bei CMS-Änderung von Datum/Zeit/Ort: **Änderung** mit neuer `.ics` (BCC an Ann).
 - Entfallen: Erinnerung bei fehlender Antwort (nach `MEDIEN_FRIST_TAGE` geht es still an B/C) und die Upload-Mail direkt nach der Zusage (Ordnerzugriff wird still vergeben). Alte Doc-Abschnitte „Erinnerung“/„Upload-Link“ werden ignoriert; Grundvorlage Version 6.
+
+## Speaker: Danke + Folien (Update 2026-10-24)
+
+- Tabelle **„Speaker Contacts“** (Ordner Event-Anmeldungen, entsteht beim nächsten Trigger-Lauf): Blatt *Kontakte* (Name, Firma, Anrede w/m, E-Mail …) und *Einsätze* (eine Zeile pro CMS-Event, Speaker 1–4). Speaker 1 wird einmalig aus dem CMS (speakerName/-Role/-Company) übernommen und als Kontakt angelegt — Ann trägt nur noch die E-Mail ein. E-Mails stehen bewusst nicht im CMS, weil `events.json` öffentlich ist.
+- Eine Mail **„Nach dem Event“**: Danke, Bitte um die Präsentationsfolien für LinkedIn/Instagram, Zusage „vor Veröffentlichung schicken wir dir alles zur Freigabe“. Vorschau am Eventtag, Versand am Tag danach ab 9 Uhr. Wer erst später eingetragen wird (bis 7 Tage nach dem Event): Vorschau sofort, Versand am nächsten Tag.
+- Upload: jedes Event bekommt in **Photos_Videos/<Event>/Slides** automatisch einen Ordner. Beim Versand bekommt die Person Schreibzugriff (ohne Google-Benachrichtigung), der Link steht in der Mail. Klappt der Zugriff nicht, entfällt der Link-Absatz, es bleibt „als Antwort auf diese Mail“.
+- Texte: Grundvorlage + Event-Doc „Mail-Texte Speaker“ wie bei den anderen Gruppen.
+- Sponsoren-Danke enthält jetzt ebenfalls die Bitte um Folien/Material mit Freigabe-Zusage (Grundvorlage Version 3 — wird nur neu geschrieben, wenn sie nicht bearbeitet wurde).

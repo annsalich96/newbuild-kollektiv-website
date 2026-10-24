@@ -1619,6 +1619,12 @@ function sendeErinnerungen() {
     Logger.log('Sponsoren — Fehler: ' + err)
   }
 
+  try {
+    speakerAbgleichen_(cmsEvents)
+  } catch (err) {
+    Logger.log('Speaker — Fehler: ' + err)
+  }
+
   const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
   while (files.hasNext()) {
     const file = files.next()
@@ -2058,8 +2064,8 @@ function fotosInHistoryEintragen() {
 // ═══════════════════════════════════════════════════════════════════════════
 //  FOTOS + VIDEOS: Ordner pro Event und Zugang fuer Fotograf:innen/Videograf:innen
 //
-//  Drive-Ordner BILDER_VIDEOS (Konto request@) enthaelt pro Event einen Ordner
-//  "<Nummer>: <Kurztitel>" mit Photos / Photos_watermarked / Videos.
+//  Drive-Ordner Photos_Videos (Konto request@) enthaelt pro Event einen Ordner
+//  "<Nummer>: <Kurztitel>" mit Photos / Photos_watermarked / Videos / Slides.
 //  sendeErinnerungen (alle 15 min) legt ihn fuer jedes CMS-Event an
 //  (bestehende Ordner werden ueber den Namensanfang "<Nummer>:" gefunden).
 //
@@ -2072,9 +2078,10 @@ function fotosInHistoryEintragen() {
 //  am Tag nach dem Event. Spalte "Zugang Foto/Video" merkt, wer schon Zugang
 //  hat; Zugang wird nie automatisch entzogen.
 // ═══════════════════════════════════════════════════════════════════════════
-const MEDIEN_ORDNER_ID = '1uVkvQlUi07UCx3CV8aEaKAdzXPzCX0PO' // BILDER_VIDEOS
+const MEDIEN_ORDNER_ID = '1uVkvQlUi07UCx3CV8aEaKAdzXPzCX0PO' // Photos_Videos
 const MEDIEN_SHEET_NAME = 'Media Contacts'
-const MEDIEN_UNTERORDNER = ['Photos', 'Photos_watermarked', 'Videos']
+// Slides: Upload-Ordner fuer die Folien der Speaker (Link in der Danke-Mail).
+const MEDIEN_UNTERORDNER = ['Photos', 'Photos_watermarked', 'Videos', 'Slides']
 // Reihenfolge der Anfragen je Rolle: erst A, dann B, dann C (bis zu drei Personen).
 const MEDIEN_PRIORITAETEN = ['A', 'B', 'C']
 const KONTAKTE_HEADERS = [
@@ -3041,9 +3048,275 @@ function sponsorMailVorlage_() {
     ['p', 'Betreff: Danke für {Kurztitel} – NewBuild Kollektiv × {Firma}'],
     ['p', '{Anrede},'],
     ['p', 'ich möchte mich noch einmal herzlich bei dir und {Firma} bedanken. Ohne euch hätte unser NewBuild Kollektiv Treffen {Eventtag} so nicht stattfinden können. Danke, dass du das möglich gemacht hast und die Zusammenarbeit so unkompliziert war.'],
+    ['p', 'Falls ihr an dem Abend Folien oder anderes Material gezeigt habt: Magst du mir das schicken, am einfachsten als PDF als Antwort auf diese Mail? Daraus würden wir gern Beiträge für LinkedIn und Instagram machen.'],
+    ['p', '**Bevor etwas veröffentlicht wird, schicken wir dir die Beiträge zur Freigabe** – ohne euer OK geht nichts online.'],
     ['p', 'Ich würde mich freuen, wenn wir uns bald einmal dazu austauschen, wie wir die Zusammenarbeit weiterführen können. Hast du in den nächsten Wochen Zeit für ein kurzes Telefonat oder einen Kaffee?'],
     ['p', 'Liebe Grüße,'],
   ]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SPEAKER (Referent:innen)
+//
+//  Tabelle "Speaker Contacts" (Ordner DRIVE_FOLDER_NAME), aufgebaut wie
+//  "Sponsor Contacts":
+//    Kontakte — eine Zeile pro Person (Name, Firma, Anrede w/m, E-Mail …)
+//    Einsätze — eine Zeile pro CMS-Event; Speaker 1 wird einmalig aus dem CMS
+//               (speakerName/-Role/-Company) vorbelegt, die Person landet dann
+//               auch in "Kontakte" — Ann traegt nur noch die E-Mail ein.
+//  Mail (Texte im Event-Doc "Mail-Texte Speaker"):
+//    Danke + Bitte um die Folien fuer LinkedIn/Instagram (mit Freigabe-Zusage)
+//    und Link zum Ordner Photos_Videos/<Event>/Slides; Schreibzugriff bekommt
+//    die Person beim Versand (ohne Google-Benachrichtigung).
+//    Vorschau am Eventtag ab ERINNERUNG_SENDESTUNDE, Versand am Tag danach.
+//    Wer erst nach dem Event eingetragen wird (bis SPEAKER_DANKE_FENSTER_TAGE),
+//    bekommt sie nach Vorschau am naechsten Tag.
+//  Gemerkt in den Skript-Eigenschaften (speak_<slug>_<email>_…).
+// ═══════════════════════════════════════════════════════════════════════════
+const SPEAKER_SHEET_NAME = 'Speaker Contacts'
+const SPEAKER_KONTAKTE_HEADERS = ['Name', 'Firma', 'Anrede (w/m)', 'E-Mail', 'Position', 'Telefon', 'Notizen']
+const SPEAKER_SPALTEN = ['Speaker 1', 'Speaker 2', 'Speaker 3', 'Speaker 4']
+const SPEAKER_EINSAETZE_HEADERS = ['Event', 'Datum'].concat(SPEAKER_SPALTEN).concat(['Versand', 'Slug'])
+const SPEAKER_DANKE_FENSTER_TAGE = 7
+
+function speakerSpreadsheet_() {
+  const props = PropertiesService.getScriptProperties()
+  const id = props.getProperty('speakerSheetId')
+  if (id) {
+    try {
+      return SpreadsheetApp.openById(id)
+    } catch (err) {
+      props.deleteProperty('speakerSheetId')
+    }
+  }
+  const ordner = getOrCreateFolder()
+  const vorhanden = ordner.getFilesByName(SPEAKER_SHEET_NAME)
+  if (vorhanden.hasNext()) {
+    const ss = SpreadsheetApp.open(vorhanden.next())
+    props.setProperty('speakerSheetId', ss.getId())
+    return ss
+  }
+  const ss = SpreadsheetApp.create(SPEAKER_SHEET_NAME)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
+  const kontakte = ss.getSheets()[0].setName('Kontakte')
+  kontakte.appendRow(SPEAKER_KONTAKTE_HEADERS)
+  kontakte
+    .getRange(2, SPEAKER_KONTAKTE_HEADERS.indexOf('Anrede (w/m)') + 1, 500, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['w', 'm'], true).build())
+  const einsaetze = ss.insertSheet('Einsätze')
+  einsaetze.appendRow(SPEAKER_EINSAETZE_HEADERS)
+  const namen = SpreadsheetApp.newDataValidation().requireValueInRange(kontakte.getRange('A2:A'), true).build()
+  SPEAKER_SPALTEN.forEach(function (sp) {
+    einsaetze.getRange(2, SPEAKER_EINSAETZE_HEADERS.indexOf(sp) + 1, 200, 1).setDataValidation(namen)
+  })
+  ;[kontakte, einsaetze].forEach(function (sh) {
+    sh.setFrozenRows(1)
+    sh.getRange(1, 1, 1, sh.getLastColumn()).setFontWeight('bold')
+  })
+  einsaetze.hideColumns(SPEAKER_EINSAETZE_HEADERS.indexOf('Slug') + 1)
+  einsaetze.getRange(2, SPEAKER_EINSAETZE_HEADERS.indexOf('Datum') + 1, 200, 1).setNumberFormat('@')
+  einsaetze.setColumnWidth(1, 320)
+  einsaetze.setColumnWidth(SPEAKER_EINSAETZE_HEADERS.indexOf('Versand') + 1, 360)
+  try {
+    DriveApp.getFileById(ss.getId()).addEditor(VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    Logger.log('Speaker Contacts — Freigabe fehlgeschlagen: ' + err)
+  }
+  props.setProperty('speakerSheetId', ss.getId())
+  Logger.log('Speaker Contacts angelegt: ' + ss.getUrl())
+  return ss
+}
+
+// Laeuft mit sendeErinnerungen.
+function speakerAbgleichen_(cmsEvents) {
+  const ss = speakerSpreadsheet_()
+  const kontakte = ss.getSheetByName('Kontakte')
+  const einsaetze = ss.getSheetByName('Einsätze')
+  if (!kontakte || !einsaetze) throw new Error('Tabellenblatt "Kontakte" oder "Einsätze" fehlt')
+  try {
+    grundvorlageDoc_(mailGruppe_('speaker'))
+  } catch (err) {
+    Logger.log('Grundvorlage Speaker — ' + err)
+  }
+  const props = PropertiesService.getScriptProperties()
+
+  const kk = kontakte.getRange(1, 1, 1, kontakte.getLastColumn()).getValues()[0]
+  const leseKontakte = function () {
+    const kw = kontakte.getDataRange().getValues()
+    const perName = {}
+    for (let r = 1; r < kw.length; r++) {
+      const w = function (n) {
+        const i = kk.indexOf(n)
+        return i >= 0 ? String(kw[r][i] == null ? '' : kw[r][i]).trim() : ''
+      }
+      const name = w('Name')
+      if (name) perName[name.toLowerCase()] = { name: name, firma: w('Firma'), anrede: w('Anrede (w/m)'), email: w('E-Mail') }
+    }
+    return perName
+  }
+  let perName = leseKontakte()
+
+  const jetzt = new Date()
+  const ew = einsaetze.getDataRange().getValues()
+  const ek = ew[0]
+  const col = function (name) { return ek.indexOf(name) + 1 }
+  const zeileProSlug = {}
+  for (let r = 1; r < ew.length; r++) {
+    const s = String(ew[r][col('Slug') - 1] || '').trim()
+    if (s) zeileProSlug[s] = r + 1
+  }
+  const vermerk = function (zeile, text) {
+    const zelle = einsaetze.getRange(zeile, col('Versand'))
+    const alt = String(zelle.getValue() || '')
+    if (alt.split('\n').indexOf(text) >= 0) return
+    zelle.setValue(alt ? alt + '\n' + text : text)
+  }
+
+  cmsEvents.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    if (!slug) return
+    let zeile = zeileProSlug[slug]
+    if (!zeile) {
+      const neu = SPEAKER_EINSAETZE_HEADERS.map(function () { return '' })
+      neu[SPEAKER_EINSAETZE_HEADERS.indexOf('Slug')] = slug
+      einsaetze.appendRow(neu)
+      zeile = einsaetze.getLastRow()
+      zeileProSlug[slug] = zeile
+    }
+    einsaetze.getRange(zeile, col('Event')).setValue(medienOrdnerName_(ev))
+    einsaetze.getRange(zeile, col('Datum')).setValue(String(ev.date || ''))
+
+    // Einmalig Speaker 1 aus dem CMS vorbelegen (nur echte Namen mit Rolle
+    // oder Firma — nicht Platzhalter wie "SPEAKERS"). Leert Ann das Feld,
+    // bleibt es leer.
+    const cmsName = String(ev.speakerName || '').trim()
+    if (cmsName && (ev.speakerRole || ev.speakerCompany) && !props.getProperty('speakerVorbelegt_' + slug)) {
+      if (!perName[cmsName.toLowerCase()]) {
+        const neu = kk.map(function (h) {
+          if (h === 'Name') return cmsName
+          if (h === 'Firma') return String(ev.speakerCompany || '').trim()
+          if (h === 'Position') return String(ev.speakerRole || '').trim()
+          return ''
+        })
+        kontakte.appendRow(neu)
+        perName = leseKontakte()
+      }
+      const zelle = einsaetze.getRange(zeile, col('Speaker 1'))
+      if (!String(zelle.getValue() || '').trim()) zelle.setValue(cmsName)
+      props.setProperty('speakerVorbelegt_' + slug, '1')
+    }
+
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    if (!start) return
+    const z = einsaetze.getRange(zeile, 1, 1, ek.length).getValues()[0]
+    SPEAKER_SPALTEN.forEach(function (sp) {
+      const name = String(z[col(sp) - 1] || '').trim()
+      if (!name) return
+      const k = perName[name.toLowerCase()]
+      if (!k || !k.email) {
+        // Erst melden, wenn die Mail auch faellig waere.
+        const tage = tagesDifferenz_(jetzt, start)
+        if (tage <= 1 && tage >= -SPEAKER_DANKE_FENSTER_TAGE) vermerk(zeile, name + ': E-Mail fehlt in „Kontakte“')
+        return
+      }
+      try {
+        const getan = speakerNachlauf_(k, ev, start, jetzt)
+        if (getan) vermerk(zeile, k.name + ': ' + getan + ' · ' + jetztText_())
+      } catch (err) {
+        Logger.log('Speaker — ' + k.email + ' (' + slug + '): ' + err)
+        vermerk(zeile, k.name + ': FEHLER ' + err)
+      }
+    })
+  })
+  SpreadsheetApp.flush()
+  medienEventsInKontakte_(kontakte, einsaetze, SPEAKER_SPALTEN)
+}
+
+function speakerMailDaten_(k, ev, upload) {
+  const vorname = String(k.name || '').trim().split(' ')[0]
+  const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+  return {
+    slug: String(ev.slug || ''),
+    anrede: anrede_(k.anrede, vorname),
+    vorname: vorname,
+    firma: String(k.firma || ''),
+    titel: String(ev.title || '').trim(),
+    kurztitel: kurzTitel_(ev.title),
+    datum: String(ev.date || ''),
+    eventtag: eventTagWort_(start),
+    links: { eventseite: eventSeiteUrl_(ev.slug), upload: upload || '' },
+  }
+}
+
+function speakerSlidesOrdner_(ev) {
+  const m = medienEventOrdner_(ev, true)
+  return m ? m.unter.Slides : null
+}
+
+// Eine Person, ein Event: Vorschau bzw. Danke-Mail. Rueckgabe = Vermerk.
+function speakerNachlauf_(k, ev, start, jetzt) {
+  const g = mailGruppe_('speaker')
+  const props = PropertiesService.getScriptProperties()
+  const slug = String(ev.slug)
+  const base = 'speak_' + slug + '_' + k.email.toLowerCase()
+  const tage = tagesDifferenz_(jetzt, start)
+  const ab = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE
+  if (tage > 0 || tage < -SPEAKER_DANKE_FENSTER_TAGE || !ab) return ''
+  if (props.getProperty(base + '_danke')) return ''
+  const ordner = speakerSlidesOrdner_(ev)
+  const plan = Number(props.getProperty(base + '_dankePlan') || 0)
+  if (!plan) {
+    const v = gruppenMail_(g, 'danke', speakerMailDaten_(k, ev, ordner ? ordner.getUrl() : ''))
+    vorschauAnAnn_(base + '_dankeVorschau', v, 'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + k.name, g, slug)
+    props.setProperty(base + '_dankePlan', String(morgenUm_(jetzt)))
+    return 'Vorschau „Danke + Folien“ an dich'
+  }
+  if (jetzt.getTime() < plan) return ''
+  // Schreibzugriff auf Slides; klappt das nicht (z. B. keine Google-Adresse),
+  // entfaellt der Link-Absatz und es bleibt "als Antwort auf diese Mail".
+  let upload = ''
+  if (ordner) {
+    try {
+      medienZugangGeben_(ordner, k.email)
+      upload = ordner.getUrl()
+    } catch (err) {
+      Logger.log('Speaker — Zugang Slides fuer ' + k.email + ' fehlgeschlagen: ' + err)
+    }
+  }
+  const m = gruppenMail_(g, 'danke', speakerMailDaten_(k, ev, upload))
+  sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
+  props.setProperty(base + '_danke', jetztText_())
+  return 'Danke + Folien-Bitte verschickt'
+}
+
+function speakerMailKey_(t) {
+  t = String(t || '').toLowerCase()
+  if (t.indexOf('nach dem event') >= 0 || t.indexOf('danke') >= 0) return 'danke'
+  return ''
+}
+
+function speakerMailVorlage_() {
+  return [
+    ['h', 'Nach dem Event'],
+    ['p', 'Betreff: Danke für deinen Vortrag bei {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'ganz herzlichen Dank, dass du {Eventtag} bei unserem NewBuild Kollektiv Treffen **„{Titel}“** gesprochen hast! Dein Vortrag hat viele Gespräche angestoßen – genau das wünschen wir uns für das Kollektiv.'],
+    ['p', 'Magst du deine Präsentationsfolien mit mir teilen? Daraus würden wir gern ein paar Beiträge für LinkedIn und Instagram machen, damit die Inhalte auch über den Abend hinaus sichtbar bleiben.'],
+    ['p', 'Du kannst sie einfach hier ablegen: {Upload-Link: Zum Ordner für deine Folien →}'],
+    ['p', 'Oder schick sie mir als PDF als Antwort auf diese Mail – wie es dir lieber ist.'],
+    ['p', '**Bevor etwas veröffentlicht wird, schicken wir dir die fertigen Beiträge zur Freigabe.** Es geht nichts online, was du nicht vorher gesehen und freigegeben hast.'],
+    ['p', 'Danke dir noch einmal und liebe Grüße,'],
+  ]
+}
+
+function speakerHinweise_() {
+  return [
+    'Empfänger: die Personen, die in „Speaker Contacts“ → Einsätze bei diesem Event als Speaker 1–4 stehen. Speaker 1 wird automatisch aus dem CMS übernommen – du trägst nur noch die E-Mail in „Kontakte“ ein.',
+    'Nach dem Event: am Eventtag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr bekommst du eine Vorschau, am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht die Mail raus. Trägst du jemanden erst nach dem Event ein (bis ' + SPEAKER_DANKE_FENSTER_TAGE + ' Tage danach), kommt sofort die Vorschau und die Mail am nächsten Tag.',
+    'Folien: pro Event gibt es den Ordner Photos_Videos → <Event> → Slides. Beim Versand bekommt die Person Schreibzugriff darauf (ohne Google-Benachrichtigung), der Link steht in der Mail. Klappt der Zugriff nicht (z. B. keine Google-Adresse), entfällt der Link-Absatz – dann kommen die Folien als Antwort an request@.',
+    'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Eventtag} („gestern“ / „am Dienstag“)',
+    'Links: {Upload-Link: Text} (Slides-Ordner) · {Eventseite-Link: Text}',
+  ].concat(gemeinsameHinweise_())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3205,7 +3478,7 @@ function medienMail_(key, d) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIL-GRUPPEN: Gäste · Sponsoren · Foto & Video
+//  MAIL-GRUPPEN: Gäste · Sponsoren · Speaker · Foto & Video
 //
 //  Je Gruppe eine Grundvorlage (Doc in Mail-Texte/_Grundvorlagen) und pro Event
 //  ein eigenes Doc im Event-Ordner (Mail-Texte/<Nummer — Titel>/). Das Event-Doc
@@ -3228,9 +3501,15 @@ function mailGruppe_(id) {
     },
     sponsoren: {
       id: 'sponsoren', titel: 'Sponsoren', docName: 'Mail-Texte Sponsoren', eventProp: 'mailDocSponsoren_',
-      grundProp: 'sponsorGrundDoc', version: '2', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
+      grundProp: 'sponsorGrundDoc', version: '3', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
       keyFn: sponsorMailKey_, vorlage: sponsorMailVorlage_, hinweise: sponsorHinweise_,
       links: function () { return [['→ Sponsor Contacts (wer bei welchem Event Sponsor ist)', sponsorSpreadsheet_().getUrl()]] },
+    },
+    speaker: {
+      id: 'speaker', titel: 'Speaker', docName: 'Mail-Texte Speaker', eventProp: 'mailDocSpeaker_',
+      grundProp: 'speakerGrundDoc', version: '1', empfaenger: 'die Speaker (aus „Speaker Contacts“)',
+      keyFn: speakerMailKey_, vorlage: speakerMailVorlage_, hinweise: speakerHinweise_,
+      links: function () { return [['→ Speaker Contacts (wer bei welchem Event spricht)', speakerSpreadsheet_().getUrl()]] },
     },
     medien: {
       id: 'medien', titel: 'Foto & Video', docName: 'Mail-Texte Foto & Video', eventProp: 'mailDocMedien_',
@@ -3240,7 +3519,7 @@ function mailGruppe_(id) {
       links: function () { return [['→ Media Contacts (Kontakte, Einsätze, Anfragen)', medienSpreadsheet_().getUrl()]] },
     },
   }
-  return id ? g[id] : [g.gaeste, g.sponsoren, g.medien]
+  return id ? g[id] : [g.gaeste, g.sponsoren, g.speaker, g.medien]
 }
 
 function gemeinsameHinweise_() {
@@ -3286,7 +3565,7 @@ function sponsorHinweise_() {
     'Info zum Event: sobald du jemanden einträgst, bekommst du sofort eine Vorschau. Am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht sie raus, mit Kalenderdatei. Ist das Event weniger als 2 Tage entfernt, geht sie sofort raus (Kopie an dich).',
     '1 Woche vorher: ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, kurze Erinnerung mit Kalenderdatei. Vorschau am Vortag.',
     'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, mit neuer Kalenderdatei (Kopie an dich).',
-    'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Vorschau am Eventtag – ein persönlicher Satz zum Abend macht die Mail stärker.',
+    'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, mit der Bitte um Folien/Material für LinkedIn und Instagram (Freigabe vor Veröffentlichung). Vorschau am Eventtag – ein persönlicher Satz zum Abend macht die Mail stärker.',
     'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} · {Vorher} (alter Termin, nur in „Änderung“)',
     'Links: {Maps-Link: Text} · {Eventseite-Link: Text}. [EVENTKARTE] in einer eigenen Zeile = Eventbild.',
   ].concat(gemeinsameHinweise_())
@@ -3302,7 +3581,7 @@ function grundvorlagenOrdner_() {
   return it.hasNext() ? it.next() : parent.createFolder('_Grundvorlagen')
 }
 
-// Ordner "Mail-Texte/<Nummer — Titel>" fuer die drei Docs eines Events.
+// Ordner "Mail-Texte/<Nummer — Titel>" fuer die Docs eines Events.
 function eventMailOrdner_(ev) {
   const props = PropertiesService.getScriptProperties()
   const key = 'mailOrdner_' + String(ev.slug)
@@ -3446,7 +3725,7 @@ function eventGruppenDocAnlegen_(g, ev) {
   kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
   ;[
     ['p', 'Hier stehen alle automatischen E-Mails an ' + g.empfaenger + ' zu diesem Event. Der Text stammt aus der Grundvorlage und gilt nur für dieses Event – einfach ändern, das Doc speichert von selbst und die nächste Mail übernimmt ihn. Kein Code, kein Bereitstellen.'],
-    ['p', '→ Vorschau aller Mails dieses Events (Gäste, Sponsoren, Foto & Video)', mailVorschauLink_(slug)],
+    ['p', '→ Vorschau aller Mails dieses Events (Gäste, Sponsoren, Speaker, Foto & Video)', mailVorschauLink_(slug)],
     ['p', '→ Alle Mails als Testmail an mich schicken', mailTestLink_(slug)],
   ]
     .concat(g.links(ev).map(function (l) { return ['p', l[0], l[1]] }))
@@ -4203,7 +4482,7 @@ function mailDocLinksAktualisieren_() {
   props.setProperty('mailDocLinks_v2', '1')
 }
 
-// Legt fuer jedes CMS-Event die drei Docs (Gäste, Sponsoren, Foto & Video)
+// Legt fuer jedes CMS-Event die Docs (Gäste, Sponsoren, Speaker, Foto & Video)
 // an — fuer kommende Events und solche, die hoechstens MAILDOC_VORLAUF_TAGE
 // zurueckliegen — und schickt Ann einmal eine Mail mit den Links.
 function mailTexteDocsAnlegen_(cmsEvents) {
@@ -4302,7 +4581,7 @@ function mailVorschauSeite_(p) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
 }
 
-// Beispiel-Mails an Sponsoren und Foto/Video fuer Vorschau und Testmail
+// Beispiel-Mails an Sponsoren, Speaker und Foto/Video fuer Vorschau und Testmail
 // (Empfaengerin Ann, Zusage-Links ohne gueltigen Token).
 function gruppenBeispielMails_(slug) {
   const ev = ladeCmsEvents_().filter(function (x) { return x.slug === slug })[0]
@@ -4350,6 +4629,20 @@ function gruppenBeispielMails_(slug) {
     const m = gruppenMail_(mailGruppe_('sponsoren'), a[0], sponsorMailDaten_(sk, ev, { vorher: vorher }))
     if (a[3] && sIcs) m.attachments = [sIcs]
     out.push({ gruppe: 'Sponsoren', titel: a[1], wann: a[2], m: m })
+  })
+
+  const spk = { name: 'Ann-Kathrin', firma: String(ev.speakerCompany || ''), anrede: 'w', email: VORSCHAU_EMPFAENGER }
+  out.push({
+    gruppe: 'Speaker', titel: 'Nach dem Event (Danke + Folien)',
+    wann: 'am Tag nach dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr (Vorschau am Eventtag)',
+    m: gruppenMail_(mailGruppe_('speaker'), 'danke', speakerMailDaten_(spk, ev, (function () {
+      try {
+        const m = medienEventOrdner_(ev, false)
+        return m ? m.unter.Slides.getUrl() : 'https://drive.google.com/'
+      } catch (err) {
+        return 'https://drive.google.com/'
+      }
+    })())),
   })
   return out
 }
