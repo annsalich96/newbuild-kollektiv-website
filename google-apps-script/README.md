@@ -141,7 +141,7 @@ Einmalig nach dem Einspielen: `mailTexteDocsJetztAnlegen` ausführen (fragt die 
 - Drive-Ordner **BILDER_VIDEOS** (request@, ID in `MEDIEN_ORDNER_ID`): pro Event `"<Nummer>: <Kurztitel>"` mit `Photos` · `Photos_watermarked` · `Videos`. `sendeErinnerungen` legt ihn für jedes CMS-Event an (auch vergangene; Name bis zum ersten „:“ bzw. „ - “ des Titels); vorhandene, von Hand angelegte Ordner werden über den Namensanfang `"<Nummer>:"` gefunden und nur um fehlende Unterordner ergänzt. Ordner-ID in Skript-Eigenschaft `medienOrdner_<slug>`.
 - Tabelle **Media Contacts** (im selben Ordner, freigegeben für salich@):
   - `Kontakte`: Name · Rolle (Foto/Video) · E-Mail · Priorität (A/B) · Aktiv · Credit im Wasserzeichen · Telefon · Honorar · Notizen
-  - `Einsätze`: eine Zeile pro Event (legt das Skript an). Ann wählt **Fotograf:in** / **Videograf:in** per Dropdown → Person bekommt Bearbeitungszugriff auf `Photos` bzw. `Videos` (ohne Google-Benachrichtigung, Drive-API-Dienst) und, falls das Event höchstens 2 Tage zurückliegt, eine Mail mit Upload-Link. `Zugang Foto/Video` merkt, wer Zugang hat; Zugang wird nie automatisch entzogen.
+  - `Einsätze`: eine Zeile pro Event (legt das Skript an). Ann wählt **Fotograf:in** / **Videograf:in** per Dropdown → Person bekommt Bearbeitungszugriff auf `Photos` bzw. `Videos` (ohne Google-Benachrichtigung, Drive-API-Dienst) und, solange das Event noch bevorsteht, eine Mail mit Upload-Link und .ics. `Zugang Foto/Video` merkt, wer Zugang hat; Zugang wird nie automatisch entzogen.
 - Noch nicht gebaut: Wasserzeichen (GitHub Actions), Foto-Mail an Anwesende (eigener Abschnitt im Mail-Texte-Doc, X Tage nach dem Event), A/B-Anfragelogik.
 
 Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)** hinzufügen → `medienJetztEinrichten` einmal ausführen (Berechtigungen bestätigen). Keine neue Bereitstellung nötig (läuft nur im Zeit-Trigger).
@@ -158,3 +158,9 @@ Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)*
 - Privater Kalender **„NewBuild Kollektiv – Foto & Video“** (Konto request@, nur für salich@ freigegeben, braucht Dienst „Google Calendar API“): ein Termin pro CMS-Event mit der Besetzung („Foto: … / Video: …“) in der Beschreibung. **Keine Gäste** – Fotograf:innen/Videograf:innen und Teilnehmende sehen ihn nicht.
 - Anfrage-Mail enthält Termin, Ort, Ankunftszeit ({Ankunft} = Beginn − 30 Min., `MEDIEN_VORLAUF_MIN`) und Honorar.
 - Nach der Zusage: Upload-Mail mit **eigener .ics** (Beginn = Ankunftszeit, eigene UID `<slug>-foto|video@…`, kollidiert nicht mit der .ics der Teilnehmenden).
+
+### Änderungs- und Danke-Mail an Foto/Video (24.10.2026)
+
+- **Änderung:** Ändert Ann Datum, Zeit oder Ort im CMS, bekommt jede bereits eingesetzte Person (Zugang vergeben, Event noch nicht vorbei) beim nächsten Lauf eine Mail „Änderung: …“ mit dem neuen Stand, „Bisher: …“ und einer neuen .ics (gleiche UID → ersetzt den alten Kalendereintrag). Absage-Link nur, wenn die Person über eine Anfrage zugesagt hat. Gemerkter Stand je Person: Script-Property `medienStand_<slug>_<email>`.
+- **Nach dem Event:** Am Tag danach ab `ERINNERUNG_SENDESTUNDE` einmal „Danke für … – bitte Fotos/Videos hochladen“ mit Upload-Link (nachgeholt bis `MEDIEN_DANKE_TAGE` = 3 Tage danach). Merker: `medienDanke_<slug>_<email>`.
+- Texte: Abschnitte **„Änderung (Datum, Zeit oder Ort)“** und **„Nach dem Event“** im Medien-Mail-Doc (Version 4; ein unbearbeitetes Doc wird automatisch neu geschrieben, ein bearbeitetes nicht – dann gelten für die neuen Abschnitte die Standardtexte, bis sie im Doc ergänzt werden). Neue Platzhalter: `{Begleitung}`, `{Eventtag}`, `{Vorher}`.
