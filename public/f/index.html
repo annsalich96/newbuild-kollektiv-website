@@ -239,7 +239,41 @@
       });
   }
 
-  if (doo === 'fotoinfo') {
+  // Zusage/Absage von Fotograf:innen/Videograf:innen (Link aus der Anfrage-Mail).
+  // Bewusst mit Bestaetigungs-Knopf: Link-Vorschauen von Mailprogrammen sollen
+  // nicht versehentlich zu- oder absagen.
+  function medienAntwort() {
+    var ja = q.get('a') === 'ja';
+    card.innerHTML =
+      '<h1>' + (ja ? 'Zusage bestätigen' : 'Absage bestätigen') + '</h1>' +
+      '<p class="ev">' + (ja ? 'Schön, dass du dabei bist! Ein Klick noch, dann bist du eingetragen.' : 'Schade! Ein Klick noch, dann geben wir die Anfrage weiter.') + '</p>' +
+      '<button type="button" id="mb">' + (ja ? 'Ja, ich bin dabei' : 'Leider nein') + '</button>' +
+      '<p class="err" id="err" hidden></p>' + foot;
+    document.getElementById('mb').addEventListener('click', function () {
+      var btn = this;
+      btn.disabled = true; btn.textContent = 'Wird gesendet …';
+      fetch(EXEC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'medien', t: q.get('t') || '', a: ja ? 'ja' : 'nein' })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (!res || !res.html) throw new Error('Unerwartete Antwort');
+          card.innerHTML = res.html + foot;
+        })
+        .catch(function () {
+          btn.disabled = false; btn.textContent = ja ? 'Ja, ich bin dabei' : 'Leider nein';
+          var err = document.getElementById('err');
+          err.hidden = false;
+          err.textContent = 'Konnte nicht gesendet werden. Bitte versuch es nochmal oder antworte kurz auf die E-Mail.';
+        });
+    });
+  }
+
+  if (doo === 'medien') {
+    medienAntwort();
+  } else if (doo === 'fotoinfo') {
     showInfo();
   } else if (doo === 'mailvorschau' || doo === 'mailtest') {
     mailAktion(doo);

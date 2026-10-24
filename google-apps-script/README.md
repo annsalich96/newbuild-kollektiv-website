@@ -145,3 +145,10 @@ Einmalig nach dem Einspielen: `mailTexteDocsJetztAnlegen` ausführen (fragt die 
 - Noch nicht gebaut: Wasserzeichen (GitHub Actions), Foto-Mail an Anwesende (eigener Abschnitt im Mail-Texte-Doc, X Tage nach dem Event), A/B-Anfragelogik.
 
 Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)** hinzufügen → `medienJetztEinrichten` einmal ausführen (Berechtigungen bestätigen). Keine neue Bereitstellung nötig (läuft nur im Zeit-Trigger).
+
+### Anfragen an Fotograf:innen/Videograf:innen (A → B), seit 24.10.2026
+
+- Für jedes **kommende** Event, bei dem in „Einsätze“ noch niemand für Foto bzw. Video steht, fragt `medienAnfragen_` sofort den aktiven Kontakt mit Priorität **A** an (Mail mit Zusage-/Absage-Link, Honorar falls in „Kontakte“ eingetragen). Erinnerung nach 2 Tagen, nach 3 Tagen ohne Antwort → **B** (danach weitere aktive Kontakte ohne A/B). Niemand mehr übrig → einmalige Mail an salich@.
+- Links: `newbuild-kollektiv.com/f/?do=medien&t=<token>&a=ja|nein` (Seite mit Bestätigungs-Knopf, damit Link-Vorschauen nichts auslösen) → `doPost` action `medien` → `medienAntwortVerarbeiten_`. Zusage trägt den Namen in „Einsätze“ ein; der nächste Lauf gibt Zugang und schickt den Upload-Link. Späte Zusage, wenn die Rolle schon vergeben ist → Info an Ann statt Doppelbuchung. Absage nach Zusage → Name wird geleert, nächste Person angefragt (Ordnerzugriff bleibt, ggf. von Hand entziehen).
+- Verlauf im Blatt **Anfragen** (Media Contacts). Texte (Anfrage, Erinnerung, Upload-Link) im Doc **„Mail-Texte · Fotograf:innen & Videograf:innen“** (Ordner Mail-Texte), Platzhalter siehe Doc.
+- Einspielen: Code.gs kopieren → **neue Version bereitstellen** (doPost geändert) → `medienJetztEinrichten` einmal ausführen (legt Blatt „Anfragen“ und das Doc an).

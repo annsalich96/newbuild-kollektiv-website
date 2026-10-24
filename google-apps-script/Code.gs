@@ -174,6 +174,7 @@ function doPost(e) {
         if (data.action === 'feedback') return jsonResponse(feedbackVerarbeiten_(data))
         if (data.action === 'referent') return jsonResponse(referentVerarbeiten_(data))
         if (data.action === 'fotowiderspruch') return jsonResponse(fotoWiderspruchVerarbeiten_(data))
+        if (data.action === 'medien') return jsonResponse(medienAntwortVerarbeiten_(data))
         if (data.action === 'mailvorschau') return jsonResponse({ ok: true, html: mailVorschauHtml_(String(data.slug || '')) })
         if (data.action === 'mailtest') return jsonResponse({ ok: true, html: mailTestHtml_(String(data.slug || '')) })
         return jsonResponse({ ok: false, html: '<h1>Unbekannt</h1><p>Aktion nicht erkannt.</p>' })
@@ -2203,19 +2204,8 @@ function medienZugangGeben_(folder, email) {
 }
 
 function medienEinladungMail_(kontakt, rolle, ev, folder) {
-  const was = rolle === 'Foto' ? 'Fotos' : 'Videos'
-  const vorname = String(kontakt.name).split(' ')[0]
-  const html = wrapMail_(
-    '<p>Hallo ' + escapeHtml_(vorname) + ',</p>' +
-      '<p>für unser NewBuild Kollektiv Treffen <strong>„' + escapeHtml_(String(ev.title || '').trim()) + '“</strong>' +
-      (ev.date ? ' am ' + escapeHtml_(String(ev.date)) : '') +
-      ' habe ich dir einen Ordner für deine ' + was + ' angelegt. Lade sie dort einfach hoch, ' +
-      'sobald sie fertig sind:</p>' +
-      '<p><a href="' + folder.getUrl() + '" style="color:#3d5a80">' + was + ' hochladen →</a></p>' +
-      (ev.location ? '<p>Ort: ' + escapeHtml_(String(ev.location)) + (ev.time ? ' · ' + escapeHtml_(String(ev.time)) + ' Uhr' : '') + '</p>' : '') +
-      '<p>Danke dir und liebe Grüße,</p>',
-  )
-  sendeTeilnehmerMail_(kontakt.email, 'Upload-Ordner ' + was + ': ' + kurzTitel_(ev.title), html)
+  const m = medienMail_('upload', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() }))
+  sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody)
 }
 
 // Laeuft mit sendeErinnerungen: Ordner anlegen, Einsätze-Zeilen pflegen,
@@ -2237,7 +2227,17 @@ function medienAbgleichen_(cmsEvents) {
       rolle: String(kWerte[r][kk.indexOf('Rolle')] || '').trim(),
       email: String(kWerte[r][kk.indexOf('E-Mail')] || '').trim(),
       credit: String(kWerte[r][kk.indexOf('Credit im Wasserzeichen')] || '').trim(),
+      prioritaet: String(kWerte[r][kk.indexOf('Priorität')] || '').trim().toUpperCase(),
+      aktiv: String(kWerte[r][kk.indexOf('Aktiv')] || '').trim(),
+      honorar: String(kWerte[r][kk.indexOf('Honorar')] || '').trim(),
     }
+  }
+  const kontaktListe = Object.keys(perName).map(function (k) { return perName[k] })
+  const anfragen = medienAnfragenSheet_(ss)
+  try {
+    medienMailDoc_() // Texte-Doc sofort anlegen, damit Ann es vor der ersten Anfrage sieht
+  } catch (err) {
+    Logger.log('Medien-Mail-Doc — ' + err)
   }
 
   const heute = new Date()
@@ -2270,6 +2270,24 @@ function medienAbgleichen_(cmsEvents) {
     einsaetze.getRange(zeile, col('Videos-Ordner')).setValue(m.unter.Videos.getUrl())
 
     const z = einsaetze.getRange(zeile, 1, 1, ek.length).getValues()[0]
+
+    // Kommende Events ohne eingetragene Person: A anfragen, bei Absage /
+    // keiner Antwort B (siehe medienAnfragen_). Von Hand Eingetragenes geht vor.
+    if (start && start.getTime() > heute.getTime()) {
+      ;[['Foto', 'Fotograf:in'], ['Video', 'Videograf:in']].forEach(function (r) {
+        if (String(z[col(r[1]) - 1] || '').trim()) return
+        try {
+          const zugesagt = medienAnfragen_(anfragen, ev, r[0], kontaktListe, heute)
+          if (zugesagt) {
+            einsaetze.getRange(zeile, col(r[1])).setValue(zugesagt)
+            z[col(r[1]) - 1] = zugesagt
+          }
+        } catch (err) {
+          Logger.log('Medien — Anfrage ' + r[0] + ' (' + slug + ') fehlgeschlagen: ' + err)
+        }
+      })
+    }
+
     ;[
       ['Foto', 'Fotograf:in', 'Zugang Foto', m.unter.Photos],
       ['Video', 'Videograf:in', 'Zugang Video', m.unter.Videos],
@@ -2307,6 +2325,343 @@ function medienAbgleichen_(cmsEvents) {
 function medienJetztEinrichten() {
   medienAbgleichen_(ladeCmsEvents_())
   Logger.log('Media Contacts: ' + medienSpreadsheet_().getUrl())
+}
+
+// ── Anfragen an Fotograf:innen / Videograf:innen (A, dann B) ─────────────────
+// Fuer jedes kommende Event ohne eingetragene Person je Rolle (Foto/Video):
+//   1. Anfrage an den aktiven Kontakt mit Prioritaet A (Mail mit Zusage-/
+//      Absage-Link, Honorar falls eingetragen).
+//   2. Nach MEDIEN_ERINNERUNG_TAGE ohne Antwort eine Erinnerung, nach
+//      MEDIEN_FRIST_TAGE "keine Antwort" -> naechster Kontakt (B, dann weitere).
+//   3. Zusage -> Name in "Einsätze"; der Abgleich gibt dann Zugang zum Ordner
+//      und schickt den Upload-Link. Absage -> naechster Kontakt.
+//   4. Niemand mehr uebrig -> einmal Mail an Ann, nichts weiter.
+// Verlauf im Blatt "Anfragen". Texte im Doc "Mail-Texte · Fotograf:innen &
+// Videograf:innen" (Ordner Mail-Texte), sonst die Standardtexte unten.
+const MEDIEN_ERINNERUNG_TAGE = 2
+const MEDIEN_FRIST_TAGE = 3
+const ANFRAGEN_HEADERS = [
+  'Event', 'Rolle', 'Name', 'E-Mail', 'Priorität', 'Status', 'Angefragt am', 'Erinnert am', 'Antwort am', 'Slug', 'Token', 'Seit',
+]
+const MEDIEN_OFFEN = ['angefragt', 'erinnert']
+
+function medienAnfragenSheet_(ss) {
+  let sh = ss.getSheetByName('Anfragen')
+  if (sh) return sh
+  sh = ss.insertSheet('Anfragen')
+  sh.appendRow(ANFRAGEN_HEADERS)
+  sh.setFrozenRows(1)
+  sh.getRange(1, 1, 1, ANFRAGEN_HEADERS.length).setFontWeight('bold')
+  ;['Slug', 'Token', 'Seit'].forEach(function (n) { sh.hideColumns(ANFRAGEN_HEADERS.indexOf(n) + 1) })
+  sh.setColumnWidth(1, 320)
+  return sh
+}
+
+function jetztText_() {
+  return Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm')
+}
+
+function medienZusageLink_(token, ja) {
+  return SITE_FORM_URL + '?do=medien&t=' + encodeURIComponent(token) + '&a=' + (ja ? 'ja' : 'nein')
+}
+
+// Gibt den Namen zurueck, falls fuer Event+Rolle schon jemand zugesagt hat.
+function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
+  const slug = String(ev.slug)
+  const werte = sh.getDataRange().getValues()
+  const c = function (n) { return ANFRAGEN_HEADERS.indexOf(n) }
+  const eigene = []
+  for (let r = 1; r < werte.length; r++) {
+    if (String(werte[r][c('Slug')]) === slug && String(werte[r][c('Rolle')]) === rolle) eigene.push(r)
+  }
+  const zugesagt = eigene.filter(function (r) { return werte[r][c('Status')] === 'zugesagt' })[0]
+  if (zugesagt !== undefined) return String(werte[zugesagt][c('Name')])
+
+  const offen = eigene.filter(function (r) { return MEDIEN_OFFEN.indexOf(String(werte[r][c('Status')])) >= 0 })[0]
+  if (offen !== undefined) {
+    const tage = (jetzt.getTime() - Number(werte[offen][c('Seit')] || 0)) / 86400000
+    if (tage < MEDIEN_FRIST_TAGE) {
+      if (tage >= MEDIEN_ERINNERUNG_TAGE && werte[offen][c('Status')] === 'angefragt') {
+        const k = kontaktListe.filter(function (x) {
+          return x.email.toLowerCase() === String(werte[offen][c('E-Mail')]).toLowerCase()
+        })[0] || { name: werte[offen][c('Name')], email: werte[offen][c('E-Mail')], honorar: '' }
+        const m = medienMail_('erinnerung', medienMailDaten_(k, rolle, ev, { token: werte[offen][c('Token')] }))
+        sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
+        sh.getRange(offen + 1, c('Status') + 1).setValue('erinnert')
+        sh.getRange(offen + 1, c('Erinnert am') + 1).setValue(jetztText_())
+        Logger.log('Medien — Erinnerung ' + rolle + ' an ' + k.email + ' (' + slug + ')')
+      }
+      return null
+    }
+    sh.getRange(offen + 1, c('Status') + 1).setValue('keine Antwort')
+    werte[offen][c('Status')] = 'keine Antwort'
+  }
+
+  const gefragt = {}
+  eigene.forEach(function (r) { gefragt[String(werte[r][c('E-Mail')]).toLowerCase()] = true })
+  const rang = function (p) { return p === 'A' ? 0 : p === 'B' ? 1 : 2 }
+  const kandidaten = kontaktListe
+    .filter(function (k) {
+      return k.rolle === rolle && !/^nein$/i.test(k.aktiv) && k.email && !gefragt[k.email.toLowerCase()]
+    })
+    .sort(function (a, b) { return rang(a.prioritaet) - rang(b.prioritaet) })
+
+  if (kandidaten.length) {
+    const k = kandidaten[0]
+    const token = Utilities.getUuid()
+    const m = medienMail_('anfrage', medienMailDaten_(k, rolle, ev, { token: token }))
+    sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
+    sh.appendRow([
+      medienOrdnerName_(ev), rolle, k.name, k.email, k.prioritaet, 'angefragt', jetztText_(), '', '', slug, token, jetzt.getTime(),
+    ])
+    Logger.log('Medien — Anfrage ' + rolle + ' an ' + k.email + ' (' + slug + ')')
+    return null
+  }
+
+  // Niemand (mehr) da: Ann einmal informieren — aber nur, wenn ueberhaupt
+  // jemand angefragt wurde (ohne Kontakte fuer die Rolle keine Mail pro Event).
+  const props = PropertiesService.getScriptProperties()
+  const key = 'medienFehlt_' + slug + '_' + rolle
+  if (eigene.length && !props.getProperty(key)) {
+    GmailApp.sendEmail(
+      VORSCHAU_EMPFAENGER,
+      (rolle === 'Foto' ? 'Fotograf:in' : 'Videograf:in') + ' fehlt: ' + kurzTitel_(ev.title),
+      'Für „' + String(ev.title || '').trim() + '“ (' + String(ev.date || '') + ') hat niemand aus der ' +
+        'Kontaktliste für ' + rolle + ' zugesagt. Bitte selbst jemanden finden und in „Media Contacts“ → ' +
+        'Einsätze eintragen.\n\n' + sh.getParent().getUrl(),
+      { name: SENDER_NAME, from: SENDER_EMAIL },
+    )
+    props.setProperty(key, jetztText_())
+  }
+  return null
+}
+
+// Klick auf Zusage-/Absage-Link (newbuild-kollektiv.com/f/?do=medien&t=…&a=ja|nein).
+function medienAntwortVerarbeiten_(p) {
+  const token = String(p.t || '').trim()
+  const ja = String(p.a || '') === 'ja'
+  const ss = medienSpreadsheet_()
+  const sh = medienAnfragenSheet_(ss)
+  const werte = sh.getDataRange().getValues()
+  const c = function (n) { return ANFRAGEN_HEADERS.indexOf(n) }
+  let r = -1
+  for (let i = 1; i < werte.length; i++) if (token && String(werte[i][c('Token')]) === token) r = i
+  if (r < 0) {
+    return abmeldeSeite_('<h1>Ups</h1><p>Diese Anfrage kennen wir nicht (mehr). Bitte antworte kurz auf die E-Mail.</p>')
+  }
+  const z = werte[r]
+  const status = String(z[c('Status')])
+  const slug = String(z[c('Slug')])
+  const rolle = String(z[c('Rolle')])
+  const event = String(z[c('Event')])
+  const name = String(z[c('Name')])
+  const spalte = rolle === 'Foto' ? 'Fotograf:in' : 'Videograf:in'
+  const info = function (betreff, text) {
+    try {
+      GmailApp.sendEmail(VORSCHAU_EMPFAENGER, betreff, text + '\n\n' + ss.getUrl(), { name: SENDER_NAME, from: SENDER_EMAIL })
+    } catch (err) {
+      Logger.log('Medien — Info an Ann fehlgeschlagen: ' + err)
+    }
+  }
+  const setze = function (st) {
+    sh.getRange(r + 1, c('Status') + 1).setValue(st)
+    sh.getRange(r + 1, c('Antwort am') + 1).setValue(jetztText_())
+  }
+  const einsatzZeile = function () {
+    const e = ss.getSheetByName('Einsätze')
+    const ew = e.getDataRange().getValues()
+    const iSlug = ew[0].indexOf('Slug')
+    for (let i = 1; i < ew.length; i++) {
+      if (String(ew[i][iSlug]) === slug) return { sh: e, zeile: i + 1, spalte: ew[0].indexOf(spalte) + 1, wert: String(ew[i][ew[0].indexOf(spalte)] || '').trim() }
+    }
+    return null
+  }
+
+  if (ja) {
+    if (status === 'zugesagt') {
+      return abmeldeSeite_('<h1>Schon eingetragen</h1><p>Du hast für „' + escapeHtml_(event) + '“ bereits zugesagt. Danke!</p>')
+    }
+    const e = einsatzZeile()
+    // Auch eine verspaetete Zusage gilt, solange die Rolle frei ist und gerade
+    // niemand anderes angefragt ist.
+    const andereOffen = werte.some(function (w, i) {
+      return i > 0 && i !== r && String(w[c('Slug')]) === slug && String(w[c('Rolle')]) === rolle &&
+        (MEDIEN_OFFEN.indexOf(String(w[c('Status')])) >= 0 || w[c('Status')] === 'zugesagt')
+    })
+    if (e && !e.wert && (MEDIEN_OFFEN.indexOf(status) >= 0 || !andereOffen)) {
+      setze('zugesagt')
+      e.sh.getRange(e.zeile, e.spalte).setValue(name)
+      SpreadsheetApp.flush()
+      info('Zusage ' + rolle + ': ' + name + ' – ' + event, name + ' hat für ' + rolle + ' bei „' + event + '“ zugesagt.')
+      return abmeldeSeite_(
+        '<h1>Danke, du bist dabei!</h1><p>Wir haben dich für „' + escapeHtml_(event) + '“ eingetragen. ' +
+          'In den nächsten Minuten bekommst du eine Mail mit dem Link zum Upload-Ordner.</p>',
+        'Zugesagt – NewBuild Kollektiv',
+      )
+    }
+    setze(status + ' · später zugesagt')
+    info('Späte Zusage ' + rolle + ': ' + name + ' – ' + event,
+      name + ' hat für ' + rolle + ' bei „' + event + '“ zugesagt, die Rolle ist aber schon vergeben oder die Anfrage ging inzwischen an jemand anderen. Bitte klären.')
+    return abmeldeSeite_(
+      '<h1>Danke für deine Rückmeldung!</h1><p>Wir hatten inzwischen schon jemand anderen angefragt. Ann-Kathrin meldet sich kurz bei dir.</p>',
+    )
+  }
+
+  if (status === 'zugesagt') {
+    setze('abgesagt nach Zusage')
+    const e = einsatzZeile()
+    if (e && e.wert === name) e.sh.getRange(e.zeile, e.spalte).setValue('')
+    SpreadsheetApp.flush()
+    info('Absage nach Zusage ' + rolle + ': ' + name + ' – ' + event,
+      name + ' hat für ' + rolle + ' bei „' + event + '“ nachträglich abgesagt. Die nächste Person wird automatisch angefragt. Den Ordnerzugriff ggf. von Hand entziehen.')
+  } else if (MEDIEN_OFFEN.indexOf(status) >= 0) {
+    setze('abgesagt')
+    info('Absage ' + rolle + ': ' + name + ' – ' + event, name + ' hat für ' + rolle + ' bei „' + event + '“ abgesagt. Die nächste Person wird automatisch angefragt.')
+  }
+  return abmeldeSeite_(
+    '<h1>Schade, danke für die Rückmeldung!</h1><p>Vielleicht klappt es beim nächsten Mal.</p>',
+    'Abgesagt – NewBuild Kollektiv',
+  )
+}
+
+// ── Texte der Medien-Mails (Doc, sonst Standard) ─────────────────────────────
+function medienMailDaten_(kontakt, rolle, ev, extra) {
+  const d = {
+    vorname: String(kontakt.name || '').trim().split(' ')[0],
+    titel: String(ev.title || '').trim(),
+    kurztitel: kurzTitel_(ev.title),
+    datum: String(ev.date || ''),
+    zeit: String(ev.time || ''),
+    ort: String(ev.location || ''),
+    aufgabe: rolle === 'Foto' ? 'die Fotos' : 'das Video',
+    medien: rolle === 'Foto' ? 'Fotos' : 'Videos',
+    honorar: String(kontakt.honorar || ''),
+    links: {
+      zusage: extra.token ? medienZusageLink_(extra.token, true) : '',
+      absage: extra.token ? medienZusageLink_(extra.token, false) : '',
+      upload: extra.upload || '',
+      maps: ev.location ? mapsLink_(ev.location) : '',
+    },
+  }
+  return d
+}
+
+function medienMailKey_(t) {
+  t = String(t || '').toLowerCase()
+  if (t.indexOf('erinnerung') >= 0) return 'erinnerung'
+  if (t.indexOf('anfrage') >= 0) return 'anfrage'
+  if (t.indexOf('upload') >= 0) return 'upload'
+  return ''
+}
+
+function medienMailVorlage_() {
+  return [
+    ['h', 'Anfrage'],
+    ['p', 'Betreff: Anfrage NewBuild Kollektiv – {Kurztitel} am {Datum}'],
+    ['p', 'Hallo {Vorname},'],
+    ['p', 'wir planen unser nächstes NewBuild Kollektiv Treffen **„{Titel}“** und würden uns freuen, wenn du {Aufgabe} übernimmst.'],
+    ['p', '**{Datum} · {Zeit} Uhr**\n{Ort}'],
+    ['p', 'Honorar: {Honorar}'],
+    ['p', 'Hast du Zeit? Ein Klick genügt: {Zusage-Link: Ja, ich bin dabei} · {Absage-Link: Leider nein}'],
+    ['p', 'Danke dir und liebe Grüße,'],
+    ['h', 'Erinnerung'],
+    ['p', 'Betreff: Kurze Erinnerung: {Kurztitel} am {Datum}'],
+    ['p', 'Hallo {Vorname},'],
+    ['p', 'kurze Erinnerung an unsere Anfrage für „{Titel}“ am {Datum} um {Zeit} Uhr. Gib uns bitte bis morgen Bescheid, ob du {Aufgabe} übernehmen kannst: {Zusage-Link: Ja, ich bin dabei} · {Absage-Link: Leider nein}'],
+    ['p', 'Liebe Grüße,'],
+    ['h', 'Upload-Link'],
+    ['p', 'Betreff: Upload-Ordner {Medien}: {Kurztitel}'],
+    ['p', 'Hallo {Vorname},'],
+    ['p', 'schön, dass du bei „{Titel}“ am {Datum} dabei bist! Hier ist dein Ordner für die {Medien}. Lade sie dort einfach hoch, sobald sie fertig sind: {Upload-Link: {Medien} hochladen →}'],
+    ['p', 'Danke dir und liebe Grüße,'],
+  ]
+}
+
+function medienMailStandard_(key) {
+  const v = medienMailVorlage_()
+  const out = { betreff: '', absaetze: [] }
+  let drin = false
+  v.forEach(function (z) {
+    if (z[0] === 'h') { drin = medienMailKey_(z[1]) === key; return }
+    if (!drin) return
+    if (/^Betreff:/.test(z[1])) { out.betreff = z[1].replace(/^Betreff:\s*/, ''); return }
+    out.absaetze.push(escapeHtml_(z[1]).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'))
+  })
+  return out
+}
+
+function medienMailDoc_() {
+  const props = PropertiesService.getScriptProperties()
+  const id = props.getProperty('medienMailDoc')
+  if (id) {
+    try {
+      return DocumentApp.openById(id)
+    } catch (err) {
+      props.deleteProperty('medienMailDoc')
+    }
+  }
+  const name = 'Mail-Texte · Fotograf:innen & Videograf:innen'
+  const doc = DocumentApp.create(name)
+  const file = DriveApp.getFileById(doc.getId())
+  moveFileIntoFolder(file, mailTexteOrdner_())
+  const body = doc.getBody()
+  const kopf = body.getChild(0).asParagraph()
+  kopf.setText(name)
+  kopf.setHeading(DocumentApp.ParagraphHeading.TITLE)
+  ;[
+    ['p', 'Diese Mails gehen automatisch an Fotograf:innen und Videograf:innen aus „Media Contacts“ – für alle Events gleich. Text einfach hier ändern, die nächste Mail übernimmt ihn.'],
+    ['h2', 'So funktioniert’s'],
+    ['li', 'Anfrage: sobald ein Event im CMS steht, an Kontakt A der Rolle. Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen, nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort geht die Anfrage an B.'],
+    ['li', 'Upload-Link: direkt nach der Zusage (bzw. wenn du jemanden in „Einsätze“ einträgst).'],
+    ['li', 'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Honorar} (Absatz entfällt, wenn kein Honorar eingetragen ist)'],
+    ['li', 'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}'],
+  ].concat(medienMailVorlage_()).forEach(function (z) { docAbsatz_(body, z[0], z[1]) })
+  doc.saveAndClose()
+  try {
+    file.addEditor(VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    Logger.log('Medien-Mail-Doc — Freigabe fehlgeschlagen: ' + err)
+  }
+  props.setProperty('medienMailDoc', doc.getId())
+  return DocumentApp.openById(doc.getId())
+}
+
+let MEDIEN_DOC_CACHE = null
+
+function medienMail_(key, d) {
+  let a = null
+  try {
+    if (!MEDIEN_DOC_CACHE) {
+      const roh = parseMailDoc_(medienMailDoc_().getBody(), medienMailKey_)
+      MEDIEN_DOC_CACHE = {}
+      Object.keys(roh).forEach(function (k) {
+        MEDIEN_DOC_CACHE[k] = { betreff: roh[k].betreff, absaetze: roh[k].absaetze.map(function (x) { return x.html }) }
+      })
+    }
+    a = MEDIEN_DOC_CACHE[key]
+  } catch (err) {
+    Logger.log('Medien-Mail-Doc nicht lesbar, Standardtext: ' + err)
+  }
+  if (!a || !a.absaetze.length) a = medienMailStandard_(key)
+
+  const werte = function (text, html) {
+    return String(text).replace(/\{\s*([A-Za-zÄÖÜäöü]+)\s*\}/g, function (m, n) {
+      const k = n.toLowerCase()
+      if (!Object.prototype.hasOwnProperty.call(d, k) || k === 'links') return m
+      return html ? escapeHtml_(d[k]) : String(d[k])
+    })
+  }
+  const absaetze = a.absaetze
+    .filter(function (h) { return d.honorar || !/\{\s*Honorar\s*\}/i.test(h) })
+    .map(function (h) {
+      const mitLinks = h.replace(/\{\s*([A-Za-zÄÖÜäöü]+?)-Link\s*:\s*((?:[^{}]|\{[^{}]*\})*)\}/g, function (m, n, text) {
+        const url = d.links[n.toLowerCase()]
+        const t = werte(text.trim(), true)
+        return url ? '<a href="' + url + '" style="color:#3d5a80;font-weight:600">' + t + '</a>' : t
+      })
+      return '<p>' + werte(mitLinks, true) + '</p>'
+    })
+  return { subject: werte(a.betreff || medienMailStandard_(key).betreff, false), htmlBody: wrapMail_(absaetze.join('')) }
 }
 
 // ── Mailtexte der einzelnen Stufen ────────────────────────────────────────
@@ -2616,7 +2971,8 @@ function mailDocAbschnitte_(slug) {
   return res
 }
 
-function parseMailDoc_(body) {
+function parseMailDoc_(body, keyFn) {
+  keyFn = keyFn || abschnittKey_
   const T = DocumentApp.ElementType
   const out = {}
   let akt = null
@@ -2625,7 +2981,7 @@ function parseMailDoc_(body) {
     const typ = el.getType()
     if (typ !== T.PARAGRAPH && typ !== T.LIST_ITEM) continue
     if (el.getHeading() === DocumentApp.ParagraphHeading.HEADING1) {
-      const key = abschnittKey_(el.getText())
+      const key = keyFn(el.getText())
       akt = key ? (out[key] = { betreff: '', absaetze: [] }) : null
       continue
     }
