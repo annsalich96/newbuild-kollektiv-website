@@ -3420,16 +3420,16 @@ function speakerHinweise_() {
 //
 //  In "Media Contacts" → Einsätze waehlt Ann in der Spalte "Fotos freigeben",
 //  wer die Fotos bekommt (FOTO_FREIGABE_OPTIONEN). Ab dem Tag nach dem Event:
-//    1. Jede Person bekommt Lesezugriff auf Photos_watermarked (ohne Google-
-//       Mail; klappt das nicht, z. B. ohne Google-Konto, mit Google-Einladung;
-//       klappt auch das nicht, steht die Adresse in "Freigabe-Stand").
+//    1. Photos_watermarked wird auf "Jeder mit dem Link kann ansehen" gestellt
+//       (Ann, 24.10.2026: viele Gaeste haben keine Google-Adresse). Den Link
+//       bekommt nur die gewaehlte Gruppe per Mail.
 //    2. Beim ersten Lauf Vorschau der Mail "Fotos vom Abend" an Ann, Versand
 //       am naechsten Tag ab ERINNERUNG_SENDESTUNDE. Wer spaeter dazukommt
 //       (z. B. nachtraeglich als anwesend markiert), bekommt Zugriff und Mail
 //       beim naechsten Lauf.
 //  Gaeste: Text aus "Mail-Texte Gäste" (Abschnitt "Fotos vom Abend"),
-//  Sponsoren/Speaker aus ihren Docs. Zugriff wird nie automatisch entzogen.
-//  Gemerkt: fotoGeteilt_<slug>, fotoMail_<slug> (JSON), fotoMailPlan_<slug>.
+//  Sponsoren/Speaker aus ihren Docs. Die Link-Freigabe wird nie automatisch
+//  zurueckgenommen. Gemerkt: fotoMail_<slug> (JSON), fotoMailPlan_<slug>.
 // ═══════════════════════════════════════════════════════════════════════════
 const FOTO_FREIGABE_OPTIONEN = [
   'Anwesende',
@@ -3488,19 +3488,13 @@ function fotoEmpfaenger_(ev, wahl) {
   return { liste: out, anwesendGenutzt: anwesendGenutzt }
 }
 
-function fotoZugang_(ordner, email) {
-  if (typeof Drive === 'undefined') {
-    ordner.addViewer(email)
-    return 'Google-Einladung'
-  }
-  try {
-    Drive.Permissions.create({ role: 'reader', type: 'user', emailAddress: email }, ordner.getId(), { sendNotificationEmail: false })
-    return 'ok'
-  } catch (err) {
-    // Ohne Google-Konto geht es nur mit Einladung (Google schickt dann selbst eine Mail).
-    Drive.Permissions.create({ role: 'reader', type: 'user', emailAddress: email }, ordner.getId(), { sendNotificationEmail: true })
-    return 'Google-Einladung'
-  }
+// "Jeder mit dem Link kann ansehen" fuer den Ordner (gilt auch fuer alle
+// Dateien und Unterordner darin). Wirft, wenn die Workspace-Einstellungen
+// Link-Freigaben nach aussen verbieten.
+function fotoLinkFreigabe_(ordner) {
+  if (ordner.getSharingAccess() === DriveApp.Access.ANYONE_WITH_LINK) return false
+  ordner.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW)
+  return true
 }
 
 // Credit der Fotografin / des Fotografen (Media Contacts) fuer ein Event.
@@ -3573,18 +3567,13 @@ function fotoFreigabenAbgleichen_(cmsEvents) {
     }
     const link = ordner.getUrl()
     const credit = fotoCredit_(ss, slug)
-    const geteilt = JSON.parse(props.getProperty('fotoGeteilt_' + slug) || '{}')
+    try {
+      if (fotoLinkFreigabe_(ordner)) Logger.log('Fotos — Link-Freigabe gesetzt (' + slug + ')')
+    } catch (err) {
+      stand('Link-Freigabe nicht möglich (Google-Workspace-Einstellung?): ' + err + ' – keine Mails verschickt')
+      return
+    }
     const gemailt = JSON.parse(props.getProperty('fotoMail_' + slug) || '{}')
-    e.liste.forEach(function (p) {
-      if (geteilt[p.email]) return
-      try {
-        geteilt[p.email] = fotoZugang_(ordner, p.email)
-      } catch (err) {
-        geteilt[p.email] = 'fehler'
-        Logger.log('Fotos — Zugang fuer ' + p.email + ' (' + slug + ') fehlgeschlagen: ' + err)
-      }
-    })
-    props.setProperty('fotoGeteilt_' + slug, JSON.stringify(geteilt))
 
     // Mails: erst Vorschau an Ann (je Gruppe eine), Versand am naechsten Tag.
     const planKey = 'fotoMailPlan_' + slug
@@ -3600,7 +3589,7 @@ function fotoFreigabenAbgleichen_(cmsEvents) {
       props.setProperty(planKey, String(morgenUm_(jetzt)))
     } else if (jetzt.getTime() >= plan && ab) {
       e.liste.forEach(function (p) {
-        if (gemailt[p.email] || geteilt[p.email] === 'fehler') return
+        if (gemailt[p.email]) return
         if (MailApp.getRemainingDailyQuota() < 2) return
         try {
           const m = fotoMailFuer_(p, ev, link, credit)
@@ -3613,13 +3602,9 @@ function fotoFreigabenAbgleichen_(cmsEvents) {
       })
       props.setProperty('fotoMail_' + slug, JSON.stringify(gemailt))
     }
-    const fehler = Object.keys(geteilt).filter(function (k) { return geteilt[k] === 'fehler' })
-    const einladung = Object.keys(geteilt).filter(function (k) { return geteilt[k] === 'Google-Einladung' }).length
     stand(
-      e.liste.length + ' Personen (' + wahl + ') · ' +
-      Object.keys(geteilt).length + ' freigegeben' + (einladung ? ' (davon ' + einladung + ' per Google-Einladung)' : '') + ' · ' +
-      Object.keys(gemailt).length + ' Mails' + (plan ? '' : ' · Vorschau an dich, Versand morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr') +
-      (fehler.length ? '\nKein Zugriff möglich: ' + fehler.join(', ') : ''),
+      e.liste.length + ' Personen (' + wahl + ') · Link-Freigabe aktiv · ' +
+      Object.keys(gemailt).length + ' Mails' + (plan ? '' : ' · Vorschau an dich, Versand morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr'),
     )
   })
 }
