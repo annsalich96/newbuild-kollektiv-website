@@ -190,3 +190,20 @@ Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)*
 - Upload: jedes Event bekommt in **Photos_Videos/<Event>/Slides** automatisch einen Ordner. Beim Versand bekommt die Person Schreibzugriff (ohne Google-Benachrichtigung), der Link steht in der Mail. Klappt der Zugriff nicht, entfällt der Link-Absatz, es bleibt „als Antwort auf diese Mail“.
 - Texte: Grundvorlage + Event-Doc „Mail-Texte Speaker“ wie bei den anderen Gruppen.
 - Sponsoren-Danke enthält jetzt ebenfalls die Bitte um Folien/Material mit Freigabe-Zusage (Grundvorlage Version 3 — wird nur neu geschrieben, wenn sie nicht bearbeitet wurde).
+
+## Neue Ordnerstruktur + Fotos freigeben (Update 2026-10-24)
+
+```
+NewBuild Kollektiv/                 (bisher „NewBuild Kollektiv — Event-Anmeldungen“, gleiche ID)
+  Events/<Nummer — Kurztitel>/      ein Ordner pro CMS-Event
+    <Anmeldetabelle>
+    Emails/                         Mail-Texte Gäste / Sponsoren / Speaker / Foto & Video
+    Photos/  Photos_watermarked/  Videos/  Slides/
+  General/
+    Email Templates/                Grundvorlagen
+    History Anmeldungen · Feedback · Referenten-Vorschläge · Media/Sponsor/Speaker Contacts
+```
+
+- **Umzug:** einmalig `strukturUmbauen` im Editor ausführen. Verschiebt Anmeldetabellen, Mail-Docs, Grundvorlagen, Contacts-Tabellen und die Foto-/Video-Ordner aus `Photos_Videos` in die neue Struktur. Löscht nichts außer leer gewordenen alten Ordnern (Papierkorb), kann mehrfach laufen. Danach findet das Skript alles über gemerkte IDs; neue Events bekommen ihren Ordner automatisch.
+- **Fotos freigeben:** In *Media Contacts → Einsätze* Spalte **„Fotos freigeben“** wählen: `Anwesende` · `Anwesende + Sponsoren` · `Anwesende + Sponsoren + Speaker` · `Alle Angemeldeten + Sponsoren`. Ab dem Tag nach dem Event bekommt jede Person Lesezugriff auf *Photos_watermarked* (ohne Google-Mail; ohne Google-Konto per Google-Einladung), Ann bekommt eine Vorschau der Mail „Fotos vom Abend“, am nächsten Tag ab 9 Uhr geht sie an alle. Nachträglich als anwesend Markierte bekommen Zugriff + Mail beim nächsten Lauf. „Freigabe-Stand“ protokolliert Anzahl, Mails und Adressen ohne Zugriff. Zugriff wird nie automatisch entzogen.
+- Texte „Fotos vom Abend“ in allen Gruppen-Docs (Gäste, Sponsoren, Speaker), Platzhalter `{Fotos-Link: Text}` und `{Credit}` (aus Media Contacts → Credit der eingesetzten Fotograf:in).

@@ -277,20 +277,128 @@ function normalizePhone(rawPhone) {
   return phone
 }
 
+// ── Ordnerstruktur (seit 24.10.2026, Ann) ───────────────────────────────────
+//  NewBuild Kollektiv/                       (Hauptordner, Konto request@)
+//    Events/<Nummer — Kurztitel>/            ein Ordner pro CMS-Event
+//      <Anmeldetabelle>  Emails/  Photos/  Photos_watermarked/  Videos/  Slides/
+//    General/                                alles, was nicht zu einem Event gehoert
+//      Email Templates/ (Grundvorlagen) · History Anmeldungen · Feedback ·
+//      Referenten-Vorschläge · Media/Sponsor/Speaker Contacts
+//  Der Hauptordner wird per ID gemerkt (frueher hiess er DRIVE_FOLDER_NAME).
+//  Umzug der alten Struktur: einmalig strukturUmbauen() im Editor ausfuehren.
+const ROOT_NAME = 'NewBuild Kollektiv'
+const ALLGEMEIN_NAME = 'General'
+const VORLAGEN_ORDNER_NAME = 'Email Templates'
+const EVENT_UNTERORDNER = ['Emails', 'Photos', 'Photos_watermarked', 'Videos', 'Slides']
+
 function getOrCreateFolder() {
-  const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME)
-  if (folders.hasNext()) return folders.next()
-  return DriveApp.createFolder(DRIVE_FOLDER_NAME)
+  const props = PropertiesService.getScriptProperties()
+  const id = props.getProperty('rootOrdnerId')
+  if (id) {
+    try {
+      const f = DriveApp.getFolderById(id)
+      if (!f.isTrashed()) return f
+    } catch (err) {}
+  }
+  let f = null
+  ;[DRIVE_FOLDER_NAME, ROOT_NAME].some(function (n) {
+    const it = DriveApp.getFoldersByName(n)
+    if (it.hasNext()) f = it.next()
+    return !!f
+  })
+  if (!f) f = DriveApp.createFolder(ROOT_NAME)
+  props.setProperty('rootOrdnerId', f.getId())
+  return f
 }
 
-// Unterordner "Events" innerhalb von DRIVE_FOLDER_NAME - dort liegen alle
-// einzelnen Session-Tabellen. "History Anmeldungen" bleibt bewusst direkt im
-// Hauptordner, nicht in diesem Unterordner (Absprache 2026-07-30).
+function unterordner_(parent, name) {
+  const it = parent.getFoldersByName(name)
+  return it.hasNext() ? it.next() : parent.createFolder(name)
+}
+
 function getOrCreateEventsSubfolder() {
-  const parent = getOrCreateFolder()
-  const subfolders = parent.getFoldersByName(EVENTS_SUBFOLDER_NAME)
-  if (subfolders.hasNext()) return subfolders.next()
-  return parent.createFolder(EVENTS_SUBFOLDER_NAME)
+  return unterordner_(getOrCreateFolder(), EVENTS_SUBFOLDER_NAME)
+}
+
+function allgemeinOrdner_() {
+  return unterordner_(getOrCreateFolder(), ALLGEMEIN_NAME)
+}
+
+// Datei in General (sonst im Hauptordner / weiteren Orten suchen und nach
+// General verschieben). null, wenn es sie nicht gibt.
+function allgemeineDatei_(name, weitereOrdner) {
+  const ziel = allgemeinOrdner_()
+  const orte = [ziel, getOrCreateFolder()].concat(weitereOrdner || [])
+  for (let i = 0; i < orte.length; i++) {
+    const it = orte[i].getFilesByName(name)
+    if (it.hasNext()) {
+      const f = it.next()
+      if (i > 0) f.moveTo(ziel)
+      return f
+    }
+  }
+  return null
+}
+
+function eventOrdnerName_(ev) {
+  const nr = String(ev.number || '').trim()
+  const titel = kurzTitel_(String(ev.title || ev.slug || '').trim()).split(' - ')[0].trim()
+  return nr ? nr + ' — ' + titel : titel
+}
+
+// Ordner eines Events (Events/<Nummer — Kurztitel>) mit allen Unterordnern.
+// ev braucht slug, number, title. anlegen=false -> nur suchen (null, wenn keiner).
+function eventOrdner_(ev, anlegen, ohneUnterordner) {
+  const slug = String(ev.slug || '')
+  const props = PropertiesService.getScriptProperties()
+  const key = 'eventOrdner_' + slug
+  const name = eventOrdnerName_(ev)
+  let ordner = null
+  const id = slug && props.getProperty(key)
+  if (id) {
+    try {
+      ordner = DriveApp.getFolderById(id)
+      if (ordner.isTrashed()) ordner = null
+    } catch (err) {
+      ordner = null
+    }
+  }
+  const events = getOrCreateEventsSubfolder()
+  if (!ordner) {
+    const nr = String(ev.number || '').trim()
+    const treffer = []
+    const alle = events.getFolders()
+    while (alle.hasNext()) {
+      const f = alle.next()
+      const n = f.getName()
+      if (n === name || (nr && n.indexOf(nr + ' — ') === 0)) treffer.push(f)
+    }
+    if (treffer.length === 1) ordner = treffer[0]
+  }
+  if (!ordner && anlegen === false) return null
+  if (!ordner) ordner = events.createFolder(name)
+  if (ordner.getName() !== name) ordner.setName(name)
+  if (slug) props.setProperty(key, ordner.getId())
+  if (ohneUnterordner) return { ordner: ordner, unter: {} }
+  const unter = {}
+  EVENT_UNTERORDNER.forEach(function (n) { unter[n] = unterordner_(ordner, n) })
+  return { ordner: ordner, unter: unter }
+}
+
+// Alle Anmeldetabellen: in den Event-Ordnern (neu) und lose in Events/ (alt).
+// Liefert einen Iterator wie DriveApp (hasNext/next).
+function eventSheetDateien_() {
+  const events = getOrCreateEventsSubfolder()
+  const liste = []
+  const lose = events.getFilesByType(MimeType.GOOGLE_SHEETS)
+  while (lose.hasNext()) liste.push(lose.next())
+  const ordner = events.getFolders()
+  while (ordner.hasNext()) {
+    const it = ordner.next().getFilesByType(MimeType.GOOGLE_SHEETS)
+    while (it.hasNext()) liste.push(it.next())
+  }
+  let i = 0
+  return { hasNext: function () { return i < liste.length }, next: function () { return liste[i++] } }
 }
 
 function moveFileIntoFolder(file, folder) {
@@ -304,7 +412,6 @@ function moveFileIntoFolder(file, folder) {
 // eine zweite an. Jetzt wird Slug -> Datei-ID in den Skript-Eigenschaften
 // gemerkt; der Dateiname wird bei Titelaenderung nur noch nachgezogen.
 function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
-  const folder = getOrCreateEventsSubfolder()
   const niceName = (eventNumber ? eventNumber + ' — ' : '') + eventTitle
   const props = PropertiesService.getScriptProperties()
   const propKey = eventSlug ? 'sheetId_' + eventSlug : null
@@ -325,11 +432,13 @@ function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
 
   // 2. Migration / Fallback: Datei mit dem Anzeigenamen existiert schon
   //    (aus der Zeit vor der Slug-Logik oder wenn kein Slug mitgeschickt wird).
-  const byName = folder.getFilesByName(niceName)
-  if (byName.hasNext()) {
-    const file = byName.next()
-    if (propKey) props.setProperty(propKey, file.getId())
-    return SpreadsheetApp.open(file).getSheets()[0]
+  const alleSheets = []
+  const it = eventSheetDateien_()
+  while (it.hasNext()) alleSheets.push(it.next())
+  const byName = alleSheets.filter(function (f) { return f.getName() === niceName })[0]
+  if (byName) {
+    if (propKey) props.setProperty(propKey, byName.getId())
+    return SpreadsheetApp.open(byName).getSheets()[0]
   }
 
   // 2b. URL-Kuerzel im CMS geaendert (neuer Slug unbekannt) und Titel auch:
@@ -339,12 +448,7 @@ function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
   //     eine Tabelle mit "<Nummer> — " beginnt.
   if (eventNumber) {
     const prefix = String(eventNumber).trim() + ' — '
-    const treffer = []
-    const alle = folder.getFilesByType(MimeType.GOOGLE_SHEETS)
-    while (alle.hasNext()) {
-      const f = alle.next()
-      if (f.getName().indexOf(prefix) === 0) treffer.push(f)
-    }
+    const treffer = alleSheets.filter(function (f) { return f.getName().indexOf(prefix) === 0 })
     if (treffer.length === 1) {
       const ss = SpreadsheetApp.open(treffer[0])
       if (propKey) props.setProperty(propKey, ss.getId())
@@ -355,7 +459,10 @@ function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
 
   // 3. Neu anlegen.
   const spreadsheet = SpreadsheetApp.create(niceName)
-  moveFileIntoFolder(DriveApp.getFileById(spreadsheet.getId()), folder)
+  moveFileIntoFolder(
+    DriveApp.getFileById(spreadsheet.getId()),
+    eventOrdner_({ slug: eventSlug, number: eventNumber, title: eventTitle }).ordner,
+  )
   const sheet = spreadsheet.getSheets()[0]
   sheet.appendRow(SHEET_HEADERS)
   sheet.setFrozenRows(1)
@@ -372,15 +479,11 @@ function getOrCreateEventSheet(eventSlug, eventNumber, eventTitle) {
 }
 
 function getOrCreateHistorySpreadsheet() {
-  const folder = getOrCreateFolder()
-
-  const files = folder.getFilesByName(HISTORY_SHEET_NAME)
-  if (files.hasNext()) {
-    return SpreadsheetApp.open(files.next())
-  }
+  const vorhanden = allgemeineDatei_(HISTORY_SHEET_NAME)
+  if (vorhanden) return SpreadsheetApp.open(vorhanden)
 
   const spreadsheet = SpreadsheetApp.create(HISTORY_SHEET_NAME)
-  moveFileIntoFolder(DriveApp.getFileById(spreadsheet.getId()), folder)
+  moveFileIntoFolder(DriveApp.getFileById(spreadsheet.getId()), allgemeinOrdner_())
 
   const sheet = spreadsheet.getSheets()[0]
   sheet.appendRow(HISTORY_HEADERS)
@@ -438,7 +541,7 @@ function upsertHistoryEntry(data) {
 // oder liegen lassen (macht nichts kaputt, einfach nochmal ausfuehren).
 function backfillHistoryAnrede() {
   const anredeProEmail = {}
-  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  const files = eventSheetDateien_()
   while (files.hasNext()) {
     try {
       const sh = SpreadsheetApp.open(files.next()).getSheets()[0]
@@ -941,7 +1044,7 @@ function findeEventSheetPerSlug_(slug) {
       return SpreadsheetApp.openById(id).getSheets()[0]
     } catch (e) {}
   }
-  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  const files = eventSheetDateien_()
   while (files.hasNext()) {
     try {
       const sh = SpreadsheetApp.open(files.next()).getSheets()[0]
@@ -966,11 +1069,10 @@ const REFERENTEN_HEADERS = [
 ]
 
 function getOrCreateReferentenSheet_() {
-  const folder = getOrCreateFolder()
-  const files = folder.getFilesByName(REFERENTEN_SHEET_NAME)
-  if (files.hasNext()) return SpreadsheetApp.open(files.next()).getSheets()[0]
+  const vorhanden = allgemeineDatei_(REFERENTEN_SHEET_NAME)
+  if (vorhanden) return SpreadsheetApp.open(vorhanden).getSheets()[0]
   const ss = SpreadsheetApp.create(REFERENTEN_SHEET_NAME)
-  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), folder)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), allgemeinOrdner_())
   const sheet = ss.getSheets()[0]
   sheet.appendRow(REFERENTEN_HEADERS)
   sheet.setFrozenRows(1)
@@ -1050,11 +1152,10 @@ const FEEDBACK_HEADERS = [
 ]
 
 function getOrCreateFeedbackSheet_() {
-  const folder = getOrCreateFolder()
-  const files = folder.getFilesByName(FEEDBACK_SHEET_NAME)
-  if (files.hasNext()) return SpreadsheetApp.open(files.next()).getSheets()[0]
+  const vorhanden = allgemeineDatei_(FEEDBACK_SHEET_NAME)
+  if (vorhanden) return SpreadsheetApp.open(vorhanden).getSheets()[0]
   const ss = SpreadsheetApp.create(FEEDBACK_SHEET_NAME)
-  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), folder)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), allgemeinOrdner_())
   const sheet = ss.getSheets()[0]
   sheet.appendRow(FEEDBACK_HEADERS)
   sheet.setFrozenRows(1)
@@ -1488,7 +1589,7 @@ function erinnerungenTriggerEinrichten() {
 // "Hallo {Vorname}"), "Referent" mit dem Namen der Referentin / des Referenten
 // (ein Wert pro Tabelle genuegt).
 function zusatzspaltenJetztAnlegen() {
-  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  const files = eventSheetDateien_()
   const namen = []
   while (files.hasNext()) {
     const ss = SpreadsheetApp.open(files.next())
@@ -1510,7 +1611,7 @@ function zusatzspaltenJetztAnlegen() {
 const BESTAETIGUNG_NACHHOLEN_TAG = '30.09.2026'
 
 function bestaetigungenNachholenMarkieren() {
-  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  const files = eventSheetDateien_()
   let n = 0
   while (files.hasNext()) {
     const sheet = SpreadsheetApp.open(files.next()).getSheets()[0]
@@ -1625,7 +1726,13 @@ function sendeErinnerungen() {
     Logger.log('Speaker — Fehler: ' + err)
   }
 
-  const files = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  try {
+    fotoFreigabenAbgleichen_(cmsEvents)
+  } catch (err) {
+    Logger.log('Fotos freigeben — Fehler: ' + err)
+  }
+
+  const files = eventSheetDateien_()
   while (files.hasNext()) {
     const file = files.next()
     try {
@@ -2064,12 +2171,11 @@ function fotosInHistoryEintragen() {
 // ═══════════════════════════════════════════════════════════════════════════
 //  FOTOS + VIDEOS: Ordner pro Event und Zugang fuer Fotograf:innen/Videograf:innen
 //
-//  Drive-Ordner Photos_Videos (Konto request@) enthaelt pro Event einen Ordner
-//  "<Nummer>: <Kurztitel>" mit Photos / Photos_watermarked / Videos / Slides.
-//  sendeErinnerungen (alle 15 min) legt ihn fuer jedes CMS-Event an
-//  (bestehende Ordner werden ueber den Namensanfang "<Nummer>:" gefunden).
+//  Fotos/Videos liegen im Event-Ordner (Events/<Nummer — Kurztitel>/Photos,
+//  Photos_watermarked, Videos, Slides — siehe eventOrdner_). sendeErinnerungen
+//  (alle 15 min) legt ihn fuer jedes CMS-Event an.
 //
-//  Tabelle "Media Contacts" (im selben Ordner):
+//  Tabelle "Media Contacts" (Ordner General):
 //    Kontakte  — eine Zeile pro Person: Name, Rolle (Foto/Video), E-Mail, Credit …
 //    Einsätze  — eine Zeile pro Event (legt das Skript an); Ann waehlt dort
 //                Fotograf:in und Videograf:in aus der Kontaktliste aus.
@@ -2078,10 +2184,9 @@ function fotosInHistoryEintragen() {
 //  am Tag nach dem Event. Spalte "Zugang Foto/Video" merkt, wer schon Zugang
 //  hat; Zugang wird nie automatisch entzogen.
 // ═══════════════════════════════════════════════════════════════════════════
+// Alte Medienablage (vor dem Umbau 24.10.2026) — nur noch Quelle fuer strukturUmbauen().
 const MEDIEN_ORDNER_ID = '1uVkvQlUi07UCx3CV8aEaKAdzXPzCX0PO' // Photos_Videos
 const MEDIEN_SHEET_NAME = 'Media Contacts'
-// Slides: Upload-Ordner fuer die Folien der Speaker (Link in der Danke-Mail).
-const MEDIEN_UNTERORDNER = ['Photos', 'Photos_watermarked', 'Videos', 'Slides']
 // Reihenfolge der Anfragen je Rolle: erst A, dann B, dann C (bis zu drei Personen).
 const MEDIEN_PRIORITAETEN = ['A', 'B', 'C']
 const KONTAKTE_HEADERS = [
@@ -2101,16 +2206,15 @@ function medienSpreadsheet_() {
       props.deleteProperty('medienSheetId')
     }
   }
-  const ordner = DriveApp.getFolderById(MEDIEN_ORDNER_ID)
-  const vorhanden = ordner.getFilesByName(MEDIEN_SHEET_NAME)
-  if (vorhanden.hasNext()) {
-    const ss = SpreadsheetApp.open(vorhanden.next())
+  const vorhanden = allgemeineDatei_(MEDIEN_SHEET_NAME, [DriveApp.getFolderById(MEDIEN_ORDNER_ID)])
+  if (vorhanden) {
+    const ss = SpreadsheetApp.open(vorhanden)
     props.setProperty('medienSheetId', ss.getId())
     return ss
   }
 
   const ss = SpreadsheetApp.create(MEDIEN_SHEET_NAME)
-  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), allgemeinOrdner_())
   const kontakte = ss.getSheets()[0].setName('Kontakte')
   kontakte.appendRow(KONTAKTE_HEADERS)
   kontakte.appendRow(['Ruthe Zuntz', 'Foto', '', 'A', 'Ja', '© Ruthe Zuntz', '', '', '', '', '', 'Session 01'])
@@ -2159,49 +2263,28 @@ function medienOrdnerName_(ev) {
 // Event-Ordner (mit Unterordnern) zu einem CMS-Event. anlegen=false -> nur
 // suchen. null, wenn keiner existiert und nicht angelegt werden soll.
 function medienEventOrdner_(ev, anlegen) {
-  const slug = String(ev.slug || '')
-  const props = PropertiesService.getScriptProperties()
-  const key = 'medienOrdner_' + slug
-  let ordner = null
-  const id = props.getProperty(key)
+  return eventOrdner_(ev, anlegen)
+}
+
+// Alte Ablage (vor dem Umbau): Photos_Videos/<Nummer>: <Kurztitel>. Nur fuer
+// strukturUmbauen() — sucht, legt nichts an.
+function alterMedienOrdner_(ev) {
+  const nr = String(ev.number || '').trim()
+  const id = PropertiesService.getScriptProperties().getProperty('medienOrdner_' + String(ev.slug || ''))
   if (id) {
     try {
-      ordner = DriveApp.getFolderById(id)
-      if (ordner.isTrashed()) ordner = null
-    } catch (err) {
-      ordner = null
-    }
+      const f = DriveApp.getFolderById(id)
+      if (!f.isTrashed()) return f
+    } catch (err) {}
   }
-  const basis = DriveApp.getFolderById(MEDIEN_ORDNER_ID)
-  if (!ordner) {
-    // Von Hand angelegte Ordner ("Session 03: …") ueber den Namensanfang finden.
-    const nr = String(ev.number || '').trim()
-    const treffer = []
-    const alle = basis.getFolders()
-    while (alle.hasNext()) {
-      const f = alle.next()
-      const name = f.getName()
-      if (name === medienOrdnerName_(ev) || (nr && name.indexOf(nr + ':') === 0)) treffer.push(f)
-    }
-    if (treffer.length === 1) ordner = treffer[0]
-    else if (treffer.length > 1) {
-      Logger.log('Medien — mehrere Ordner fuer "' + nr + '", bitte einen umbenennen. Uebersprungen.')
-      return null
-    }
+  const treffer = []
+  const alle = DriveApp.getFolderById(MEDIEN_ORDNER_ID).getFolders()
+  while (alle.hasNext()) {
+    const f = alle.next()
+    const name = f.getName()
+    if (name === medienOrdnerName_(ev) || (nr && name.indexOf(nr + ':') === 0)) treffer.push(f)
   }
-  if (!ordner && !anlegen) return null
-  if (!ordner) {
-    ordner = basis.createFolder(medienOrdnerName_(ev))
-    Logger.log('Medien — Ordner angelegt: ' + ordner.getName())
-  }
-  props.setProperty(key, ordner.getId())
-
-  const unter = {}
-  MEDIEN_UNTERORDNER.forEach(function (name) {
-    const it = ordner.getFoldersByName(name)
-    unter[name] = it.hasNext() ? it.next() : ordner.createFolder(name)
-  })
-  return { ordner: ordner, unter: unter }
+  return treffer.length === 1 ? treffer[0] : null
 }
 
 // Bearbeitungszugriff ohne Googles eigene Benachrichtigungsmail (erweiterter
@@ -2795,15 +2878,14 @@ function sponsorSpreadsheet_() {
       props.deleteProperty('sponsorSheetId')
     }
   }
-  const ordner = getOrCreateFolder()
-  const vorhanden = ordner.getFilesByName(SPONSOR_SHEET_NAME)
-  if (vorhanden.hasNext()) {
-    const ss = SpreadsheetApp.open(vorhanden.next())
+  const vorhanden = allgemeineDatei_(SPONSOR_SHEET_NAME)
+  if (vorhanden) {
+    const ss = SpreadsheetApp.open(vorhanden)
     props.setProperty('sponsorSheetId', ss.getId())
     return ss
   }
   const ss = SpreadsheetApp.create(SPONSOR_SHEET_NAME)
-  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), allgemeinOrdner_())
   const kontakte = ss.getSheets()[0].setName('Kontakte')
   kontakte.appendRow(SPONSOR_KONTAKTE_HEADERS)
   kontakte
@@ -3013,6 +3095,7 @@ function sponsorMailKey_(t) {
   t = String(t || '').toLowerCase()
   if (t.indexOf('änderung') >= 0 || t.indexOf('aenderung') >= 0) return 'aenderung'
   if (t.indexOf('woche') >= 0) return 'woche'
+  if (t.indexOf('foto') >= 0) return 'fotos'
   if (t.indexOf('nach dem event') >= 0 || t.indexOf('danke') >= 0) return 'danke'
   if (t.indexOf('info') >= 0) return 'info'
   return ''
@@ -3052,6 +3135,12 @@ function sponsorMailVorlage_() {
     ['p', '**Bevor etwas veröffentlicht wird, schicken wir dir die Beiträge zur Freigabe** – ohne euer OK geht nichts online.'],
     ['p', 'Ich würde mich freuen, wenn wir uns bald einmal dazu austauschen, wie wir die Zusammenarbeit weiterführen können. Hast du in den nächsten Wochen Zeit für ein kurzes Telefonat oder einen Kaffee?'],
     ['p', 'Liebe Grüße,'],
+    ['h', 'Fotos vom Abend'],
+    ['p', 'Betreff: Die Fotos von {Kurztitel} – NewBuild Kollektiv × {Firma}'],
+    ['p', '{Anrede},'],
+    ['p', 'die Fotos von unserem Treffen **„{Titel}“** sind fertig: {Fotos-Link: Zu den Fotos →}'],
+    ['p', 'Ihr dürft sie gern für eure eigenen Kanäle nutzen – bitte mit Credit: {Credit}. Über eine Verlinkung von NewBuild Kollektiv freuen wir uns.'],
+    ['p', 'Liebe Grüße,'],
   ]
 }
 
@@ -3089,15 +3178,14 @@ function speakerSpreadsheet_() {
       props.deleteProperty('speakerSheetId')
     }
   }
-  const ordner = getOrCreateFolder()
-  const vorhanden = ordner.getFilesByName(SPEAKER_SHEET_NAME)
-  if (vorhanden.hasNext()) {
-    const ss = SpreadsheetApp.open(vorhanden.next())
+  const vorhanden = allgemeineDatei_(SPEAKER_SHEET_NAME)
+  if (vorhanden) {
+    const ss = SpreadsheetApp.open(vorhanden)
     props.setProperty('speakerSheetId', ss.getId())
     return ss
   }
   const ss = SpreadsheetApp.create(SPEAKER_SHEET_NAME)
-  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), ordner)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), allgemeinOrdner_())
   const kontakte = ss.getSheets()[0].setName('Kontakte')
   kontakte.appendRow(SPEAKER_KONTAKTE_HEADERS)
   kontakte
@@ -3291,6 +3379,7 @@ function speakerNachlauf_(k, ev, start, jetzt) {
 
 function speakerMailKey_(t) {
   t = String(t || '').toLowerCase()
+  if (t.indexOf('foto') >= 0) return 'fotos'
   if (t.indexOf('nach dem event') >= 0 || t.indexOf('danke') >= 0) return 'danke'
   return ''
 }
@@ -3306,6 +3395,12 @@ function speakerMailVorlage_() {
     ['p', 'Oder schick sie mir als PDF als Antwort auf diese Mail – wie es dir lieber ist.'],
     ['p', '**Bevor etwas veröffentlicht wird, schicken wir dir die fertigen Beiträge zur Freigabe.** Es geht nichts online, was du nicht vorher gesehen und freigegeben hast.'],
     ['p', 'Danke dir noch einmal und liebe Grüße,'],
+    ['h', 'Fotos vom Abend'],
+    ['p', 'Betreff: Die Fotos von deinem Vortrag bei {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'die Fotos vom Abend **„{Titel}“** sind fertig – natürlich auch von deinem Vortrag: {Fotos-Link: Zu den Fotos →}'],
+    ['p', 'Du darfst sie gern für deine eigenen Kanäle nutzen – bitte mit Credit: {Credit}. Über eine Verlinkung von NewBuild Kollektiv freuen wir uns.'],
+    ['p', 'Liebe Grüße,'],
   ]
 }
 
@@ -3315,8 +3410,343 @@ function speakerHinweise_() {
     'Nach dem Event: am Eventtag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr bekommst du eine Vorschau, am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht die Mail raus. Trägst du jemanden erst nach dem Event ein (bis ' + SPEAKER_DANKE_FENSTER_TAGE + ' Tage danach), kommt sofort die Vorschau und die Mail am nächsten Tag.',
     'Folien: pro Event gibt es den Ordner Photos_Videos → <Event> → Slides. Beim Versand bekommt die Person Schreibzugriff darauf (ohne Google-Benachrichtigung), der Link steht in der Mail. Klappt der Zugriff nicht (z. B. keine Google-Adresse), entfällt der Link-Absatz – dann kommen die Folien als Antwort an request@.',
     'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Eventtag} („gestern“ / „am Dienstag“)',
-    'Links: {Upload-Link: Text} (Slides-Ordner) · {Eventseite-Link: Text}',
+    'Fotos vom Abend: nur wenn du bei „Fotos freigeben“ eine Gruppe mit Speakern wählst. {Credit} = Credit der Fotografin / des Fotografen.',
+    'Links: {Upload-Link: Text} (Slides-Ordner) · {Fotos-Link: Text} · {Eventseite-Link: Text}',
   ].concat(gemeinsameHinweise_())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FOTOS FREIGEBEN (Photos_watermarked eines Events)
+//
+//  In "Media Contacts" → Einsätze waehlt Ann in der Spalte "Fotos freigeben",
+//  wer die Fotos bekommt (FOTO_FREIGABE_OPTIONEN). Ab dem Tag nach dem Event:
+//    1. Jede Person bekommt Lesezugriff auf Photos_watermarked (ohne Google-
+//       Mail; klappt das nicht, z. B. ohne Google-Konto, mit Google-Einladung;
+//       klappt auch das nicht, steht die Adresse in "Freigabe-Stand").
+//    2. Beim ersten Lauf Vorschau der Mail "Fotos vom Abend" an Ann, Versand
+//       am naechsten Tag ab ERINNERUNG_SENDESTUNDE. Wer spaeter dazukommt
+//       (z. B. nachtraeglich als anwesend markiert), bekommt Zugriff und Mail
+//       beim naechsten Lauf.
+//  Gaeste: Text aus "Mail-Texte Gäste" (Abschnitt "Fotos vom Abend"),
+//  Sponsoren/Speaker aus ihren Docs. Zugriff wird nie automatisch entzogen.
+//  Gemerkt: fotoGeteilt_<slug>, fotoMail_<slug> (JSON), fotoMailPlan_<slug>.
+// ═══════════════════════════════════════════════════════════════════════════
+const FOTO_FREIGABE_OPTIONEN = [
+  'Anwesende',
+  'Anwesende + Sponsoren',
+  'Anwesende + Sponsoren + Speaker',
+  'Alle Angemeldeten + Sponsoren',
+]
+
+// Empfaenger je Auswahl: [{ email, gruppe: gaeste|sponsoren|speaker, anrede, vorname, name, firma }]
+function fotoEmpfaenger_(ev, wahl) {
+  const slug = String(ev.slug)
+  const out = []
+  const gesehen = {}
+  const dazu = function (p) {
+    const e = String(p.email || '').trim().toLowerCase()
+    if (!e || gesehen[e]) return
+    gesehen[e] = true
+    p.email = e
+    out.push(p)
+  }
+  const nurAnwesende = wahl.indexOf('Anwesende') === 0
+  let anwesendGenutzt = false
+  const sheet = findeEventSheetPerSlug_(slug)
+  if (sheet) {
+    const w = sheet.getDataRange().getValues()
+    const k = w[0]
+    const i = function (n) { return k.indexOf(n) }
+    for (let r = 1; r < w.length; r++) {
+      const z = w[r]
+      if (i('Status') >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(z[i('Status')] || ''))) continue
+      const da = i('Anwesend') >= 0 && !!String(z[i('Anwesend')] || '').trim()
+      if (da) anwesendGenutzt = true
+      if (nurAnwesende && !da) continue
+      dazu({
+        email: z[i('E-Mail')], gruppe: 'gaeste',
+        anrede: anrede_(i('Anrede') >= 0 ? z[i('Anrede')] : '', i('Vorname') >= 0 ? z[i('Vorname')] : ''),
+      })
+    }
+  }
+  const ausKontakten = function (ss, spalten, gruppe) {
+    const ew = ss.getSheetByName('Einsätze').getDataRange().getValues()
+    const kw = ss.getSheetByName('Kontakte').getDataRange().getValues()
+    const zeile = ew.filter(function (z) { return String(z[ew[0].indexOf('Slug')]) === slug })[0]
+    if (!zeile) return
+    spalten.forEach(function (sp) {
+      const name = String(zeile[ew[0].indexOf(sp)] || '').trim().toLowerCase()
+      if (!name) return
+      const kz = kw.filter(function (z) { return String(z[kw[0].indexOf('Name')]).trim().toLowerCase() === name })[0]
+      if (!kz) return
+      const v = function (n) { return kw[0].indexOf(n) >= 0 ? String(kz[kw[0].indexOf(n)] || '').trim() : '' }
+      dazu({ email: v('E-Mail'), gruppe: gruppe, name: v('Name'), firma: v('Firma'), anrede: v('Anrede (w/m)') })
+    })
+  }
+  if (wahl.indexOf('Sponsoren') >= 0) ausKontakten(sponsorSpreadsheet_(), SPONSOR_SPALTEN, 'sponsoren')
+  if (wahl.indexOf('Speaker') >= 0) ausKontakten(speakerSpreadsheet_(), SPEAKER_SPALTEN, 'speaker')
+  return { liste: out, anwesendGenutzt: anwesendGenutzt }
+}
+
+function fotoZugang_(ordner, email) {
+  if (typeof Drive === 'undefined') {
+    ordner.addViewer(email)
+    return 'Google-Einladung'
+  }
+  try {
+    Drive.Permissions.create({ role: 'reader', type: 'user', emailAddress: email }, ordner.getId(), { sendNotificationEmail: false })
+    return 'ok'
+  } catch (err) {
+    // Ohne Google-Konto geht es nur mit Einladung (Google schickt dann selbst eine Mail).
+    Drive.Permissions.create({ role: 'reader', type: 'user', emailAddress: email }, ordner.getId(), { sendNotificationEmail: true })
+    return 'Google-Einladung'
+  }
+}
+
+// Credit der Fotografin / des Fotografen (Media Contacts) fuer ein Event.
+function fotoCredit_(ss, slug) {
+  const ew = ss.getSheetByName('Einsätze').getDataRange().getValues()
+  const kw = ss.getSheetByName('Kontakte').getDataRange().getValues()
+  const zeile = ew.filter(function (z) { return String(z[ew[0].indexOf('Slug')]) === slug })[0]
+  const name = zeile ? String(zeile[ew[0].indexOf('Fotograf:in')] || '').trim().toLowerCase() : ''
+  const kz = name && kw.filter(function (z) { return String(z[kw[0].indexOf('Name')]).trim().toLowerCase() === name })[0]
+  return kz ? String(kz[kw[0].indexOf('Credit im Wasserzeichen')] || '').trim() : ''
+}
+
+function fotoMailFuer_(p, ev, link, credit) {
+  if (p.gruppe === 'gaeste') {
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    return fotoMail_({
+      anrede: p.anrede, slug: String(ev.slug), email: p.email, titel: String(ev.title || '').trim(),
+      datum: String(ev.date || ''), zeit: String(ev.time || ''), ort: String(ev.location || ''),
+      referent: referentText_(ev.speakerName, ev.speakerRole, ev.speakerCompany), start: start,
+      fotolink: link, credit: credit,
+    })
+  }
+  const k = { name: p.name, firma: p.firma, anrede: p.anrede, email: p.email }
+  const d = p.gruppe === 'sponsoren' ? sponsorMailDaten_(k, ev, {}) : speakerMailDaten_(k, ev, '')
+  d.credit = credit
+  d.links.fotos = link
+  return gruppenMail_(mailGruppe_(p.gruppe), 'fotos', d)
+}
+
+// Laeuft mit sendeErinnerungen.
+function fotoFreigabenAbgleichen_(cmsEvents) {
+  const ss = medienSpreadsheet_()
+  const einsaetze = ss.getSheetByName('Einsätze')
+  if (!einsaetze) return
+  const props = PropertiesService.getScriptProperties()
+  const spWahl = ensureColumn_(einsaetze, 'Fotos freigeben')
+  const spStand = ensureColumn_(einsaetze, 'Freigabe-Stand')
+  if (props.getProperty('fotoFreigabeAuswahl') !== FOTO_FREIGABE_OPTIONEN.join('|')) {
+    einsaetze.getRange(2, spWahl, 200, 1).setDataValidation(
+      SpreadsheetApp.newDataValidation().requireValueInList(FOTO_FREIGABE_OPTIONEN, true).build())
+    props.setProperty('fotoFreigabeAuswahl', FOTO_FREIGABE_OPTIONEN.join('|'))
+  }
+  const w = einsaetze.getDataRange().getValues()
+  const iSlug = w[0].indexOf('Slug')
+  const jetzt = new Date()
+  const ab = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE
+
+  cmsEvents.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    let r = -1
+    for (let i = 1; i < w.length; i++) if (String(w[i][iSlug]) === slug) r = i
+    if (r < 0) return
+    const wahl = String(w[r][spWahl - 1] || '').trim()
+    if (!wahl) return
+    const stand = function (t) { einsaetze.getRange(r + 1, spStand).setValue(t + ' · ' + jetztText_()) }
+    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
+    if (!start || tagesDifferenz_(jetzt, start) > -1) {
+      stand('wartet bis zum Tag nach dem Event')
+      return
+    }
+    const ordner = eventOrdner_(ev).unter.Photos_watermarked
+    if (!ordner.getFiles().hasNext() && !ordner.getFolders().hasNext()) {
+      stand('Photos_watermarked ist noch leer – nichts freigegeben')
+      return
+    }
+    const e = fotoEmpfaenger_(ev, wahl)
+    if (wahl.indexOf('Anwesende') === 0 && !e.anwesendGenutzt) {
+      stand('Niemand ist als anwesend markiert (Check-in nicht genutzt?) – bitte „Alle Angemeldeten …“ wählen oder Anwesend eintragen')
+      return
+    }
+    const link = ordner.getUrl()
+    const credit = fotoCredit_(ss, slug)
+    const geteilt = JSON.parse(props.getProperty('fotoGeteilt_' + slug) || '{}')
+    const gemailt = JSON.parse(props.getProperty('fotoMail_' + slug) || '{}')
+    e.liste.forEach(function (p) {
+      if (geteilt[p.email]) return
+      try {
+        geteilt[p.email] = fotoZugang_(ordner, p.email)
+      } catch (err) {
+        geteilt[p.email] = 'fehler'
+        Logger.log('Fotos — Zugang fuer ' + p.email + ' (' + slug + ') fehlgeschlagen: ' + err)
+      }
+    })
+    props.setProperty('fotoGeteilt_' + slug, JSON.stringify(geteilt))
+
+    // Mails: erst Vorschau an Ann (je Gruppe eine), Versand am naechsten Tag.
+    const planKey = 'fotoMailPlan_' + slug
+    const plan = Number(props.getProperty(planKey) || 0)
+    if (!plan) {
+      const beispiel = { gaeste: { gruppe: 'gaeste', email: VORSCHAU_EMPFAENGER, anrede: anrede_('w', 'Ann-Kathrin') } }
+      e.liste.forEach(function (p) { if (p.gruppe !== 'gaeste' && !beispiel[p.gruppe]) beispiel[p.gruppe] = p })
+      const n = e.liste.length
+      Object.keys(beispiel).forEach(function (gr) {
+        vorschauAnAnn_('fotoVorschau_' + slug + '_' + gr, fotoMailFuer_(beispiel[gr], ev, link, credit),
+          'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + n + ' Personen (' + wahl + ')', mailGruppe_(gr), slug)
+      })
+      props.setProperty(planKey, String(morgenUm_(jetzt)))
+    } else if (jetzt.getTime() >= plan && ab) {
+      e.liste.forEach(function (p) {
+        if (gemailt[p.email] || geteilt[p.email] === 'fehler') return
+        if (MailApp.getRemainingDailyQuota() < 2) return
+        try {
+          const m = fotoMailFuer_(p, ev, link, credit)
+          sendeTeilnehmerMail_(p.email, m.subject, m.htmlBody)
+          gemailt[p.email] = jetztText_()
+          Utilities.sleep(300)
+        } catch (err) {
+          Logger.log('Fotos — Mail an ' + p.email + ' (' + slug + ') fehlgeschlagen: ' + err)
+        }
+      })
+      props.setProperty('fotoMail_' + slug, JSON.stringify(gemailt))
+    }
+    const fehler = Object.keys(geteilt).filter(function (k) { return geteilt[k] === 'fehler' })
+    const einladung = Object.keys(geteilt).filter(function (k) { return geteilt[k] === 'Google-Einladung' }).length
+    stand(
+      e.liste.length + ' Personen (' + wahl + ') · ' +
+      Object.keys(geteilt).length + ' freigegeben' + (einladung ? ' (davon ' + einladung + ' per Google-Einladung)' : '') + ' · ' +
+      Object.keys(gemailt).length + ' Mails' + (plan ? '' : ' · Vorschau an dich, Versand morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr') +
+      (fehler.length ? '\nKein Zugriff möglich: ' + fehler.join(', ') : ''),
+    )
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  EINMALIG im Editor ausfuehren: alte Ablage in die neue Struktur umziehen
+//  (siehe "Ordnerstruktur" oben). Verschiebt nur, loescht nichts ausser leer
+//  gewordenen alten Ordnern (Papierkorb). Kann gefahrlos mehrfach laufen.
+// ═══════════════════════════════════════════════════════════════════════════
+function strukturUmbauen() {
+  const props = PropertiesService.getScriptProperties()
+  const log = []
+  const root = getOrCreateFolder()
+  if (root.getName() !== ROOT_NAME) { root.setName(ROOT_NAME); log.push('Hauptordner umbenannt: ' + ROOT_NAME) }
+  try {
+    medienZugangGeben_(root, VORSCHAU_EMPFAENGER)
+  } catch (err) {
+    log.push('Freigabe Hauptordner fuer Ann: ' + err)
+  }
+  const general = allgemeinOrdner_()
+  const medienAlt = DriveApp.getFolderById(MEDIEN_ORDNER_ID)
+  const verschiebe = function (file, ziel, was) {
+    if (!file) return
+    const parents = file.getParents()
+    while (parents.hasNext()) if (parents.next().getId() === ziel.getId()) return
+    file.moveTo(ziel)
+    log.push(was + ' → ' + ziel.getName())
+  }
+  const leerWeg = function (f) {
+    if (!f || f.getFiles().hasNext() || f.getFolders().hasNext()) return
+    f.setTrashed(true)
+    log.push('leerer alter Ordner in den Papierkorb: ' + f.getName())
+  }
+
+  // 1. Allgemeine Tabellen nach General
+  ;[HISTORY_SHEET_NAME, FEEDBACK_SHEET_NAME, REFERENTEN_SHEET_NAME, SPONSOR_SHEET_NAME, SPEAKER_SHEET_NAME, MEDIEN_SHEET_NAME].forEach(function (n) {
+    if (general.getFilesByName(n).hasNext()) return
+    if (allgemeineDatei_(n, [medienAlt])) log.push(n + ' → General')
+  })
+  ;['sponsorSheetId', 'speakerSheetId', 'medienSheetId'].forEach(function (k) {
+    const id = props.getProperty(k)
+    if (id) try { verschiebe(DriveApp.getFileById(id), general, k) } catch (err) {}
+  })
+
+  // 2. Grundvorlagen nach General/Email Templates ("unbearbeitet" bleibt erhalten)
+  const vorlagen = grundvorlagenOrdner_()
+  mailGruppe_().forEach(function (g) {
+    const id = props.getProperty(g.grundProp)
+    if (!id) return
+    try {
+      const file = DriveApp.getFileById(id)
+      const stand = Number(props.getProperty(g.grundProp + 'Stand') || file.getDateCreated().getTime())
+      const unbearbeitet = file.getLastUpdated().getTime() - stand < 5 * 60000
+      verschiebe(file, vorlagen, 'Grundvorlage ' + g.titel)
+      if (unbearbeitet) props.setProperty(g.grundProp + 'Stand', String(Date.now()))
+    } catch (err) {
+      log.push('Grundvorlage ' + g.titel + ': ' + err)
+    }
+  })
+
+  // 3. Pro CMS-Event: Anmeldetabelle, Mail-Docs, Fotos/Videos in den Event-Ordner
+  const cms = ladeCmsEvents_()
+  cms.forEach(function (ev) {
+    const slug = String(ev.slug || '').trim()
+    if (!slug) return
+    const alt = alterMedienOrdner_(ev)
+    const ziel = eventOrdner_(ev, true, true).ordner // erst ohne Unterordner
+    if (alt) {
+      const kinder = alt.getFolders()
+      while (kinder.hasNext()) {
+        const k = kinder.next()
+        const schon = ziel.getFoldersByName(k.getName())
+        if (schon.hasNext()) {
+          const z = schon.next()
+          const fs = k.getFiles()
+          while (fs.hasNext()) fs.next().moveTo(z)
+          const ds = k.getFolders()
+          while (ds.hasNext()) ds.next().moveTo(z)
+          leerWeg(k)
+        } else {
+          k.moveTo(ziel)
+          log.push(alt.getName() + '/' + k.getName() + ' → ' + ziel.getName())
+        }
+      }
+      const lose = alt.getFiles()
+      while (lose.hasNext()) verschiebe(lose.next(), ziel, alt.getName() + ' (Datei)')
+      leerWeg(alt)
+    }
+    const e = eventOrdner_(ev) // jetzt mit allen Unterordnern
+    let sheetId = props.getProperty('sheetId_' + slug)
+    if (!sheetId) {
+      const sh = findeEventSheetPerSlug_(slug)
+      if (sh) sheetId = sh.getParent().getId()
+    }
+    if (sheetId) try { verschiebe(DriveApp.getFileById(sheetId), e.ordner, 'Anmeldetabelle ' + slug) } catch (err) {}
+    mailGruppe_().forEach(function (g) {
+      const id = props.getProperty(g.eventProp + slug)
+      if (id) try { verschiebe(DriveApp.getFileById(id), e.unter.Emails, g.docName + ' ' + slug) } catch (err) {}
+    })
+    const mailAltId = props.getProperty('mailOrdner_' + slug)
+    if (mailAltId) {
+      try {
+        const m = DriveApp.getFolderById(mailAltId)
+        const fs = m.getFiles()
+        while (fs.hasNext()) verschiebe(fs.next(), e.unter.Emails, 'Mail-Datei ' + slug)
+        leerWeg(m)
+      } catch (err) {}
+      props.deleteProperty('mailOrdner_' + slug)
+    }
+    props.deleteProperty('medienOrdner_' + slug)
+  })
+
+  // 4. Alte Sammelordner aufraeumen, wenn leer
+  const mt = getOrCreateFolder().getFoldersByName(MAILTEXTE_ORDNER)
+  if (mt.hasNext()) {
+    const m = mt.next()
+    const gv = m.getFoldersByName('_Grundvorlagen')
+    if (gv.hasNext()) leerWeg(gv.next())
+    leerWeg(m)
+  }
+  const lose = getOrCreateEventsSubfolder().getFilesByType(MimeType.GOOGLE_SHEETS)
+  while (lose.hasNext()) log.push('Tabelle ohne CMS-Event bleibt in Events/: ' + lose.next().getName())
+  const rest = medienAlt.getFolders()
+  while (rest.hasNext()) log.push('noch in Photos_Videos (kein CMS-Event): ' + rest.next().getName())
+
+  Logger.log('Struktur-Umbau fertig:\n' + log.join('\n'))
+  Logger.log('Hauptordner: ' + root.getUrl())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3491,7 +3921,7 @@ function mailGruppe_(id) {
   const g = {
     gaeste: {
       id: 'gaeste', titel: 'Gäste', docName: 'Mail-Texte Gäste', eventProp: 'mailDoc_',
-      grundProp: 'gaesteGrundDoc', version: '1', empfaenger: 'die angemeldeten Gäste',
+      grundProp: 'gaesteGrundDoc', version: '2', empfaenger: 'die angemeldeten Gäste',
       keyFn: abschnittKey_, vorlage: function () { return mailDocVorlage_('') },
       hinweise: gaesteHinweise_,
       links: function (ev) {
@@ -3501,13 +3931,13 @@ function mailGruppe_(id) {
     },
     sponsoren: {
       id: 'sponsoren', titel: 'Sponsoren', docName: 'Mail-Texte Sponsoren', eventProp: 'mailDocSponsoren_',
-      grundProp: 'sponsorGrundDoc', version: '3', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
+      grundProp: 'sponsorGrundDoc', version: '4', empfaenger: 'die Sponsoren (Ansprechpersonen aus „Sponsor Contacts“)',
       keyFn: sponsorMailKey_, vorlage: sponsorMailVorlage_, hinweise: sponsorHinweise_,
       links: function () { return [['→ Sponsor Contacts (wer bei welchem Event Sponsor ist)', sponsorSpreadsheet_().getUrl()]] },
     },
     speaker: {
       id: 'speaker', titel: 'Speaker', docName: 'Mail-Texte Speaker', eventProp: 'mailDocSpeaker_',
-      grundProp: 'speakerGrundDoc', version: '1', empfaenger: 'die Speaker (aus „Speaker Contacts“)',
+      grundProp: 'speakerGrundDoc', version: '2', empfaenger: 'die Speaker (aus „Speaker Contacts“)',
       keyFn: speakerMailKey_, vorlage: speakerMailVorlage_, hinweise: speakerHinweise_,
       links: function () { return [['→ Speaker Contacts (wer bei welchem Event spricht)', speakerSpreadsheet_().getUrl()]] },
     },
@@ -3540,7 +3970,8 @@ function gaesteHinweise_() {
     'Kleine Schrift (9 pt) = kleine graue Schrift in der Mail, z. B. für das P.S.',
     'Fett, kursiv und normale Links aus dem Doc werden übernommen.',
     'Platzhalter: {Anrede} (z. B. „Liebe Maria“) · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} („gestern“ / „am Dienstag“) · {Minuten}',
-    'Links mit eigenem Text: {Abmelde-Link: Text} · {Feedback-Link: Text} · {Referent-Link: Text} · {Maps-Link: Text} · {Eventseite-Link: Text} · {Ich-war-da-Link: Text} (der Absatz wird zum grauen Kasten).',
+    'Links mit eigenem Text: {Abmelde-Link: Text} · {Feedback-Link: Text} · {Referent-Link: Text} · {Maps-Link: Text} · {Eventseite-Link: Text} · {Ich-war-da-Link: Text} (der Absatz wird zum grauen Kasten) · {Fotos-Link: Text} (nur „Fotos vom Abend“, Ordner Photos_watermarked).',
+    'Fotos vom Abend: geht erst raus, wenn du in „Media Contacts“ → Einsätze bei „Fotos freigeben“ eine Gruppe wählst. {Credit} = Credit der Fotografin / des Fotografen aus Media Contacts.',
     'Kalenderdatei (.ics) und Signatur hängen automatisch an. Datum, Zeit und Ort kommen immer aktuell aus dem CMS.',
     'Versand: Bestätigung sofort · 1 Woche und 1 Tag vorher ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr · ca. 3 Std. vorher · Rückblick am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Am Vortag kommt jede Mail als [VORSCHAU] an dich.',
   ]
@@ -3567,7 +3998,8 @@ function sponsorHinweise_() {
     'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, mit neuer Kalenderdatei (Kopie an dich).',
     'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, mit der Bitte um Folien/Material für LinkedIn und Instagram (Freigabe vor Veröffentlichung). Vorschau am Eventtag – ein persönlicher Satz zum Abend macht die Mail stärker.',
     'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} · {Vorher} (alter Termin, nur in „Änderung“)',
-    'Links: {Maps-Link: Text} · {Eventseite-Link: Text}. [EVENTKARTE] in einer eigenen Zeile = Eventbild.',
+    'Fotos vom Abend: nur wenn du bei „Fotos freigeben“ eine Gruppe mit Sponsoren wählst. {Credit} = Credit der Fotografin / des Fotografen.',
+    'Links: {Maps-Link: Text} · {Eventseite-Link: Text} · {Fotos-Link: Text}. [EVENTKARTE] in einer eigenen Zeile = Eventbild.',
   ].concat(gemeinsameHinweise_())
 }
 
@@ -3576,34 +4008,12 @@ function eventName_(ev) {
 }
 
 function grundvorlagenOrdner_() {
-  const parent = mailTexteOrdner_()
-  const it = parent.getFoldersByName('_Grundvorlagen')
-  return it.hasNext() ? it.next() : parent.createFolder('_Grundvorlagen')
+  return unterordner_(allgemeinOrdner_(), VORLAGEN_ORDNER_NAME)
 }
 
-// Ordner "Mail-Texte/<Nummer — Titel>" fuer die Docs eines Events.
+// Ordner Events/<Event>/Emails fuer die Mail-Docs eines Events.
 function eventMailOrdner_(ev) {
-  const props = PropertiesService.getScriptProperties()
-  const key = 'mailOrdner_' + String(ev.slug)
-  const name = eventName_(ev)
-  let f = null
-  const id = props.getProperty(key)
-  if (id) {
-    try {
-      f = DriveApp.getFolderById(id)
-      if (f.isTrashed()) f = null
-    } catch (err) {
-      f = null
-    }
-  }
-  if (!f) {
-    const parent = mailTexteOrdner_()
-    const it = parent.getFoldersByName(name)
-    f = it.hasNext() ? it.next() : parent.createFolder(name)
-    props.setProperty(key, f.getId())
-  }
-  if (f.getName() !== name) f.setName(name)
-  return f
+  return eventOrdner_(ev).unter.Emails
 }
 
 function grundvorlageDoc_(g) {
@@ -4064,6 +4474,28 @@ function nachfassNichtDaMailStandard_(e) {
   }
 }
 
+// Fotos vom Abend (nach der Freigabe in Media Contacts). e.fotolink = Ordner
+// Photos_watermarked, e.credit = Credit der Fotografin / des Fotografen.
+function fotoMail_(e) {
+  return ausDoc_('fotos', e, fotoMailStandard_)
+}
+
+function fotoMailStandard_(e) {
+  const link = e.fotolink || '#'
+  return {
+    subject: 'Die Fotos vom NBK Treffen sind da – ' + kurzTitel_(e.titel),
+    htmlBody: wrapMail_(
+      '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+        '<p>hier sind die Fotos von unserem NewBuild Kollektiv Treffen <strong>„' + escapeHtml_(e.titel) + '“</strong>: ' +
+        '<a href="' + link + '" style="color:#3d5a80;font-weight:600">Zu den Fotos →</a></p>' +
+        '<p>Du darfst sie gern herunterladen und teilen, zum Beispiel auf LinkedIn.' +
+        (e.credit ? ' Bitte gib dabei den Credit an: ' + escapeHtml_(e.credit) : '') + '</p>' +
+        '<p>Über eine Verlinkung von NewBuild Kollektiv freuen wir uns sehr.</p>' +
+        '<p>Liebe Grüße,</p>',
+    ),
+  }
+}
+
 function nachfassDaMail_(e) {
   return ausDoc_('da', e, nachfassDaMailStandard_)
 }
@@ -4134,11 +4566,14 @@ function mailArten_() {
     ['da', 'Rückblick – war da', 'am Tag nach dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', nachfassDaMail_],
     ['nichtda', 'Rückblick – nicht da', 'am Tag nach dem Event, ab ' + ERINNERUNG_SENDESTUNDE +
       ' Uhr – nur wenn der Check-in genutzt wurde und die Person nicht eingecheckt hat', nachfassNichtDaMail_],
+    ['fotos', 'Fotos vom Abend', 'sobald du in „Media Contacts“ → Einsätze „Fotos freigeben“ wählst: Vorschau an dich, Versand am nächsten Tag ab ' +
+      ERINNERUNG_SENDESTUNDE + ' Uhr', fotoMail_],
   ]
 }
 
 function abschnittKey_(ueberschrift) {
   const t = String(ueberschrift || '').toLowerCase()
+  if (t.indexOf('foto') >= 0) return 'fotos'
   if (t.indexOf('bestätigung') >= 0 || t.indexOf('bestaetigung') >= 0) return 'bestaetigung'
   if (t.indexOf('woche') >= 0) return 'woche'
   if (t.indexOf('stunde') >= 0) return 'drei'
@@ -4237,6 +4672,7 @@ function platzhalterWerte_(e) {
     referent: e.referent,
     eventtag: eventTagWort_(e.start),
     minuten: AUFBRUCH_VORLAUF_MIN,
+    credit: e.credit || '',
   }
 }
 
@@ -4248,6 +4684,7 @@ function platzhalterLinks_(e) {
     maps: e.ort ? mapsLink_(e.ort) : '',
     eventseite: eventSeiteUrl_(e.slug),
     'ich-war-da': wardaLink_(e.sid, e.slug, e.email),
+    fotos: e.fotolink || '',
   }
 }
 
@@ -4371,6 +4808,14 @@ function mailDocVorlage_(slug) {
     ['p', 'schade, dass du es {Eventtag} nicht zum NewBuild Kollektiv Treffen geschafft hast. Die Infos zum nächsten Treffen kommen bald. Ich hoffe sehr, dass ich dich dann begrüßen darf.'],
     ['p', 'Du warst **doch da**, hast dich nur vergessen am Eingang einzuchecken? Dann vermerken wir das und du bekommst gleich die Rückblick-Mail zum Abend. {Ich-war-da-Link: Ja, ich war da →}'],
     ['p', 'Liebe Grüße und bis bald,'],
+
+    ['h', 'Fotos vom Abend'],
+    ['p', 'Betreff: Die Fotos vom NBK Treffen sind da – {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'hier sind die Fotos von unserem NewBuild Kollektiv Treffen **„{Titel}“**: {Fotos-Link: Zu den Fotos →}'],
+    ['p', 'Du darfst sie gern herunterladen und teilen, zum Beispiel auf LinkedIn. Bitte gib dabei den Credit an: {Credit}'],
+    ['p', 'Über eine Verlinkung von NewBuild Kollektiv freuen wir uns sehr.'],
+    ['p', 'Liebe Grüße,'],
   ]
   // Bestehende individuelle Texte (vor den Docs im Code gepflegt) uebernehmen.
   if (slug === 'session-03-ordner-zum-tool') {
@@ -4569,6 +5014,8 @@ function vorschauEventDaten_(slug) {
     ende: start ? parseEventEnde_(start, String(ev.time || '')) : null,
     checkinGenutzt: true,
     anwesend: true,
+    fotolink: 'https://drive.google.com/',
+    credit: 'Photography © Name (Beispiel)',
   }
 }
 
