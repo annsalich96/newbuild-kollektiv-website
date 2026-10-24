@@ -3167,6 +3167,9 @@ const SPEAKER_KONTAKTE_HEADERS = ['Name', 'Firma', 'Anrede (w/m)', 'E-Mail', 'Po
 const SPEAKER_SPALTEN = ['Speaker 1', 'Speaker 2', 'Speaker 3', 'Speaker 4']
 const SPEAKER_EINSAETZE_HEADERS = ['Event', 'Datum'].concat(SPEAKER_SPALTEN).concat(['Versand', 'Slug'])
 const SPEAKER_DANKE_FENSTER_TAGE = 7
+// Speaker-Mails erst fuer Events ab diesem Tag (Ann, 24.10.2026: Session 03
+// und aeltere Events bekommen keine automatische Danke-Mail mehr).
+const SPEAKER_MAILS_AB = new Date(2026, 9, 25)
 
 function speakerSpreadsheet_() {
   const props = PropertiesService.getScriptProperties()
@@ -3295,7 +3298,7 @@ function speakerAbgleichen_(cmsEvents) {
     }
 
     const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
-    if (!start) return
+    if (!start || start.getTime() < SPEAKER_MAILS_AB.getTime()) return
     const z = einsaetze.getRange(zeile, 1, 1, ek.length).getValues()[0]
     SPEAKER_SPALTEN.forEach(function (sp) {
       const name = String(z[col(sp) - 1] || '').trim()
