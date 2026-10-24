@@ -2068,15 +2068,13 @@ function fotosInHistoryEintragen() {
 //    Einsätze  — eine Zeile pro Event (legt das Skript an); Ann waehlt dort
 //                Fotograf:in und Videograf:in aus der Kontaktliste aus.
 //  Ist eine Person eingetragen, bekommt sie Bearbeitungszugriff auf Photos bzw.
-//  Videos dieses Events (ohne Google-Benachrichtigung) und — wenn das Event
-//  hoechstens MEDIEN_EINLADUNG_TAGE zurueckliegt — eine kurze Mail mit dem
-//  Upload-Link. Spalte "Zugang Foto/Video" merkt, wer schon Zugang hat; Zugang
-//  wird nie automatisch entzogen.
+//  Videos dieses Events (ohne Google-Benachrichtigung); den Link bekommt sie
+//  am Tag nach dem Event. Spalte "Zugang Foto/Video" merkt, wer schon Zugang
+//  hat; Zugang wird nie automatisch entzogen.
 // ═══════════════════════════════════════════════════════════════════════════
 const MEDIEN_ORDNER_ID = '1uVkvQlUi07UCx3CV8aEaKAdzXPzCX0PO' // BILDER_VIDEOS
 const MEDIEN_SHEET_NAME = 'Media Contacts'
 const MEDIEN_UNTERORDNER = ['Photos', 'Photos_watermarked', 'Videos']
-const MEDIEN_EINLADUNG_TAGE = 2
 // Reihenfolge der Anfragen je Rolle: erst A, dann B, dann C (bis zu drei Personen).
 const MEDIEN_PRIORITAETEN = ['A', 'B', 'C']
 const KONTAKTE_HEADERS = [
@@ -2239,9 +2237,15 @@ function medienHonorarText_(zeile, kopf) {
   return euro(gesamt) + ' netto' + (art ? ', ' + art : '')
 }
 
-function medienEinladungMail_(kontakt, rolle, ev, folder) {
-  const m = medienMail_('upload', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() }))
-  const ics = medienIcs_(ev, rolle, folder.getUrl())
+// Foto/Video bekommen nur: Anfrage (mit .ics) · 1 Tag vorher (Erinnerung,
+// .ics) · Tag danach (Upload-Link) · bei Aenderung von Datum/Zeit/Ort eine
+// Aenderungs-Mail (Ann, 24.10.2026). Nach der Zusage keine eigene Mail —
+// der Ordnerzugriff wird still vergeben, der Link kommt nach dem Event.
+// Von Hand in "Einsätze" eingetragene Personen (ohne Anfrage) bekommen die
+// Anfrage-Mail ohne Zusage-Knoepfe, damit auch sie die .ics haben.
+function medienAnfrageOhneToken_(kontakt, rolle, ev) {
+  const m = medienMail_('anfrage', medienMailDaten_(kontakt, rolle, ev, {}))
+  const ics = medienIcs_(ev, rolle, '')
   sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined, true)
   PropertiesService.getScriptProperties().setProperty(medienStandKey_(ev, kontakt), medienStand_(ev))
 }
@@ -2281,11 +2285,26 @@ function medienNachlauf_(anfragen, kontakt, rolle, ev, folder, start, jetzt) {
   const props = PropertiesService.getScriptProperties()
   const slug = String(ev.slug)
   if (start.getTime() > jetzt.getTime()) {
-    // Am Eventtag: Vorschau der Danke-Mail an Ann.
-    if (tagesDifferenz_(jetzt, start) === 0 && Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE) {
-      vorschauAnAnn_('medienDankeVorschau_' + slug + '_' + String(kontakt.email).toLowerCase(),
-        medienMail_('danke', medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() })),
-        'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + kontakt.name, mailGruppe_('medien'), slug)
+    const tageBis = tagesDifferenz_(jetzt, start)
+    const ab = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE
+    const mail = function (key) { return medienMail_(key, medienMailDaten_(kontakt, rolle, ev, { upload: folder.getUrl() })) }
+    const wer = 'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + kontakt.name
+    const email = String(kontakt.email).toLowerCase()
+    // Vorschauen am Vortag: Erinnerung (2 Tage vor dem Event), Danke (Eventtag).
+    if (ab && tageBis === 2) {
+      const ics = medienIcs_(ev, rolle, '')
+      vorschauAnAnn_('medienTagVorschau_' + slug + '_' + email, mail('tag'), wer, mailGruppe_('medien'), slug, ics ? [ics] : undefined)
+    }
+    if (ab && tageBis === 0) vorschauAnAnn_('medienDankeVorschau_' + slug + '_' + email, mail('danke'), wer, mailGruppe_('medien'), slug)
+    // 1 Tag vorher: Erinnerung mit .ics.
+    if (ab && tageBis === 1 && !props.getProperty('medienTag_' + slug + '_' + email)) {
+      const m = mail('tag')
+      const ics = medienIcs_(ev, rolle, '')
+      sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined)
+      props.setProperty('medienTag_' + slug + '_' + email, jetztText_())
+      props.setProperty(medienStandKey_(ev, kontakt), medienStand_(ev))
+      Logger.log('Medien — Erinnerung 1 Tag vorher ' + rolle + ' an ' + kontakt.email + ' (' + slug + ')')
+      return
     }
     const key = medienStandKey_(ev, kontakt)
     const alt = props.getProperty(key)
@@ -2295,10 +2314,9 @@ function medienNachlauf_(anfragen, kontakt, rolle, ev, folder, start, jetzt) {
     const a = JSON.parse(alt)
     const m = medienMail_('aenderung', medienMailDaten_(kontakt, rolle, ev, {
       token: medienToken_(anfragen, slug, rolle, kontakt.email),
-      upload: folder.getUrl(),
       vorher: a[0] + (a[1] ? ' · ' + a[1] + ' Uhr' : '') + (a[2] ? ' · ' + a[2] : ''),
     }))
-    const ics = medienIcs_(ev, rolle, folder.getUrl())
+    const ics = medienIcs_(ev, rolle, '')
     sendeTeilnehmerMail_(kontakt.email, m.subject, m.htmlBody, ics ? [ics] : undefined, true)
     props.setProperty(key, neu)
     Logger.log('Medien — Aenderungs-Mail ' + rolle + ' an ' + kontakt.email + ' (' + slug + ')')
@@ -2453,10 +2471,10 @@ function medienAbgleichen_(cmsEvents) {
         try {
           medienZugangGeben_(rolle[3], kontakt.email)
           let vermerk = kontakt.email + ' · ' + Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy')
-          // Upload-Mail mit .ics nur vor dem Event; danach kommt die Danke-Mail.
-          if (start && start.getTime() > heute.getTime()) {
-            medienEinladungMail_(kontakt, rolle[0], ev, rolle[3])
-            vermerk += ' · Mail'
+          // Von Hand eingetragen (keine Zusage per Anfrage): Termin-Mail mit .ics.
+          if (start && start.getTime() > heute.getTime() && !medienToken_(anfragen, slug, rolle[0], kontakt.email)) {
+            medienAnfrageOhneToken_(kontakt, rolle[0], ev)
+            vermerk += ' · Termin-Mail'
           }
           // Mehrere Personen nacheinander: alte Vermerke behalten.
           const alt = /E-Mail fehlt|FEHLER/.test(bisher) ? '' : bisher
@@ -2527,14 +2545,13 @@ function medienJetztEinrichten() {
 // Fuer jedes kommende Event ohne eingetragene Person je Rolle (Foto/Video):
 //   1. Anfrage an den aktiven Kontakt mit Prioritaet A (danach B, dann C) (Mail mit Zusage-/
 //      Absage-Link, Honorar falls eingetragen).
-//   2. Nach MEDIEN_ERINNERUNG_TAGE ohne Antwort eine Erinnerung, nach
-//      MEDIEN_FRIST_TAGE "keine Antwort" -> naechster Kontakt (B, dann C).
-//   3. Zusage -> Name in "Einsätze"; der Abgleich gibt dann Zugang zum Ordner
-//      und schickt den Upload-Link. Absage -> naechster Kontakt.
+//   2. Nach MEDIEN_FRIST_TAGE ohne Antwort "keine Antwort" -> naechster
+//      Kontakt (B, dann C). Keine Erinnerungs-Mail dazwischen.
+//   3. Zusage -> Name in "Einsätze"; der Abgleich gibt still Zugang zum Ordner
+//      (Upload-Link kommt am Tag nach dem Event). Absage -> naechster Kontakt.
 //   4. Niemand mehr uebrig -> einmal Mail an Ann, nichts weiter.
 // Verlauf im Blatt "Anfragen". Texte im Event-Doc "Mail-Texte Foto & Video"
 // (sonst Grundvorlage, sonst die Standardtexte unten, siehe MAIL-GRUPPEN).
-const MEDIEN_ERINNERUNG_TAGE = 2
 // Foto/Video sollen so viele Minuten vor Eventbeginn da sein (Platzhalter {Ankunft}).
 const MEDIEN_VORLAUF_MIN = 30
 const MEDIEN_FRIST_TAGE = 3
@@ -2581,22 +2598,7 @@ function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
   if (offen !== undefined) {
     const tage = (jetzt.getTime() - Number(werte[offen][c('Seit')] || 0)) / 86400000
     if (tage < MEDIEN_FRIST_TAGE) {
-      const k = kontaktListe.filter(function (x) {
-        return x.email.toLowerCase() === String(werte[offen][c('E-Mail')]).toLowerCase()
-      })[0] || { name: werte[offen][c('Name')], email: werte[offen][c('E-Mail')], honorar: '' }
-      if (tage >= MEDIEN_ERINNERUNG_TAGE - 1 && tage < MEDIEN_ERINNERUNG_TAGE && werte[offen][c('Status')] === 'angefragt') {
-        vorschauAnAnn_('medienErinnVorschau_' + werte[offen][c('Token')],
-          medienMail_('erinnerung', medienMailDaten_(k, rolle, ev, { token: 'VORSCHAU' })),
-          'in etwa einem Tag an ' + k.name + ' (falls bis dahin keine Antwort kommt)', mailGruppe_('medien'), slug)
-      }
-      if (tage >= MEDIEN_ERINNERUNG_TAGE && werte[offen][c('Status')] === 'angefragt') {
-        const m = medienMail_('erinnerung', medienMailDaten_(k, rolle, ev, { token: werte[offen][c('Token')] }))
-        sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody)
-        sh.getRange(offen + 1, c('Status') + 1).setValue('erinnert')
-        sh.getRange(offen + 1, c('Erinnert am') + 1).setValue(jetztText_())
-        Logger.log('Medien — Erinnerung ' + rolle + ' an ' + k.email + ' (' + slug + ')')
-      }
-      return null
+      return null // keine Erinnerungs-Mail bei fehlender Antwort (Ann: nur 3 Mails)
     }
     sh.getRange(offen + 1, c('Status') + 1).setValue('keine Antwort')
     werte[offen][c('Status')] = 'keine Antwort'
@@ -2627,8 +2629,9 @@ function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
     if (erste && !knapp) {
       const plan = Number(pr.getProperty(planKey) || 0)
       if (!plan) {
+        const vIcs = medienIcs_(ev, rolle, '')
         vorschauAnAnn_(planKey + '_vorschau', medienMail_('anfrage', medienMailDaten_(k, rolle, ev, { token: 'VORSCHAU' })),
-          'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + k.name, mailGruppe_('medien'), slug)
+          'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + k.name, mailGruppe_('medien'), slug, vIcs ? [vIcs] : undefined)
         pr.setProperty(planKey, String(morgenUm_(jetzt)))
         return null
       }
@@ -2636,7 +2639,9 @@ function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
     }
     const token = Utilities.getUuid()
     const m = medienMail_('anfrage', medienMailDaten_(k, rolle, ev, { token: token }))
-    sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, undefined, !erste || knapp)
+    const ics = medienIcs_(ev, rolle, '')
+    sendeTeilnehmerMail_(k.email, m.subject, m.htmlBody, ics ? [ics] : undefined, !erste || knapp)
+    pr.setProperty(medienStandKey_(ev, k), medienStand_(ev))
     sh.appendRow([
       medienOrdnerName_(ev), rolle, k.name, k.email, k.prioritaet, 'angefragt', jetztText_(), '', '', slug, token, jetzt.getTime(),
     ])
@@ -2721,7 +2726,7 @@ function medienAntwortVerarbeiten_(p) {
       info('Zusage ' + rolle + ': ' + name + ' – ' + event, name + ' hat für ' + rolle + ' bei „' + event + '“ zugesagt.')
       return abmeldeSeite_(
         '<h1>Danke, du bist dabei!</h1><p>Wir haben dich für „' + escapeHtml_(event) + '“ eingetragen. ' +
-          'In den nächsten Minuten bekommst du eine Mail mit dem Link zum Upload-Ordner.</p>',
+          'Die Kalenderdatei (.ics) aus der Anfrage-Mail kannst du jetzt in deinen Kalender übernehmen. Einen Tag vorher erinnern wir dich noch einmal, und nach dem Event bekommst du den Link zum Upload-Ordner.</p>',
         'Zugesagt – NewBuild Kollektiv',
       )
     }
@@ -3114,6 +3119,7 @@ function medienMailDaten_(kontakt, rolle, ev, extra) {
     honorar: String(kontakt.honorar || ''),
     ankunft: medienAnkunft_(ev),
     vorlauf: String(MEDIEN_VORLAUF_MIN),
+    aufbruch: String(AUFBRUCH_VORLAUF_MIN),
     begleitung: rolle === 'Foto' ? 'fotografisch' : 'videografisch',
     eventtag: eventTagWort_(parseEventDatum_(String(ev.date || ''), String(ev.time || ''))),
     vorher: String(extra.vorher || ''),
@@ -3137,11 +3143,12 @@ function medienAnkunft_(ev) {
   return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2)
 }
 
+// Ueberschriften der Abschnitte. Alte Abschnitte "Erinnerung" (keine Antwort)
+// und "Upload-Link" (nach Zusage) aus frueheren Docs werden ignoriert.
 function medienMailKey_(t) {
   t = String(t || '').toLowerCase()
-  if (t.indexOf('erinnerung') >= 0) return 'erinnerung'
   if (t.indexOf('anfrage') >= 0) return 'anfrage'
-  if (t.indexOf('upload') >= 0) return 'upload'
+  if (t.indexOf('vorher') >= 0) return 'tag'
   if (t.indexOf('änderung') >= 0 || t.indexOf('aenderung') >= 0) return 'aenderung'
   if (t.indexOf('nach dem event') >= 0 || t.indexOf('danke') >= 0) return 'danke'
   return ''
@@ -3156,19 +3163,16 @@ function medienMailVorlage_() {
     ['p', '**{Datum} · {Zeit} Uhr**\n{Ort}'],
     ['p', 'Bitte sei um **{Ankunft} Uhr** da, also {Vorlauf} Minuten vor Beginn, damit du in Ruhe ankommen und dich einrichten kannst.'],
     ['p', 'Honorar: {Honorar}'],
+    ['p', 'Im Anhang findest du eine Kalenderdatei (.ics) mit deiner Ankunftszeit – sie erinnert dich {Aufbruch} Minuten vorher ans Aufbrechen.'],
     ['p', 'Hast du Zeit? Ein Klick genügt: {Zusage-Link: Ja, ich bin dabei} · {Absage-Link: Leider nein}'],
     ['p', 'Danke dir und liebe Grüße,'],
-    ['h', 'Erinnerung'],
-    ['p', 'Betreff: Kurze Erinnerung: {Kurztitel} am {Datum}'],
+    ['h', '1 Tag vorher'],
+    ['p', 'Betreff: Morgen: {Kurztitel} – bitte um {Ankunft} Uhr da sein'],
     ['p', 'Hallo {Vorname},'],
-    ['p', 'kurze Erinnerung an unsere Anfrage für „{Titel}“ am {Datum} um {Zeit} Uhr. Gib uns bitte bis morgen Bescheid, ob du {Aufgabe} übernehmen kannst: {Zusage-Link: Ja, ich bin dabei} · {Absage-Link: Leider nein}'],
-    ['p', 'Liebe Grüße,'],
-    ['h', 'Upload-Link'],
-    ['p', 'Betreff: Upload-Ordner {Medien}: {Kurztitel}'],
-    ['p', 'Hallo {Vorname},'],
-    ['p', 'schön, dass du bei „{Titel}“ am {Datum} dabei bist! Kurz zur Erinnerung: Bitte sei um **{Ankunft} Uhr** vor Ort – {Ort}.'],
-    ['p', 'Hier ist dein Ordner für die {Medien}. Lade sie dort einfach hoch, sobald sie fertig sind: {Upload-Link: {Medien} hochladen →}'],
-    ['p', 'Danke dir und liebe Grüße,'],
+    ['p', 'morgen ist es soweit: „{Titel}“ am {Datum}, {Zeit} Uhr.'],
+    ['p', '**{Ort}**\n{Maps-Link: In Google Maps öffnen}'],
+    ['p', 'Bitte sei um **{Ankunft} Uhr** da, damit du in Ruhe ankommen und dich einrichten kannst. Die Kalenderdatei hängt noch einmal an.'],
+    ['p', 'Bis morgen und liebe Grüße,'],
     ['h', 'Änderung (Datum, Zeit oder Ort)'],
     ['p', 'Betreff: Änderung: {Kurztitel} am {Datum}'],
     ['p', 'Hallo {Vorname},'],
@@ -3194,7 +3198,7 @@ function medienMailStandard_(key) {
 // Version der Grundvorlage Foto & Video. Erhoehen, wenn sich die Vorlage
 // aendert: eine nie bearbeitete Grundvorlage wird dann neu geschrieben, eine
 // von Ann bearbeitete bleibt unangetastet.
-const MEDIEN_MAILDOC_VERSION = '5'
+const MEDIEN_MAILDOC_VERSION = '6'
 
 function medienMail_(key, d) {
   return gruppenMail_(mailGruppe_('medien'), key, d)
@@ -3265,12 +3269,13 @@ function gaesteHinweise_() {
 
 function medienHinweise_() {
   return [
-    'Anfrage: sobald das Event im CMS steht, bekommst du sofort eine Vorschau. Am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht sie an Kontakt A der Rolle – bis dahin kannst du den Text hier anpassen.',
-    'Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen ohne Antwort (Vorschau etwa einen Tag vorher). Nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort oder bei Absage geht die Anfrage sofort an B, danach an C (Kopie an dich).',
-    'Upload-Link: direkt nach der Zusage bzw. wenn du jemanden in „Einsätze“ einträgst, mit Kalenderdatei (Kopie an dich).',
-    'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, an alle bereits Eingesetzten, mit neuer Kalenderdatei (Kopie an dich).',
-    'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an alle Eingesetzten, mit Upload-Link. Vorschau am Eventtag.',
-    'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Ankunft} (Beginn minus ' + MEDIEN_VORLAUF_MIN + ' Min.) · {Vorlauf} · {Begleitung} („fotografisch“ / „videografisch“) · {Eventtag} („gestern“) · {Vorher} (alter Termin, nur in „Änderung“) · {Honorar}',
+    'Es gibt nur diese Mails: Anfrage (mit Kalenderdatei) · 1 Tag vorher · Nach dem Event (Upload-Link) · Änderung, falls du Datum, Zeit oder Ort im CMS änderst.',
+    'Anfrage: sobald das Event im CMS steht, bekommst du sofort eine Vorschau. Am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht sie an Kontakt A der Rolle, mit .ics (Termin = Ankunftszeit, Wecker ' + AUFBRUCH_VORLAUF_MIN + ' Min. vorher). Nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort oder bei Absage geht sie an B, danach an C (Kopie an dich).',
+    'Nach der Zusage kommt keine eigene Mail – der Upload-Ordner wird still freigegeben. Trägst du jemanden von Hand in „Einsätze“ ein, bekommt die Person die Anfrage ohne Knöpfe, damit sie auch die .ics hat.',
+    '1 Tag vorher: ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr Erinnerung mit Ankunftszeit und .ics. Vorschau am Vortag.',
+    'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr mit Link zum Upload-Ordner. Vorschau am Eventtag.',
+    'Änderung: sofort, mit neuer Kalenderdatei (ersetzt den alten Termin, Kopie an dich).',
+    'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Ankunft} (Beginn minus ' + MEDIEN_VORLAUF_MIN + ' Min.) · {Vorlauf} · {Aufbruch} (' + AUFBRUCH_VORLAUF_MIN + ') · {Begleitung} („fotografisch“ / „videografisch“) · {Eventtag} („gestern“) · {Vorher} (alter Termin, nur in „Änderung“) · {Honorar}',
     'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}',
   ].concat(gemeinsameHinweise_())
 }
@@ -4305,13 +4310,12 @@ function gruppenBeispielMails_(slug) {
   const out = []
   const mk = { name: 'Ann-Kathrin Salich', email: VORSCHAU_EMPFAENGER, honorar: '300 € netto (2 Std. à 150 €) – Beispiel' }
   const md = medienMailDaten_(mk, 'Foto', ev, { token: 'VORSCHAU', upload: upload, vorher: vorher })
-  const mIcs = medienIcs_(ev, 'Foto', upload)
+  const mIcs = medienIcs_(ev, 'Foto', '')
   ;[
-    ['anfrage', 'Anfrage', 'sobald das Event im CMS steht: Vorschau an dich, Versand am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an Kontakt A', false],
-    ['erinnerung', 'Erinnerung', MEDIEN_ERINNERUNG_TAGE + ' Tage nach der Anfrage ohne Antwort', false],
-    ['upload', 'Upload-Link', 'direkt nach der Zusage', true],
-    ['aenderung', 'Änderung', 'sofort, wenn Datum, Zeit oder Ort im CMS geändert werden', true],
+    ['anfrage', 'Anfrage', 'sobald das Event im CMS steht: Vorschau an dich, Versand am nächsten Tag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an Kontakt A', true],
+    ['tag', '1 Tag vorher', 'am Tag vor dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', true],
     ['danke', 'Nach dem Event', 'am Tag nach dem Event ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', false],
+    ['aenderung', 'Änderung (nur falls nötig)', 'sofort, wenn Datum, Zeit oder Ort im CMS geändert werden', true],
   ].forEach(function (a) {
     const m = medienMail_(a[0], md)
     if (a[3] && mIcs) m.attachments = [mIcs]

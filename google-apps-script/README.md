@@ -174,3 +174,11 @@ Einspielen: `Code.gs` in den Editor kopieren → Dienste **+ → Drive API (v3)*
 - **Sponsoren** (`sponsorAbgleichen_`): Tabelle **Sponsor Contacts** im Ordner „NewBuild Kollektiv — Event-Anmeldungen“ (Kontakte: Name, Firma, Anrede w/m, E-Mail …; Einsätze: Sponsor 1–3 pro Event, Spalte „Versand“ protokolliert). Mails: Info (mit .ics) · 1 Woche vorher (.ics; bewusst keine Anmelde-/Teilnehmerzahlen) · Änderung · Danke am Tag danach (`SPONSOR_DANKE_NACH_TAGEN`). Danke nur an Sponsoren, die vorher die Info bekommen haben.
 - **Vorschauseite/Testmail** (`/f/?do=mailvorschau|mailtest&slug=…`) zeigen bzw. schicken jetzt alle drei Gruppen (Beispiel-Empfängerin Ann, Zusage-Links ohne gültigen Token).
 - Einmalig im Editor: `mailTexteDocsJetztAnlegen` (legt Grundvorlagen + Docs sofort an, loggt die Links).
+
+### Foto/Video: nur noch 3 Mails + Änderung (24.10.2026, Anns Vorgabe)
+
+1. **Anfrage** mit `.ics` (Termin = Ankunftszeit, Wecker `AUFBRUCH_VORLAUF_MIN` = 90 Min. vorher) und Zusage-/Absage-Knöpfen. Von Hand in „Einsätze“ Eingetragene bekommen sie ohne Knöpfe (`medienAnfrageOhneToken_`).
+2. **1 Tag vorher** (Abschnitt „1 Tag vorher“) mit Ankunftszeit + `.ics`, Vorschau am Vortag.
+3. **Nach dem Event** mit Upload-Link, Vorschau am Eventtag.
+- Dazu nur bei CMS-Änderung von Datum/Zeit/Ort: **Änderung** mit neuer `.ics` (BCC an Ann).
+- Entfallen: Erinnerung bei fehlender Antwort (nach `MEDIEN_FRIST_TAGE` geht es still an B/C) und die Upload-Mail direkt nach der Zusage (Ordnerzugriff wird still vergeben). Alte Doc-Abschnitte „Erinnerung“/„Upload-Link“ werden ignoriert; Grundvorlage Version 6.
