@@ -3335,11 +3335,8 @@ function grundvorlageDoc_(g) {
     try {
       const file = DriveApp.getFileById(id)
       if (file.isTrashed()) throw new Error('im Papierkorb')
-      if (file.getName() !== name) file.setName(name)
-      if (!props.getProperty(g.grundProp + 'Ort')) {
-        file.moveTo(grundvorlagenOrdner_())
-        props.setProperty(g.grundProp + 'Ort', '1')
-      }
+      // Erst Version pruefen, dann umbenennen/verschieben: beides aendert
+      // "zuletzt geaendert" und liess das Doc sonst als "bearbeitet" gelten.
       if (props.getProperty(g.grundProp + 'Version') !== g.version) {
         // Unbearbeitet = seit dem letzten Schreiben durchs Skript nicht geaendert.
         const stand = Number(props.getProperty(g.grundProp + 'Stand') || file.getDateCreated().getTime())
@@ -3353,6 +3350,14 @@ function grundvorlageDoc_(g) {
         }
         props.setProperty(g.grundProp + 'Version', g.version)
       }
+      let geaendert = false
+      if (file.getName() !== name) { file.setName(name); geaendert = true }
+      if (!props.getProperty(g.grundProp + 'Ort')) {
+        file.moveTo(grundvorlagenOrdner_())
+        props.setProperty(g.grundProp + 'Ort', '1')
+        geaendert = true
+      }
+      if (geaendert) props.setProperty(g.grundProp + 'Stand', String(Date.now()))
       return DocumentApp.openById(id)
     } catch (err) {
       Logger.log('Grundvorlage ' + g.titel + ' nicht lesbar, lege neu an: ' + err)
