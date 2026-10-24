@@ -2069,6 +2069,8 @@ const MEDIEN_ORDNER_ID = '1uVkvQlUi07UCx3CV8aEaKAdzXPzCX0PO' // BILDER_VIDEOS
 const MEDIEN_SHEET_NAME = 'Media Contacts'
 const MEDIEN_UNTERORDNER = ['Photos', 'Photos_watermarked', 'Videos']
 const MEDIEN_EINLADUNG_TAGE = 2
+// Reihenfolge der Anfragen je Rolle: erst A, dann B, dann C (bis zu drei Personen).
+const MEDIEN_PRIORITAETEN = ['A', 'B', 'C']
 const KONTAKTE_HEADERS = [
   'Name', 'Rolle', 'E-Mail', 'Priorität', 'Aktiv', 'Credit im Wasserzeichen', 'Telefon', 'Honorar', 'Notizen',
 ]
@@ -2105,7 +2107,7 @@ function medienSpreadsheet_() {
       .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(werte, true).build())
   }
   auswahl('Rolle', ['Foto', 'Video'])
-  auswahl('Priorität', ['A', 'B'])
+  auswahl('Priorität', MEDIEN_PRIORITAETEN)
   auswahl('Aktiv', ['Ja', 'Nein'])
 
   const einsaetze = ss.insertSheet('Einsätze')
@@ -2234,6 +2236,14 @@ function medienAbgleichen_(cmsEvents) {
   }
   const kontaktListe = Object.keys(perName).map(function (k) { return perName[k] })
   const anfragen = medienAnfragenSheet_(ss)
+  // Auswahlliste "Priorität" in bestehenden Tabellen einmalig auf A/B/C erweitern.
+  const props = PropertiesService.getScriptProperties()
+  if (props.getProperty('medienPrioritaeten') !== MEDIEN_PRIORITAETEN.join('')) {
+    kontakte
+      .getRange(2, kk.indexOf('Priorität') + 1, 500, 1)
+      .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(MEDIEN_PRIORITAETEN, true).build())
+    props.setProperty('medienPrioritaeten', MEDIEN_PRIORITAETEN.join(''))
+  }
   try {
     medienMailDoc_() // Texte-Doc sofort anlegen, damit Ann es vor der ersten Anfrage sieht
   } catch (err) {
@@ -2329,10 +2339,10 @@ function medienJetztEinrichten() {
 
 // ── Anfragen an Fotograf:innen / Videograf:innen (A, dann B) ─────────────────
 // Fuer jedes kommende Event ohne eingetragene Person je Rolle (Foto/Video):
-//   1. Anfrage an den aktiven Kontakt mit Prioritaet A (Mail mit Zusage-/
+//   1. Anfrage an den aktiven Kontakt mit Prioritaet A (danach B, dann C) (Mail mit Zusage-/
 //      Absage-Link, Honorar falls eingetragen).
 //   2. Nach MEDIEN_ERINNERUNG_TAGE ohne Antwort eine Erinnerung, nach
-//      MEDIEN_FRIST_TAGE "keine Antwort" -> naechster Kontakt (B, dann weitere).
+//      MEDIEN_FRIST_TAGE "keine Antwort" -> naechster Kontakt (B, dann C).
 //   3. Zusage -> Name in "Einsätze"; der Abgleich gibt dann Zugang zum Ordner
 //      und schickt den Upload-Link. Absage -> naechster Kontakt.
 //   4. Niemand mehr uebrig -> einmal Mail an Ann, nichts weiter.
@@ -2399,7 +2409,10 @@ function medienAnfragen_(sh, ev, rolle, kontaktListe, jetzt) {
 
   const gefragt = {}
   eigene.forEach(function (r) { gefragt[String(werte[r][c('E-Mail')]).toLowerCase()] = true })
-  const rang = function (p) { return p === 'A' ? 0 : p === 'B' ? 1 : 2 }
+  const rang = function (p) {
+    const i = MEDIEN_PRIORITAETEN.indexOf(p)
+    return i >= 0 ? i : MEDIEN_PRIORITAETEN.length
+  }
   const kandidaten = kontaktListe
     .filter(function (k) {
       return k.rolle === rolle && !/^nein$/i.test(k.aktiv) && k.email && !gefragt[k.email.toLowerCase()]
@@ -2611,7 +2624,7 @@ function medienMailDoc_() {
   ;[
     ['p', 'Diese Mails gehen automatisch an Fotograf:innen und Videograf:innen aus „Media Contacts“ – für alle Events gleich. Text einfach hier ändern, die nächste Mail übernimmt ihn.'],
     ['h2', 'So funktioniert’s'],
-    ['li', 'Anfrage: sobald ein Event im CMS steht, an Kontakt A der Rolle. Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen, nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort geht die Anfrage an B.'],
+    ['li', 'Anfrage: sobald ein Event im CMS steht, an Kontakt A der Rolle. Erinnerung nach ' + MEDIEN_ERINNERUNG_TAGE + ' Tagen, nach ' + MEDIEN_FRIST_TAGE + ' Tagen ohne Antwort (oder bei Absage) geht die Anfrage an B, danach an C.'],
     ['li', 'Upload-Link: direkt nach der Zusage (bzw. wenn du jemanden in „Einsätze“ einträgst).'],
     ['li', 'Platzhalter: {Vorname} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Aufgabe} („die Fotos“ / „das Video“) · {Medien} („Fotos“ / „Videos“) · {Honorar} (Absatz entfällt, wenn kein Honorar eingetragen ist)'],
     ['li', 'Links: {Zusage-Link: Text} · {Absage-Link: Text} · {Upload-Link: Text} · {Maps-Link: Text}'],
