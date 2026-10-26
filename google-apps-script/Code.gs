@@ -1726,11 +1726,6 @@ function sendeErinnerungen() {
     Logger.log('Speaker — Fehler: ' + err)
   }
 
-  try {
-    fotoFreigabenAbgleichen_(cmsEvents)
-  } catch (err) {
-    Logger.log('Fotos freigeben — Fehler: ' + err)
-  }
 
   const files = eventSheetDateien_()
   while (files.hasNext()) {
@@ -1874,6 +1869,12 @@ function verarbeiteEventTabelle_(sheet, sheetName, jetzt, stunde, cmsEvents) {
   }
 
   sendeVorschauen_(sheet, werte, iEmail, iStatus, tageBis, stunde, eventDaten, eventSlug, jetzt)
+
+  try {
+    fotoFreigabeTabelle_(sheet, kopf, werte, cms, eventDaten, tageBis, jetzt)
+  } catch (err) {
+    Logger.log('Fotos freigeben — "' + sheetName + '": ' + err)
+  }
 
   ERINNERUNG_STUFEN.forEach(function (stufe) {
     const faellig =
@@ -3413,82 +3414,47 @@ function speakerHinweise_() {
     'Nach dem Event: am Eventtag ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr bekommst du eine Vorschau, am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr geht die Mail raus. Trägst du jemanden erst nach dem Event ein (bis ' + SPEAKER_DANKE_FENSTER_TAGE + ' Tage danach), kommt sofort die Vorschau und die Mail am nächsten Tag.',
     'Folien: pro Event gibt es den Ordner Photos_Videos → <Event> → Slides. Beim Versand bekommt die Person Schreibzugriff darauf (ohne Google-Benachrichtigung), der Link steht in der Mail. Klappt der Zugriff nicht (z. B. keine Google-Adresse), entfällt der Link-Absatz – dann kommen die Folien als Antwort an request@.',
     'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Eventtag} („gestern“ / „am Dienstag“)',
-    'Fotos vom Abend: nur wenn du bei „Fotos freigeben“ eine Gruppe mit Speakern wählst. {Credit} = Credit der Fotografin / des Fotografen.',
+    'Fotos vom Abend: wird zurzeit nicht automatisch an Speaker verschickt (Freigabe nur an Gäste). Text bleibt als Vorlage.',
     'Links: {Upload-Link: Text} (Slides-Ordner) · {Fotos-Link: Text} · {Eventseite-Link: Text}',
   ].concat(gemeinsameHinweise_())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FOTOS FREIGEBEN (Photos_watermarked eines Events)
+//  FOTOS FREIGEBEN (Photos_watermarked eines Events) — nur an Gaeste
 //
-//  In "Media Contacts" → Einsätze waehlt Ann in der Spalte "Fotos freigeben",
-//  wer die Fotos bekommt (FOTO_FREIGABE_OPTIONEN). Ab dem Tag nach dem Event:
+//  Gesteuert in der Anmeldetabelle des Events, Tab "Fotos" (legt das Skript
+//  an): Zelle B1 "Fotos freigeben an" = Anwesende | Alle Angemeldeten.
+//  Ab dem Tag nach dem Event:
 //    1. Photos_watermarked wird auf "Jeder mit dem Link kann ansehen" gestellt
 //       (Ann, 24.10.2026: viele Gaeste haben keine Google-Adresse). Den Link
 //       bekommt nur die gewaehlte Gruppe per Mail.
 //    2. Beim ersten Lauf Vorschau der Mail "Fotos vom Abend" an Ann, Versand
-//       am naechsten Tag ab ERINNERUNG_SENDESTUNDE. Wer spaeter dazukommt
-//       (z. B. nachtraeglich als anwesend markiert), bekommt Zugriff und Mail
-//       beim naechsten Lauf.
-//  Gaeste: Text aus "Mail-Texte Gäste" (Abschnitt "Fotos vom Abend"),
-//  Sponsoren/Speaker aus ihren Docs. Die Link-Freigabe wird nie automatisch
-//  zurueckgenommen. Gemerkt: fotoMail_<slug> (JSON), fotoMailPlan_<slug>.
+//       am naechsten Tag ab ERINNERUNG_SENDESTUNDE. Spalte "Fotos-Mail" in der
+//       Gaesteliste haelt fest, wer sie bekommen hat. Wer spaeter dazukommt
+//       (z. B. nachtraeglich als anwesend markiert), bekommt sie beim naechsten
+//       Lauf.
+//  Text aus "Mail-Texte Gäste" (Abschnitt "Fotos vom Abend"). Die Link-Freigabe
+//  wird nie automatisch zurueckgenommen. Gemerkt: fotoTabPlan_<slug>.
 // ═══════════════════════════════════════════════════════════════════════════
-const FOTO_FREIGABE_OPTIONEN = [
-  'Anwesende',
-  'Anwesende + Sponsoren',
-  'Anwesende + Sponsoren + Speaker',
-  'Alle Angemeldeten + Sponsoren',
-]
+const FOTO_FREIGABE_OPTIONEN = ['Anwesende', 'Alle Angemeldeten']
+const FOTO_TAB = 'Fotos'
 
-// Empfaenger je Auswahl: [{ email, gruppe: gaeste|sponsoren|speaker, anrede, vorname, name, firma }]
-function fotoEmpfaenger_(ev, wahl) {
-  const slug = String(ev.slug)
-  const out = []
-  const gesehen = {}
-  const dazu = function (p) {
-    const e = String(p.email || '').trim().toLowerCase()
-    if (!e || gesehen[e]) return
-    gesehen[e] = true
-    p.email = e
-    out.push(p)
-  }
-  const nurAnwesende = wahl.indexOf('Anwesende') === 0
-  let anwesendGenutzt = false
-  const sheet = findeEventSheetPerSlug_(slug)
-  if (sheet) {
-    const w = sheet.getDataRange().getValues()
-    const k = w[0]
-    const i = function (n) { return k.indexOf(n) }
-    for (let r = 1; r < w.length; r++) {
-      const z = w[r]
-      if (i('Status') >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(z[i('Status')] || ''))) continue
-      const da = i('Anwesend') >= 0 && !!String(z[i('Anwesend')] || '').trim()
-      if (da) anwesendGenutzt = true
-      if (nurAnwesende && !da) continue
-      dazu({
-        email: z[i('E-Mail')], gruppe: 'gaeste',
-        anrede: anrede_(i('Anrede') >= 0 ? z[i('Anrede')] : '', i('Vorname') >= 0 ? z[i('Vorname')] : ''),
-      })
-    }
-  }
-  const ausKontakten = function (ss, spalten, gruppe) {
-    const ew = ss.getSheetByName('Einsätze').getDataRange().getValues()
-    const kw = ss.getSheetByName('Kontakte').getDataRange().getValues()
-    const zeile = ew.filter(function (z) { return String(z[ew[0].indexOf('Slug')]) === slug })[0]
-    if (!zeile) return
-    spalten.forEach(function (sp) {
-      const name = String(zeile[ew[0].indexOf(sp)] || '').trim().toLowerCase()
-      if (!name) return
-      const kz = kw.filter(function (z) { return String(z[kw[0].indexOf('Name')]).trim().toLowerCase() === name })[0]
-      if (!kz) return
-      const v = function (n) { return kw[0].indexOf(n) >= 0 ? String(kz[kw[0].indexOf(n)] || '').trim() : '' }
-      dazu({ email: v('E-Mail'), gruppe: gruppe, name: v('Name'), firma: v('Firma'), anrede: v('Anrede (w/m)') })
-    })
-  }
-  if (wahl.indexOf('Sponsoren') >= 0) ausKontakten(sponsorSpreadsheet_(), SPONSOR_SPALTEN, 'sponsoren')
-  if (wahl.indexOf('Speaker') >= 0) ausKontakten(speakerSpreadsheet_(), SPEAKER_SPALTEN, 'speaker')
-  return { liste: out, anwesendGenutzt: anwesendGenutzt }
+// Tab "Fotos" in der Anmeldetabelle (einmalig anlegen). Rueckgabe: das Blatt.
+function fotoTab_(ss) {
+  let tab = ss.getSheetByName(FOTO_TAB)
+  if (tab) return tab
+  tab = ss.insertSheet(FOTO_TAB)
+  tab.getRange(1, 1, 3, 1).setValues([['Fotos freigeben an'], ['Stand'], ['Ordner']]).setFontWeight('bold')
+  tab.getRange(1, 2).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList(FOTO_FREIGABE_OPTIONEN, true).build())
+  tab.getRange(5, 1).setValue(
+    'Ab dem Tag nach dem Event: Wählst du in B1 eine Gruppe, wird der Ordner Photos_watermarked per Link ' +
+    'freigegeben. Du bekommst eine Vorschau der Mail „Fotos vom Abend“, am nächsten Tag ab ' +
+    ERINNERUNG_SENDESTUNDE + ' Uhr geht sie an die Gruppe. Wer sie bekommen hat, steht in der Gästeliste ' +
+    'in der Spalte „Fotos-Mail“. Text ändern: Mail-Texte Gäste → „Fotos vom Abend“.')
+  tab.setColumnWidth(1, 170)
+  tab.setColumnWidth(2, 520)
+  return tab
 }
 
 // "Jeder mit dem Link kann ansehen" fuer den Ordner (gilt auch fuer alle
@@ -3501,115 +3467,115 @@ function fotoLinkFreigabe_(ordner) {
 }
 
 // Credit der Fotografin / des Fotografen (Media Contacts) fuer ein Event.
-function fotoCredit_(ss, slug) {
-  const ew = ss.getSheetByName('Einsätze').getDataRange().getValues()
-  const kw = ss.getSheetByName('Kontakte').getDataRange().getValues()
-  const zeile = ew.filter(function (z) { return String(z[ew[0].indexOf('Slug')]) === slug })[0]
-  const name = zeile ? String(zeile[ew[0].indexOf('Fotograf:in')] || '').trim().toLowerCase() : ''
-  const kz = name && kw.filter(function (z) { return String(z[kw[0].indexOf('Name')]).trim().toLowerCase() === name })[0]
-  return kz ? String(kz[kw[0].indexOf('Credit im Wasserzeichen')] || '').trim() : ''
-}
-
-function fotoMailFuer_(p, ev, link, credit) {
-  if (p.gruppe === 'gaeste') {
-    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
-    return fotoMail_({
-      anrede: p.anrede, slug: String(ev.slug), email: p.email, titel: String(ev.title || '').trim(),
-      datum: String(ev.date || ''), zeit: String(ev.time || ''), ort: String(ev.location || ''),
-      referent: referentText_(ev.speakerName, ev.speakerRole, ev.speakerCompany), start: start,
-      fotolink: link, credit: credit,
-    })
+function fotoCredit_(slug) {
+  try {
+    const ss = medienSpreadsheet_()
+    const ew = ss.getSheetByName('Einsätze').getDataRange().getValues()
+    const kw = ss.getSheetByName('Kontakte').getDataRange().getValues()
+    const zeile = ew.filter(function (z) { return String(z[ew[0].indexOf('Slug')]) === slug })[0]
+    const name = zeile ? String(zeile[ew[0].indexOf('Fotograf:in')] || '').trim().toLowerCase() : ''
+    const kz = name && kw.filter(function (z) { return String(z[kw[0].indexOf('Name')]).trim().toLowerCase() === name })[0]
+    return kz ? String(kz[kw[0].indexOf('Credit im Wasserzeichen')] || '').trim() : ''
+  } catch (err) {
+    return ''
   }
-  const k = { name: p.name, firma: p.firma, anrede: p.anrede, email: p.email }
-  const d = p.gruppe === 'sponsoren' ? sponsorMailDaten_(k, ev, {}) : speakerMailDaten_(k, ev, '')
-  d.credit = credit
-  d.links.fotos = link
-  return gruppenMail_(mailGruppe_(p.gruppe), 'fotos', d)
 }
 
-// Laeuft mit sendeErinnerungen.
-function fotoFreigabenAbgleichen_(cmsEvents) {
-  const ss = medienSpreadsheet_()
-  const einsaetze = ss.getSheetByName('Einsätze')
-  if (!einsaetze) return
+// Laeuft je Anmeldetabelle in verarbeiteEventTabelle_. e = eventDaten-Funktion.
+function fotoFreigabeTabelle_(sheet, kopf, werte, cms, eventDaten, tageBis, jetzt) {
+  const tab = fotoTab_(sheet.getParent())
+  const wahl = String(tab.getRange(1, 2).getValue() || '').trim()
+  if (!wahl) return
+  const stand = function (t) { tab.getRange(2, 2).setValue(t + ' · ' + jetztText_()) }
+  if (tageBis > -1) {
+    stand('wartet bis zum Tag nach dem Event')
+    return
+  }
+  const slug = String(cms.slug || '')
+  const ordner = eventOrdner_(cms).unter.Photos_watermarked
+  tab.getRange(3, 2).setValue(ordner.getUrl())
+  if (!ordner.getFiles().hasNext() && !ordner.getFolders().hasNext()) {
+    stand('Photos_watermarked ist noch leer – nichts freigegeben')
+    return
+  }
+  const iEmail = kopf.indexOf('E-Mail')
+  const iStatus = kopf.indexOf('Status')
+  const iAnwesend = kopf.indexOf('Anwesend')
+  const nurAnwesende = wahl === 'Anwesende'
+  const empf = []
+  let anwesendGenutzt = false
+  for (let r = 1; r < werte.length; r++) {
+    const email = String(werte[r][iEmail] || '').trim()
+    if (!email) continue
+    if (iStatus >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(werte[r][iStatus] || ''))) continue
+    const da = iAnwesend >= 0 && !!String(werte[r][iAnwesend] || '').trim()
+    if (da) anwesendGenutzt = true
+    if (nurAnwesende && !da) continue
+    empf.push(r)
+  }
+  if (nurAnwesende && !anwesendGenutzt) {
+    stand('Niemand ist als anwesend markiert (Check-in nicht genutzt?) – bitte „Alle Angemeldeten“ wählen oder Anwesend eintragen')
+    return
+  }
+  try {
+    if (fotoLinkFreigabe_(ordner)) Logger.log('Fotos — Link-Freigabe gesetzt (' + slug + ')')
+  } catch (err) {
+    stand('Link-Freigabe nicht möglich (Google-Workspace-Einstellung?): ' + err + ' – keine Mails verschickt')
+    return
+  }
+  const link = ordner.getUrl()
+  const credit = fotoCredit_(slug)
+  const spMail = ensureColumn_(sheet, 'Fotos-Mail')
+  const mails = sheet.getRange(1, spMail, werte.length, 1).getValues()
+  const erledigt = {}
+  for (let r = 1; r < werte.length; r++) {
+    if (String(mails[r][0] || '').trim()) erledigt[String(werte[r][iEmail] || '').trim().toLowerCase()] = true
+  }
+  const offen = empf.filter(function (r) { return !erledigt[String(werte[r][iEmail]).trim().toLowerCase()] })
+
   const props = PropertiesService.getScriptProperties()
-  const spWahl = ensureColumn_(einsaetze, 'Fotos freigeben')
-  const spStand = ensureColumn_(einsaetze, 'Freigabe-Stand')
-  if (props.getProperty('fotoFreigabeAuswahl') !== FOTO_FREIGABE_OPTIONEN.join('|')) {
-    einsaetze.getRange(2, spWahl, 200, 1).setDataValidation(
-      SpreadsheetApp.newDataValidation().requireValueInList(FOTO_FREIGABE_OPTIONEN, true).build())
-    props.setProperty('fotoFreigabeAuswahl', FOTO_FREIGABE_OPTIONEN.join('|'))
-  }
-  const w = einsaetze.getDataRange().getValues()
-  const iSlug = w[0].indexOf('Slug')
-  const jetzt = new Date()
+  const planKey = 'fotoTabPlan_' + slug
+  const plan = Number(props.getProperty(planKey) || 0)
   const ab = Number(Utilities.formatDate(jetzt, 'Europe/Berlin', 'H')) >= ERINNERUNG_SENDESTUNDE
-
-  cmsEvents.forEach(function (ev) {
-    const slug = String(ev.slug || '').trim()
-    let r = -1
-    for (let i = 1; i < w.length; i++) if (String(w[i][iSlug]) === slug) r = i
-    if (r < 0) return
-    const wahl = String(w[r][spWahl - 1] || '').trim()
-    if (!wahl) return
-    const stand = function (t) { einsaetze.getRange(r + 1, spStand).setValue(t + ' · ' + jetztText_()) }
-    const start = parseEventDatum_(String(ev.date || ''), String(ev.time || ''))
-    if (!start || tagesDifferenz_(jetzt, start) > -1) {
-      stand('wartet bis zum Tag nach dem Event')
+  const fuer = function (zeile, email) {
+    const e = eventDaten(zeile, email)
+    e.fotolink = link
+    e.credit = credit
+    return fotoMail_(e)
+  }
+  if (!plan) {
+    const beispiel = werte[empf[0]] || werte[1]
+    vorschauAnAnn_('fotoTabVorschau_' + slug, fuer(beispiel, VORSCHAU_EMPFAENGER),
+      'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + offen.length + ' Personen (' + wahl + ')', mailGruppe_('gaeste'), slug)
+    props.setProperty(planKey, String(morgenUm_(jetzt)))
+    stand(offen.length + ' Personen (' + wahl + ') · Link-Freigabe aktiv · Vorschau an dich, Versand morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr')
+    return
+  }
+  if (jetzt.getTime() < plan || !ab) return
+  let n = 0
+  offen.forEach(function (r) {
+    const email = String(werte[r][iEmail]).trim()
+    if (erledigt[email.toLowerCase()]) {
+      sheet.getRange(r + 1, spMail).setValue('Dublette')
       return
     }
-    const ordner = eventOrdner_(ev).unter.Photos_watermarked
-    if (!ordner.getFiles().hasNext() && !ordner.getFolders().hasNext()) {
-      stand('Photos_watermarked ist noch leer – nichts freigegeben')
-      return
-    }
-    const e = fotoEmpfaenger_(ev, wahl)
-    if (wahl.indexOf('Anwesende') === 0 && !e.anwesendGenutzt) {
-      stand('Niemand ist als anwesend markiert (Check-in nicht genutzt?) – bitte „Alle Angemeldeten …“ wählen oder Anwesend eintragen')
-      return
-    }
-    const link = ordner.getUrl()
-    const credit = fotoCredit_(ss, slug)
+    if (MailApp.getRemainingDailyQuota() < 2) return
     try {
-      if (fotoLinkFreigabe_(ordner)) Logger.log('Fotos — Link-Freigabe gesetzt (' + slug + ')')
+      const m = fuer(werte[r], email)
+      sendeTeilnehmerMail_(email, m.subject, m.htmlBody)
+      sheet.getRange(r + 1, spMail).setValue(jetztText_())
+      erledigt[email.toLowerCase()] = true
+      n++
+      Utilities.sleep(300)
     } catch (err) {
-      stand('Link-Freigabe nicht möglich (Google-Workspace-Einstellung?): ' + err + ' – keine Mails verschickt')
-      return
+      sheet.getRange(r + 1, spMail).setValue('FEHLER: ' + err)
     }
-    const gemailt = JSON.parse(props.getProperty('fotoMail_' + slug) || '{}')
-
-    // Mails: erst Vorschau an Ann (je Gruppe eine), Versand am naechsten Tag.
-    const planKey = 'fotoMailPlan_' + slug
-    const plan = Number(props.getProperty(planKey) || 0)
-    if (!plan) {
-      const beispiel = { gaeste: { gruppe: 'gaeste', email: VORSCHAU_EMPFAENGER, anrede: anrede_('w', 'Ann-Kathrin') } }
-      e.liste.forEach(function (p) { if (p.gruppe !== 'gaeste' && !beispiel[p.gruppe]) beispiel[p.gruppe] = p })
-      const n = e.liste.length
-      Object.keys(beispiel).forEach(function (gr) {
-        vorschauAnAnn_('fotoVorschau_' + slug + '_' + gr, fotoMailFuer_(beispiel[gr], ev, link, credit),
-          'morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr an ' + n + ' Personen (' + wahl + ')', mailGruppe_(gr), slug)
-      })
-      props.setProperty(planKey, String(morgenUm_(jetzt)))
-    } else if (jetzt.getTime() >= plan && ab) {
-      e.liste.forEach(function (p) {
-        if (gemailt[p.email]) return
-        if (MailApp.getRemainingDailyQuota() < 2) return
-        try {
-          const m = fotoMailFuer_(p, ev, link, credit)
-          sendeTeilnehmerMail_(p.email, m.subject, m.htmlBody)
-          gemailt[p.email] = jetztText_()
-          Utilities.sleep(300)
-        } catch (err) {
-          Logger.log('Fotos — Mail an ' + p.email + ' (' + slug + ') fehlgeschlagen: ' + err)
-        }
-      })
-      props.setProperty('fotoMail_' + slug, JSON.stringify(gemailt))
-    }
-    stand(
-      e.liste.length + ' Personen (' + wahl + ') · Link-Freigabe aktiv · ' +
-      Object.keys(gemailt).length + ' Mails' + (plan ? '' : ' · Vorschau an dich, Versand morgen ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr'),
-    )
   })
+  const gesamt = empf.length
+  const fertig = empf.filter(function (r) { return erledigt[String(werte[r][iEmail]).trim().toLowerCase()] }).length
+  if (n || !String(tab.getRange(2, 2).getValue()).match(/Mails/)) {
+    stand(gesamt + ' Personen (' + wahl + ') · Link-Freigabe aktiv · ' + fertig + ' Mails verschickt')
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3959,7 +3925,7 @@ function gaesteHinweise_() {
     'Fett, kursiv und normale Links aus dem Doc werden übernommen.',
     'Platzhalter: {Anrede} (z. B. „Liebe Maria“) · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} („gestern“ / „am Dienstag“) · {Minuten}',
     'Links mit eigenem Text: {Abmelde-Link: Text} · {Feedback-Link: Text} · {Referent-Link: Text} · {Maps-Link: Text} · {Eventseite-Link: Text} · {Ich-war-da-Link: Text} (der Absatz wird zum grauen Kasten) · {Fotos-Link: Text} (nur „Fotos vom Abend“, Ordner Photos_watermarked).',
-    'Fotos vom Abend: geht erst raus, wenn du in „Media Contacts“ → Einsätze bei „Fotos freigeben“ eine Gruppe wählst. {Credit} = Credit der Fotografin / des Fotografen aus Media Contacts.',
+    'Fotos vom Abend: geht erst raus, wenn du in der Anmeldetabelle des Events im Tab „Fotos“ eine Gruppe wählst (Anwesende / Alle Angemeldeten). {Credit} = Credit der Fotografin / des Fotografen aus Media Contacts.',
     'Kalenderdatei (.ics) und Signatur hängen automatisch an. Datum, Zeit und Ort kommen immer aktuell aus dem CMS.',
     'Versand: Bestätigung sofort · 1 Woche und 1 Tag vorher ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr · ca. 3 Std. vorher · Rückblick am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr. Am Vortag kommt jede Mail als [VORSCHAU] an dich.',
   ]
@@ -3986,7 +3952,7 @@ function sponsorHinweise_() {
     'Änderung: sofort, sobald du Datum, Zeit oder Ort im CMS änderst, mit neuer Kalenderdatei (Kopie an dich).',
     'Nach dem Event: am Tag danach ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr, mit der Bitte um Folien/Material für LinkedIn und Instagram (Freigabe vor Veröffentlichung). Vorschau am Eventtag – ein persönlicher Satz zum Abend macht die Mail stärker.',
     'Platzhalter: {Anrede} („Liebe Yvonne“) · {Vorname} · {Firma} · {Titel} · {Kurztitel} · {Datum} · {Zeit} · {Ort} · {Referent} · {Eventtag} · {Vorher} (alter Termin, nur in „Änderung“)',
-    'Fotos vom Abend: nur wenn du bei „Fotos freigeben“ eine Gruppe mit Sponsoren wählst. {Credit} = Credit der Fotografin / des Fotografen.',
+    'Fotos vom Abend: wird zurzeit nicht automatisch an Sponsoren verschickt (Freigabe nur an Gäste). Text bleibt als Vorlage.',
     'Links: {Maps-Link: Text} · {Eventseite-Link: Text} · {Fotos-Link: Text}. [EVENTKARTE] in einer eigenen Zeile = Eventbild.',
   ].concat(gemeinsameHinweise_())
 }
@@ -4554,7 +4520,7 @@ function mailArten_() {
     ['da', 'Rückblick – war da', 'am Tag nach dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', nachfassDaMail_],
     ['nichtda', 'Rückblick – nicht da', 'am Tag nach dem Event, ab ' + ERINNERUNG_SENDESTUNDE +
       ' Uhr – nur wenn der Check-in genutzt wurde und die Person nicht eingecheckt hat', nachfassNichtDaMail_],
-    ['fotos', 'Fotos vom Abend', 'sobald du in „Media Contacts“ → Einsätze „Fotos freigeben“ wählst: Vorschau an dich, Versand am nächsten Tag ab ' +
+    ['fotos', 'Fotos vom Abend', 'sobald du in der Anmeldetabelle im Tab „Fotos“ eine Gruppe wählst: Vorschau an dich, Versand am nächsten Tag ab ' +
       ERINNERUNG_SENDESTUNDE + ' Uhr', fotoMail_],
   ]
 }
