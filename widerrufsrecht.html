@@ -8,20 +8,50 @@
     <meta name="robots" content="noindex" />
   </head>
   <body>
-    <header class="legal-header">
-      <a href="/">← NewBuild Kollektiv</a>
-    </header>
-
-    <main class="legal-content">
-      <h1>Widerrufsrecht</h1>
-
-      <div class="legal-todo">
-        Diese Seite ist noch nicht vollständig — es ist noch offen, ob und
-        wofür ein Widerrufsrecht überhaupt gilt. Siehe Fragenliste im
-        Projekt-Chat.
+    <div class="event-hero">
+      <div class="mobile-nav-bar">
+        <h1 class="hero__logo">
+          <img src="/logo-wordmark.png" alt="NewBuild Kollektiv" width="815" height="195" />
+        </h1>
+        <button
+          type="button"
+          class="mobile-nav-toggle"
+          aria-label="Menü öffnen"
+          aria-expanded="false"
+          aria-controls="mobile-nav-panel"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
       </div>
+      <nav id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Hauptnavigation" hidden>
+        <a href="/#mission">Mission</a>
+        <a href="/#events">Events</a>
+        <a href="/#sponsoring">Sponsoring</a>
+        <a href="/#about">About</a>
+      </nav>
 
-      <p id="widerrufsrecht-body"></p>
+      <header class="site-nav">
+        <div class="site-nav__pill">
+          <a href="/" class="site-nav__logo" aria-label="NewBuild Kollektiv Startseite">
+            <img src="/logo-mark.png" alt="" width="29" height="28" />
+          </a>
+          <nav aria-label="Hauptnavigation">
+            <a href="/#mission">Mission</a>
+            <a href="/#events">Events</a>
+            <a href="/#sponsoring">Sponsoring</a>
+            <a href="/#about">About</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="grid event-detail__intro legal-intro">
+        <p class="section__eyebrow">Rechtliches</p>
+        <h2 class="event-detail__title">Widerrufsrecht</h2>
+      </section>
+    </div>
+
+    <main class="event-form-section legal-section">
+      <div class="legal-sections" id="legal-sections" data-legal-page="widerrufsrecht"></div>
     </main>
 
     <footer class="site-footer">

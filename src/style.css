@@ -1285,56 +1285,65 @@ ul {
 }
 
 /* ---------- Rechts-Seiten (Impressum/Datenschutz/Widerruf) ----------
-   Einfache eigenständige Seiten, kein Grid-/Balken-System noetig — reiner
-   Lesetext auf demselben Hintergrund/Look wie die Startseite. */
-.legal-header {
-  padding: var(--space-6) var(--grid-margin);
+   Gleiches Layout wie die Eventseiten (Absprache 2026-11-02): dunkler Kopf
+   (.event-hero) mit Navigation und Titel, Inhalt im hellen Bereich
+   (.event-form-section). Je Abschnitt Ueberschrift als Versal-Label in
+   Spalte 2-4 (wie "Anmeldung"), Text in Spalte 5-12 (wie das Formular). */
+.legal-intro {
+  padding-block-end: calc(2 * var(--balken));
 }
 
-.legal-header a {
-  text-decoration: none;
+.legal-section {
+  display: block;
+}
+
+.legal-block + .legal-block {
+  margin-block-start: var(--space-8);
+}
+
+.legal-block__heading {
+  grid-column: 2 / 5;
+  margin: 0;
+  padding-inline-end: var(--space-5);
   text-transform: uppercase;
-  font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-capital);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.4;
 }
 
-.legal-content {
-  max-width: 800px;
-  /* Linksbündig statt zentriert — startet am linken Seitenrand wie der Rest der Website */
-  margin-inline: 0;
-  padding: var(--space-8) var(--grid-margin) var(--space-9);
-  text-align: left;
+.legal-block__body {
+  grid-column: 5 / 12;
 }
 
-.legal-content h1 {
-  font-size: var(--font-size-bold);
-  line-height: var(--line-height-bold);
-  margin-block-end: var(--space-7);
-}
-
-.legal-content h2 {
-  font-size: var(--font-size-regular-text);
-  margin-block: var(--space-7) var(--space-3);
-}
-
-.legal-content p,
-.legal-content li {
+.legal-block__body p {
+  margin: 0 0 var(--space-4);
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
-  color: var(--color-muted);
-}
-
-.legal-content ul {
-  list-style: disc;
-  padding-inline-start: var(--space-6);
-}
-
-.legal-content .legal-todo {
-  border: var(--line-thickness) dashed var(--color-border);
-  border-radius: 8px;
-  padding: var(--space-5);
-  margin-block: var(--space-5);
   color: var(--color-text);
+}
+
+.legal-block__body p:last-child {
+  margin-block-end: 0;
+}
+
+@media (max-width: 768px) {
+  .legal-intro {
+    padding-block-end: var(--space-8);
+  }
+
+  .legal-block + .legal-block {
+    margin-block-start: var(--space-7);
+  }
+
+  .legal-block__heading,
+  .legal-block__body {
+    grid-column: 1 / -1;
+  }
+
+  .legal-block__heading {
+    margin-block-end: var(--space-3);
+  }
 }
 
 /* ---------- Event-Detailseite (events/<slug>/index.html) ----------

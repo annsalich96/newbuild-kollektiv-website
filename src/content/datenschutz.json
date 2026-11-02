@@ -2,31 +2,55 @@
   "sections": [
     {
       "heading": "Verantwortlicher",
-      "body": "[Name/Firma, Anschrift, Kontakt — folgt, identisch zum Impressum]"
+      "body": "NewBuild Kollektiv\nAnn-Kathrin Salich\nWilmersdorfer Str. 108–111\n10627 Berlin\n\nE-Mail: request@newbuild-kollektiv.com\nTelefon: +49 170 2828889"
     },
     {
-      "heading": "Hosting",
-      "body": "Diese Website wird bei Cloudflare Pages gehostet. [Details zum Auftragsverarbeitungsvertrag folgen]"
+      "heading": "Das Wichtigste in Kürze",
+      "body": "Wir verarbeiten personenbezogene Daten nur, soweit das für den Betrieb dieser Website, die Organisation unserer Veranstaltungen und den Austausch mit unserer Community erforderlich ist.\n\nDiese Website setzt keine Cookies, nutzt keine Analyse- oder Tracking-Werkzeuge und lädt keine Schriften oder sonstigen Inhalte von Drittanbietern nach. Daten werden nur dann an Dienstleister übermittelt, wenn Sie ein Formular absenden (siehe „Dienstleister“)."
     },
     {
-      "heading": "Kontaktaufnahme",
-      "body": "[Falls es ein Kontaktformular gibt: welche Daten werden erhoben, wie lange gespeichert — folgt]"
+      "heading": "Hosting und Server-Logfiles",
+      "body": "Diese Website wird bei Cloudflare Pages gehostet (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA). Beim Aufruf der Website verarbeitet Cloudflare technisch notwendige Daten, damit die Seiten ausgeliefert und vor Angriffen geschützt werden können: IP-Adresse, Datum und Uhrzeit des Zugriffs, aufgerufene Seite, Browser und Betriebssystem sowie die zuvor besuchte Seite. Diese Daten werden nicht mit anderen Daten zusammengeführt und nur kurzfristig gespeichert.\n\nRechtsgrundlage ist unser berechtigtes Interesse an einer sicheren und stabilen Bereitstellung der Website (Art. 6 Abs. 1 lit. f DSGVO). Mit Cloudflare besteht ein Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO). Cloudflare ist nach dem EU-US Data Privacy Framework zertifiziert; eine Übermittlung in die USA stützt sich auf den entsprechenden Angemessenheitsbeschluss der EU-Kommission (Art. 45 DSGVO).\n\nDie Verbindung zu dieser Website ist per TLS verschlüsselt."
     },
     {
-      "heading": "Cookies und Tracking",
-      "body": "[Werden Analyse-/Tracking-Tools eingesetzt (z.B. Google Analytics)? Falls ja, welche — folgt]"
+      "heading": "Anmeldung zu Veranstaltungen",
+      "body": "Wenn Sie sich für eine Veranstaltung anmelden, verarbeiten wir Anrede, Vor- und Nachname, Unternehmen, E-Mail-Adresse sowie – falls angegeben – Unternehmensadresse und Telefonnummer.\n\nWir nutzen diese Daten, um Ihre Teilnahme zu organisieren: Anmeldebestätigung mit Kalenderdatei, organisatorische E-Mails vor der Veranstaltung (z. B. Erinnerung, Ort und Anfahrt), Einlass und Check-in vor Ort sowie E-Mails nach der Veranstaltung (Dank, Bitte um Feedback, ggf. Link zu den Fotos). Rechtsgrundlage ist die Durchführung der Teilnahme (Art. 6 Abs. 1 lit. b DSGVO).\n\nÜber einen Link in jeder E-Mail können Sie sich jederzeit von der Veranstaltung abmelden.\n\nDamit wir wiederholte Anmeldungen derselben Person zuordnen können, führen wir eine Übersicht bisheriger Teilnehmender (Name, Unternehmen, Kontaktdaten, besuchte Veranstaltungen). Rechtsgrundlage ist unser berechtigtes Interesse an der Organisation unserer Veranstaltungsreihe (Art. 6 Abs. 1 lit. f DSGVO). Wir löschen diese Daten, wenn Sie widersprechen oder die Löschung verlangen, spätestens drei Jahre nach Ihrer letzten Teilnahme."
     },
     {
-      "heading": "E-Mail-Versand",
-      "body": "[Welcher E-Mail-Anbieter wird für info@newbuildkollektiv.com genutzt — folgt]"
+      "heading": "Newsletter und Einladungen",
+      "body": "Über unseren Newsletter informieren wir über kommende Veranstaltungen des NewBuild Kollektiv. Sie können sich auf der Seite „Newsletter“ oder bei der Anmeldung zu einer Veranstaltung (Häkchen „Bitte informiere mich über anstehende Events“) dafür eintragen.\n\nBei der Anmeldung über die Newsletter-Seite verarbeiten wir Anrede, Vor- und Nachname, Unternehmen, E-Mail-Adresse, Berufsstand sowie – falls angegeben – Unternehmensadresse, Telefonnummer und einen Profil-Link (z. B. LinkedIn, Instagram oder Website).\n\nDouble-Opt-in: Nach der Anmeldung erhalten Sie eine E-Mail mit einem Link, über den Sie Ihre E-Mail-Adresse bestätigen. Erst danach wird Ihre Anmeldung bearbeitet. Wir speichern den Zeitpunkt der Anmeldung und der Bestätigung, um Ihre Einwilligung nachweisen zu können.\n\nPersönliche Prüfung: Damit die Runde fachlich passt, prüfen wir jede Anmeldung persönlich anhand Ihrer Angaben und – falls angegeben – des öffentlich zugänglichen Profils, das Sie verlinkt haben. Die Entscheidung trifft ein Mensch, es findet keine automatisierte Entscheidung statt. Über eine Aufnahme informieren wir Sie per E-Mail.\n\nRechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Sie können sie jederzeit mit Wirkung für die Zukunft widerrufen, z. B. per Antwort auf eine unserer E-Mails oder an request@newbuild-kollektiv.com. Danach löschen wir Ihre Daten aus dem Verteiler. Den Nachweis der Einwilligung bewahren wir auf, solange wir ihn zur Abwehr von Ansprüchen benötigen (Art. 6 Abs. 1 lit. f DSGVO). Wird eine Anmeldung nicht angenommen, löschen wir die Angaben spätestens sechs Monate danach."
+    },
+    {
+      "heading": "Weitere Formulare",
+      "body": "Über weitere Formulare können Sie sich als Referent:in vorschlagen (Name, Kontaktdaten, Unternehmen, Thema), uns Feedback zu einer Veranstaltung geben (Ihre Antworten, E-Mail-Adresse nur freiwillig), sich vor Ort einchecken (Name) oder Foto- und Videoaufnahmen widersprechen (Name).\n\nWir verarbeiten diese Angaben ausschließlich für den jeweiligen Zweck. Rechtsgrundlage ist unser berechtigtes Interesse an der Organisation und Verbesserung unserer Veranstaltungen bzw. Ihre Anfrage (Art. 6 Abs. 1 lit. b und f DSGVO); beim Foto-Widerspruch die Wahrung Ihrer Rechte. Wir löschen die Angaben, sobald sie für den Zweck nicht mehr erforderlich sind."
+    },
+    {
+      "heading": "Kontakt per E-Mail oder Telefon",
+      "body": "Wenn Sie uns per E-Mail oder Telefon kontaktieren, verarbeiten wir Ihre Angaben, um Ihre Anfrage zu beantworten (Art. 6 Abs. 1 lit. b bzw. f DSGVO). Wir löschen sie, sobald die Anfrage erledigt ist, sofern keine gesetzlichen Aufbewahrungspflichten bestehen."
+    },
+    {
+      "heading": "Dienstleister",
+      "body": "Formulare, Teilnehmerlisten und E-Mail-Versand laufen über Google Workspace (Google Apps Script, Google Sheets, Google Drive, Gmail) der Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Beim Absenden eines Formulars stellt Ihr Browser eine Verbindung zu Servern von Google her; dabei wird Ihre IP-Adresse an Google übermittelt.\n\nMit Google besteht ein Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO). Eine Verarbeitung in den USA ist nicht ausgeschlossen; Google LLC ist nach dem EU-US Data Privacy Framework zertifiziert (Art. 45 DSGVO), ergänzend gelten Standardvertragsklauseln (Art. 46 DSGVO).\n\nDarüber hinaus geben wir personenbezogene Daten nicht an Dritte weiter, außer wie im Abschnitt zu Foto- und Videoaufnahmen beschrieben oder wenn wir gesetzlich dazu verpflichtet sind. Wir verkaufen keine Daten."
     },
     {
       "heading": "Foto- und Videoaufnahmen bei Veranstaltungen",
       "body": "Bei Veranstaltungen des NewBuild Kollektiv werden Foto- und Videoaufnahmen angefertigt. Diese dienen der Dokumentation und Nachberichterstattung sowie der Öffentlichkeitsarbeit des NewBuild Kollektiv, insbesondere der Veröffentlichung auf dieser Website, in sozialen Netzwerken (u. a. Instagram, LinkedIn), im Newsletter, in Präsentationen und gegenüber der Presse.\n\nRechtsgrundlage für Übersichts-, Saal- und Stimmungsaufnahmen, auf denen teilnehmende Personen nur als Teil der Veranstaltung bzw. einer Personenmehrheit erscheinen, ist unser berechtigtes Interesse an einer aussagekräftigen Darstellung unserer Veranstaltungen (Art. 6 Abs. 1 lit. f DSGVO) sowie § 23 Abs. 1 Nr. 3 KUG (Bilder von Versammlungen und ähnlichen Vorgängen). Werden einzelne Personen erkennbar in den Mittelpunkt gestellt oder für gezielte Porträt- oder Werbeaufnahmen abgebildet, stützen wir die Verarbeitung auf Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 22 KUG), die Sie vorab oder vor Ort erteilen und jederzeit mit Wirkung für die Zukunft widerrufen können.\n\nWeitergabe an Dritte: Das Bild- und Videomaterial kann an Sponsoren, Kooperations- und Veranstaltungspartner sowie an die Referentinnen und Referenten der jeweiligen Veranstaltung weitergegeben werden, die es zur eigenen Berichterstattung und Öffentlichkeitsarbeit über die Veranstaltung nutzen. Von uns mit der Erstellung und Bearbeitung des Materials beauftragte Fotografinnen und Fotografen, Videografinnen und Videografen sowie Agenturen werden als Auftragsverarbeiter auf Grundlage von Verträgen nach Art. 28 DSGVO für uns tätig. Bei einer Veröffentlichung in sozialen Netzwerken werden die Aufnahmen an die jeweilige Plattform übermittelt; dabei kann eine Verarbeitung auch außerhalb der Europäischen Union, insbesondere in den USA, erfolgen (Art. 44 ff. DSGVO; die Übermittlung wird, soweit erforderlich, durch Standardvertragsklauseln oder einen Angemessenheitsbeschluss abgesichert).\n\nWiderspruch und Widerruf: Sie können der Anfertigung und Veröffentlichung von Aufnahmen, die auf unserem berechtigten Interesse beruhen, jederzeit aus Gründen, die sich aus Ihrer besonderen Situation ergeben, widersprechen (Art. 21 DSGVO). Eine erteilte Einwilligung können Sie jederzeit widerrufen. Wenden Sie sich hierzu vor Ort an das Personal oder an request@newbuild-kollektiv.com. Bereits veröffentlichtes Material entfernen wir auf Ihren Wunsch aus den von uns kontrollierten Kanälen; auf bereits an Dritte weitergegebene, gedruckte oder von Dritten weiterverbreitete Kopien haben wir keinen Einfluss.\n\nSpeicherdauer: Wir bewahren das Bild- und Videomaterial so lange auf, wie es für die genannten Zwecke (Archiv, Rückblick, laufende Öffentlichkeitsarbeit) erforderlich ist, und löschen es, sobald der Zweck entfällt oder ein wirksamer Widerspruch bzw. Widerruf vorliegt."
     },
     {
+      "heading": "Links zu anderen Websites",
+      "body": "Unsere E-Mails und Seiten enthalten Links, z. B. zu Google Maps. Erst wenn Sie einen solchen Link anklicken, werden Daten an den jeweiligen Anbieter übertragen; dort gilt dessen Datenschutzerklärung."
+    },
+    {
       "heading": "Ihre Rechte",
-      "body": "[Auskunft, Berichtigung, Löschung, Widerspruch, Beschwerde bei einer Aufsichtsbehörde — folgt]"
+      "body": "Sie haben jederzeit das Recht auf Auskunft über Ihre bei uns gespeicherten Daten (Art. 15 DSGVO), auf Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20 DSGVO).\n\nWiderspruchsrecht: Soweit wir Daten auf Grundlage unseres berechtigten Interesses verarbeiten (Art. 6 Abs. 1 lit. f DSGVO), können Sie aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit widersprechen (Art. 21 DSGVO).\n\nEine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3 DSGVO). Eine formlose Nachricht an request@newbuild-kollektiv.com genügt.\n\nSie haben außerdem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Für uns zuständig ist die Berliner Beauftragte für Datenschutz und Informationsfreiheit, Alt-Moabit 59–61, 10555 Berlin, www.datenschutz-berlin.de."
+    },
+    {
+      "heading": "Pflicht zur Bereitstellung",
+      "body": "Sie sind nicht verpflichtet, uns personenbezogene Daten bereitzustellen. Ohne die als Pflichtfelder gekennzeichneten Angaben können wir Ihre Anmeldung zu einer Veranstaltung oder zum Newsletter allerdings nicht bearbeiten."
+    },
+    {
+      "heading": "Stand",
+      "body": "November 2026"
     }
   ]
 }

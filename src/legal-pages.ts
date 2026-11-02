@@ -2,33 +2,49 @@ import './style.css'
 import impressumData from './content/impressum.json'
 import datenschutzData from './content/datenschutz.json'
 import widerrufsrechtData from './content/widerrufsrecht.json'
+import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderFooter } from './footer'
 
+initStickyNav()
+initMobileNavToggle()
 renderFooter()
 
-// Rendert die Abschnitte (Ueberschrift + Text) von Impressum/Datenschutz in
-// den jeweiligen Container - welche Daten genutzt werden, steht als
-// data-legal-page auf dem Container (siehe impressum.html/
-// datenschutzerklaerung.html).
-const sectionsContainer = document.getElementById('legal-sections')
-if (sectionsContainer) {
-  const page = sectionsContainer.dataset.legalPage
-  const data = page === 'datenschutz' ? datenschutzData : page === 'impressum' ? impressumData : null
+// Rechtliche Seiten im Layout der Eventseiten: dunkler Kopf mit Navigation,
+// Inhalt im hellen Bereich - je Abschnitt Ueberschrift links (Spalte 2-4),
+// Text rechts (Spalte 5-12). Welche Daten, steht als data-legal-page am
+// Container (impressum.html / datenschutzerklaerung.html / widerrufsrecht.html).
+// Leerzeile im CMS-Text = neuer Absatz, einfacher Zeilenumbruch = <br>.
+type Section = { heading: string; body: string }
 
-  if (data) {
-    sectionsContainer.innerHTML = data.sections
-      .map(
-        (s) => `
-          <h2>${escapeHtml(s.heading)}</h2>
-          <p>${escapeHtml(s.body).replaceAll('\n', '<br />')}</p>`
-      )
-      .join('')
-  }
+const container = document.getElementById('legal-sections')
+const page = container?.dataset.legalPage
+const sections: Section[] =
+  page === 'datenschutz'
+    ? datenschutzData.sections
+    : page === 'impressum'
+      ? impressumData.sections
+      : page === 'widerrufsrecht'
+        ? [{ heading: 'Widerrufsrecht', body: widerrufsrechtData.body }]
+        : []
+
+if (container) {
+  container.innerHTML = sections
+    .map(
+      (s) => `
+        <section class="grid legal-block">
+          <h3 class="legal-block__heading">${escapeHtml(s.heading)}</h3>
+          <div class="legal-block__body">${paragraphs(s.body)}</div>
+        </section>`,
+    )
+    .join('')
 }
 
-const widerrufsrechtBody = document.getElementById('widerrufsrecht-body')
-if (widerrufsrechtBody) {
-  widerrufsrechtBody.textContent = widerrufsrechtData.body
+function paragraphs(text: string) {
+  return String(text || '')
+    .trim()
+    .split(/\n\s*\n/)
+    .map((p) => `<p>${escapeHtml(p.trim()).replaceAll('\n', '<br />')}</p>`)
+    .join('')
 }
 
 function escapeHtml(value: string) {
