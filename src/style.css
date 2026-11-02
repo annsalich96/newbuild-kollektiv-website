@@ -1150,7 +1150,9 @@ ul {
 
 .photo-gallery-2__slide {
   flex: 0 0 calc((6 * 122 + 5 * 16) * var(--px)); /* 6 Spalten inkl. 5 interner Gutter = 812px @1920 */
-  aspect-ratio: 812 / 500;
+  /* 500px + 2 Balken (2 x 122px) hoch bei 1920px (Absprache 2026-11-02) -
+     gilt fuer Startseite und Event-Galerien. */
+  aspect-ratio: 812 / 744;
   background: #1a1a1a;
   display: flex;
   align-items: center;
