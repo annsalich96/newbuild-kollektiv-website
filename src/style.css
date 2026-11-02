@@ -54,19 +54,26 @@ body {
   background: var(--color-bg);
 }
 
-/* Ein durchgehendes Hintergrundbild über die komplette Seitenhöhe —
-   alle Sections liegen transparent darüber. background-size 100% 100%
-   dehnt es proportional auf die tatsächliche Seitenlänge, damit die
-   Farbverläufe unabhängig vom exakten Content-Umfang an der relativ
-   gleichen Scroll-Position bleiben. */
+/* Ein durchgehender Farbverlauf über die komplette Seitenhöhe — alle
+   Sections liegen transparent darüber. background-size 100% 100% dehnt ihn
+   proportional auf die tatsächliche Seitenlänge, damit die Farbverläufe
+   unabhängig vom exakten Content-Umfang an der relativ gleichen
+   Scroll-Position bleiben.
+   Rauschen (Absprache 2026-11-02): Frueher war das Korn in background.jpg
+   (1440px breit) eingebacken und wurde mitgedehnt - auf grossen und
+   Retina-Bildschirmen wirkte es verpixelt. Jetzt: geglaetteter Verlauf
+   (background-smooth.jpg) + feine Rausch-Kachel (assets/noise.png, 512px
+   auf 256px angezeigt = auf Retina 1:1, nie hochskaliert), per Overlay
+   darueber. Dieselbe Kachel liegt auf .event-hero - ueberall gleiches Korn. */
 body::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: url("/background.jpg");
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  background:
+    url("./assets/noise.png") 0 0 / 256px 256px repeat,
+    url("/background-smooth.jpg") 0 0 / 100% 100% no-repeat;
+  background-blend-mode: overlay, normal;
 }
 
 h1,
@@ -1354,14 +1361,11 @@ ul {
 
 .event-hero {
   position: relative;
-  /* Oberste Ebene: Koernung, 1:1 aus public/background.jpg (Startseite)
-     herausgefiltert (nur das Rauschen, ohne Farbverlauf) und per Overlay
-     auf den Verlauf gelegt - sonst wirkte der Event-Hintergrund glatt/
-     digital neben der koernigen Startseite. Kachelbreite 33,333vw = 480 von
-     1440px Bildbreite, damit das Korn exakt so gross ist wie auf der
-     Startseite (dort wird das Bild auf 100vw gedehnt). */
+  /* Oberste Ebene: dieselbe feine Rausch-Kachel wie auf der Startseite
+     (body::before), per Overlay auf den Verlauf - fest 256px, nie
+     hochskaliert, damit das Korn nicht verpixelt wirkt. */
   background:
-    url("./assets/grain.png") 0 0 / 33.333vw auto repeat,
+    url("./assets/noise.png") 0 0 / 256px 256px repeat,
     linear-gradient(
       135deg,
       /* Eventfarbe aus Pages CMS (inline am .event-hero gesetzt, siehe

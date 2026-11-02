@@ -77,7 +77,7 @@
 
   /* ---------- Farben ---------- */
   /* Der eigentliche Verlauf (Orange -> Schwarz -> Violett) kommt aus einem
-     einzigen durchgehenden Hintergrundbild (public/background.jpg, siehe
+     einzigen durchgehenden Hintergrundbild (public/background-smooth.jpg + Rauschen, siehe
      body::before in style.css), nicht aus CSS-Gradients — die Vorlage
      nutzt eine organische, nicht linear reproduzierbare Verlaufstextur. */
   --color-bg: #000000;
