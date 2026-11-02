@@ -74,6 +74,10 @@ Jeder HTML-Entry-Point (`index.html`, `scripts/event-page.template.html`, `impre
 - **Kalenderdatei (.ics)** hängt seit 2026-10-08 auch an der Anmeldebestätigung (nicht mehr nur an der „1 Tag vorher“-Mail). UID ist pro Event fest (`<slug>@newbuild-kollektiv.com`), SEQUENCE = Zeitstempel — eine spätere .ics aktualisiert denselben Kalendereintrag statt einen zweiten anzulegen.
 - **Signatur** unter allen Teilnehmer-Mails: Konstanten `SIGNATUR_HTML` / `SIGNATUR_TEXT` oben in `Code.gs`.
 - **Newsletter-Anmeldung mit Prüfung** (seit 2026-11-02): Seite `/newsletter/` (`newsletter/index.html`, `src/newsletter-form.ts`) → Code.gs `newsletterAnmelden_` → Tabelle „Newsletter-Anfragen“ (General) + Eingangsmail mit Bestätigungslink (Double-Opt-in, `NEWSLETTER_DOI`) → nach Bestätigung Prüf-Mail an `NEWSLETTER_PRUEFER` mit Aufnehmen/Ablehnen (Links über `/f/?do=nlbestaetigen|nlfreigabe&t=…`) → Aufnehmen: Zusage-Mail (BCC Ann) + Eintrag in „History Anmeldungen“ (Newsletter = Ja, Spalten Quelle/Berufsstand/Profil). Ablehnen: keine Mail.
+- **Mehrere Speaker** (seit 2026-11-02): CMS-Liste `speakers` (name/role/company/bio/image) pro Event; ab 2 Einträgen wird der Speaker-Bereich zum Slider (gleiches Karussell `src/carousel.ts`). Ohne Liste gelten die Einzelfelder `speakerName` usw. – die bleiben auch für Mails/Karten maßgeblich. Fotos als `public/speaker-<name>.jpg`, Hochformat 3:4.
+- **Fotogalerien**: jedes Foto im Originalformat (aspect-ratio beim Build via `scripts/image-orientation.mjs`), gleiche Höhe.
+- **Hintergrund-Rauschen**: `src/assets/noise.png` (512px, angezeigt 256px, nie hochskaliert) per Overlay über `public/background-smooth.jpg` (Startseite) bzw. den Verlauf von `.event-hero` – kein eingebackenes Korn mehr.
+- **Rechtsseiten** im Eventseiten-Layout, Inhalte in `src/content/{impressum,datenschutz,widerrufsrecht}.json` (Leerzeile = neuer Absatz).
 - **Next Event** auf der Startseite: angepinntes Event nur, solange es nicht vorbei ist, sonst nächstes kommendes; gibt es keins → „Stay tuned“ + Button zur Newsletter-Seite.
 - Noch offen: geschlechtsspezifische Anrede („Liebe/Lieber") — braucht ein Anrede-Feld im Anmeldeformular.
 
