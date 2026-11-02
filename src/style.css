@@ -1565,6 +1565,83 @@ ul {
   }
 }
 
+/* ---------- Speaker-Slider (ab 2 Speakern, generate-event-pages.mjs) ----------
+   Gleiches Karussell wie die Fotogalerie (src/carousel.ts): .marquee__inner
+   scrollt mit scroll-snap, je eine Klon-Kopie davor/danach fuer den
+   Endlos-Loop. Jede Slide ist eine volle Seitenbreite mit demselben Grid wie
+   der Einzel-Speaker (Name/Bio Spalte 2-7, Foto 9-12). Zeit/Ort stehen fest
+   darunter (.event-detail__speaker-after). */
+.speaker-marquee .marquee__inner {
+  animation: none;
+  transform: none;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+
+.speaker-marquee .marquee__inner.is-ready {
+  opacity: 1;
+}
+
+.speaker-marquee .marquee__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.speaker-marquee .is-mobile-wrap-clone {
+  display: block !important;
+}
+
+.speaker-track {
+  display: flex;
+}
+
+.speaker-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+
+.speaker-marquee .marquee__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(1.2 * var(--balken));
+  height: calc(1.2 * var(--balken));
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: calc(1.2 * var(--font-size-bold));
+  cursor: pointer;
+  z-index: 5;
+}
+
+.speaker-marquee .marquee__arrow--prev {
+  left: var(--space-3);
+}
+
+.speaker-marquee .marquee__arrow--next {
+  right: var(--space-3);
+}
+
+.event-detail__speaker-after .event-detail__speaker-meta {
+  margin-block-start: var(--space-5);
+}
+
+@media (max-width: 768px) {
+  /* Mobil: Pfeile auf Hoehe des Fotos statt mitten im Text. */
+  .speaker-marquee .marquee__arrow {
+    top: auto;
+    bottom: calc((100vw - 2 * var(--grid-margin)) * 2 / 3);
+    transform: translateY(50%);
+    font-size: 28px;
+  }
+}
+
 /* ---------- Anmeldeformular ----------
    Heller Bereich (Absprache laut Layout-Vorlage) - ueberschreibt die
    Farb-Tokens lokal auf dunkle Werte, damit Inputs/Labels/Button (die alle

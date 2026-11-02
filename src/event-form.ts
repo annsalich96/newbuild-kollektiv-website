@@ -4,6 +4,7 @@ import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
 import { initEventGallery } from './event-gallery'
+import { initCarousel } from './carousel'
 
 // sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
@@ -20,6 +21,9 @@ renderSponsorMarquee(eventSponsorNames)
 initStickyNav()
 initMobileNavToggle()
 renderFooter()
+
+// Mehrere Speaker: Slider (Markup aus generate-event-pages.mjs).
+document.querySelectorAll<HTMLElement>('.speaker-marquee').forEach(initCarousel)
 
 // Web-App-URL des Google Apps Script (google-apps-script/Code.gs),
 // deployed von Xavi am 2026-07-30.

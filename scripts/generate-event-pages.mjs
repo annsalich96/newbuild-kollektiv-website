@@ -48,13 +48,14 @@ export function generateEventPages() {
     // Grafiken taugt. Die Satzzeichen setzt der Code, nicht das CMS:
     //   Website:  "Name — Position, Firma"
     //   E-Mail:   "Name, Position Firma"  (siehe Code.gs -> referentText_)
-    const speakerExtra = [event.speakerRole, event.speakerCompany]
-      .map((s) => String(s || '').trim())
-      .filter(Boolean)
-      .join(', ')
-    const speaker = speakerExtra
-      ? `${event.speakerName || ''} — ${speakerExtra}`
-      : event.speakerName || ''
+    const speakerLine = (name, role, company) => {
+      const extra = [role, company]
+        .map((v) => String(v || '').trim())
+        .filter(Boolean)
+        .join(', ')
+      return extra ? `${name || ''} — ${extra}` : name || ''
+    }
+    const speaker = speakerLine(event.speakerName, event.speakerRole, event.speakerCompany)
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
     // eigener Absatz, wie im PDF-Layout vorgegeben.
@@ -65,22 +66,26 @@ export function generateEventPages() {
       .map((line) => `<p class="event-detail__description">${escapeHtml(line)}</p>`)
       .join('\n')
 
-    // speakerBio/speakerImage sind optionale Felder - Pages CMS laesst den
-    // Schluessel komplett weg, wenn sie leer bleiben (daher || '' zur
-    // Absicherung). Ohne Bio/Foto wird der jeweilige Block einfach nicht
-    // ausgegeben statt einer leeren Zeile/einem leeren Bild.
-    const speakerBioBlock = event.speakerBio
-      ? `<p class="event-detail__speaker-bio">${escapeHtml(event.speakerBio)}</p>`
-      : ''
-    const speakerPhoto = event.speakerImage
-      ? `<img src="${escapeHtml(event.speakerImage)}" alt="" />`
-      : ''
+    // Referent:innen-Bereich: Name + Bio links, Foto rechts. Liste "speakers"
+    // im CMS (mehrere Speaker) hat Vorrang vor den Einzelfeldern
+    // speakerName/-Role/-Company/-Bio/-Image (die bleiben fuer die Mails
+    // massgeblich). Ab 2 Speakern wird der Bereich zum Slider - gleiches
+    // Karussell wie die Fotogalerie (src/carousel.ts, je eine volle
+    // Klon-Kopie davor und danach fuer den Endlos-Loop). Optionale Felder
+    // laesst Pages CMS ganz weg, wenn sie leer bleiben - daher || ''.
+    const speakers = (event.speakers || []).filter((s) => s && s.name)
+    const speakerList = speakers.length
+      ? speakers.map((s) => ({ line: speakerLine(s.name, s.role, s.company), bio: s.bio, image: s.image }))
+      : [{ line: speaker, bio: event.speakerBio, image: event.speakerImage }]
+    const speakerBlock = (s) => `<div class="event-detail__speaker-info">
+          <h3 class="event-detail__speaker-name">${escapeHtml(s.line)}</h3>
+          ${s.bio ? `<p class="event-detail__speaker-bio">${escapeHtml(s.bio)}</p>` : ''}
+        </div>
+        <figure class="event-detail__speaker-photo">${s.image ? `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.line.split(' — ')[0])}" loading="lazy" />` : ''}</figure>`
 
-    // Datum/Uhrzeit/Ort standen bisher nirgends sichtbar auf der
-    // Anmeldeseite (nur versteckt als data-event-* Attribute am Formular) -
-    // Ann wollte sie direkt unter der Referent:innen-Beschreibung sehen,
-    // gleiche dt/dd-Struktur wie die "Next Event"-Karte auf der Startseite
-    // (.event-card__meta).
+    // Datum/Uhrzeit/Ort unter der Referent:innen-Beschreibung, gleiche
+    // dt/dd-Struktur wie die "Next Event"-Karte auf der Startseite
+    // (.event-card__meta). Beim Slider fest unter den Slides.
     const eventMetaBlock = `<dl class="event-detail__speaker-meta">
         <div>
           <dt>Zeit</dt>
@@ -91,6 +96,39 @@ export function generateEventPages() {
           <dd>${escapeHtml(event.location)}</dd>
         </div>
       </dl>`
+
+    const speakerSlides = (extraClass) =>
+      speakerList
+        .map(
+          (s) => `<li class="speaker-slide${extraClass}"${extraClass ? ' aria-hidden="true"' : ''}>
+        <div class="grid event-detail__speaker">
+        ${speakerBlock(s)}
+        </div>
+      </li>`,
+        )
+        .join('\n')
+    const speakerSection =
+      speakerList.length > 1
+        ? `<div class="marquee speaker-marquee" aria-label="Speaker">
+        <div class="marquee__inner">
+          <ul class="speaker-track">
+      ${speakerSlides(' is-mobile-wrap-clone')}
+      ${speakerSlides('')}
+      ${speakerSlides(' is-mobile-wrap-clone')}
+          </ul>
+        </div>
+        <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorherige:r Speaker:in">‹</button>
+        <button type="button" class="marquee__arrow marquee__arrow--next" aria-label="Nächste:r Speaker:in">›</button>
+      </div>
+      <div class="grid event-detail__speaker-after">
+        <div class="event-detail__speaker-info">${eventMetaBlock}</div>
+      </div>`
+        : `<section class="grid event-detail__speaker">
+        ${speakerBlock(speakerList[0]).replace(
+          /(<\/div>\s*<figure)/,
+          `${eventMetaBlock}\n        $1`,
+        )}
+      </section>`
 
     // Galerie (CMS-Feld "gallery", optional): gleiches Bauteil wie die
     // Fotogalerie auf der Startseite (.gallery-marquee, Logik in
@@ -131,16 +169,13 @@ export function generateEventPages() {
       .replaceAll('__DATE__', escapeHtml(event.date))
       .replaceAll('__TIME__', escapeHtml(event.time))
       .replaceAll('__LOCATION__', escapeHtml(event.location))
-      .replaceAll('__SPEAKER__', escapeHtml(speaker))
       .replaceAll('__SPEAKER_NAME__', escapeHtml(event.speakerName || ''))
       .replaceAll('__SPEAKER_ROLE__', escapeHtml(event.speakerRole || ''))
       .replaceAll('__SPEAKER_COMPANY__', escapeHtml(event.speakerCompany || ''))
       .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs)
-      .replaceAll('__SPEAKER_BIO_BLOCK__', speakerBioBlock)
-      .replaceAll('__EVENT_META_BLOCK__', eventMetaBlock)
-      .replaceAll('__SPEAKER_PHOTO__', speakerPhoto)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
       .replaceAll('__GALLERY_SECTION__', gallerySection)
+      .replaceAll('__SPEAKER_SECTION__', speakerSection)
       // Eventfarbe aus Pages CMS (Feld "Farbe") -> Hintergrund-Verlauf der
       // Seite (.event-hero), dieselbe Farbe wie auf der Mail-Karte.
       .replaceAll('__EVENT_FARBE__', eventFarbe(event))

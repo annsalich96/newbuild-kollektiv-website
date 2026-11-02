@@ -72,6 +72,34 @@ content:
           - name: description
             label: Beschreibung
             type: text
+          - name: speakers
+            label: "Speaker (optional, mehrere möglich) - ab 2 Einträgen wird der Bereich auf der Eventseite zum Slider. Leer lassen = die einzelnen Referent:in-Felder oben gelten"
+            type: object
+            required: false
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{name}"
+            fields:
+              - name: name
+                label: Name
+                type: string
+              - name: role
+                label: "Position (optional)"
+                type: string
+                required: false
+              - name: company
+                label: "Firma (optional)"
+                type: string
+                required: false
+              - name: bio
+                label: "Kurzbeschreibung (optional)"
+                type: text
+                required: false
+              - name: image
+                label: "Foto (optional, am besten Hochformat 3:4)"
+                type: image
+                required: false
           - name: sponsors
             label: "Sponsoren für dieses Event (optional - leer lassen zeigt die allgemeine Sponsoren-Leiste von der Startseite)"
             type: object
