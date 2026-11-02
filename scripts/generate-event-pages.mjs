@@ -91,30 +91,36 @@ export function generateEventPages() {
         </div>
       </dl>`
 
-    // Galerie (CMS-Feld "gallery", optional): wird immer mitgeneriert, aber
-    // versteckt - event-form.ts blendet sie erst ein und das Formular aus,
-    // wenn das Event vorbei ist (Pruefung im Browser, wie "View Past" auf
-    // der Startseite). Ohne Fotos bleibt alles wie bisher.
+    // Galerie (CMS-Feld "gallery", optional): gleiches Bauteil wie die
+    // Fotogalerie auf der Startseite (.gallery-marquee, Logik in
+    // src/carousel.ts) - je eine volle Kopie vor und nach den echten Bildern
+    // fuer den Endlos-Loop. Wird immer mitgeneriert, aber versteckt -
+    // event-gallery.ts blendet sie erst ein und das Formular aus, wenn das
+    // Event vorbei ist (Pruefung im Browser, wie "View Past" auf der
+    // Startseite). Ohne Fotos bleibt alles wie bisher.
     const gallery = (event.gallery || []).filter(Boolean)
+    const gallerySlides = (extraClass) =>
+      gallery
+        .map(
+          (src) =>
+            `<li class="photo-gallery-2__slide${extraClass}" aria-hidden="true"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></li>`
+        )
+        .join('\n            ')
     const gallerySection = gallery.length
-      ? `<section class="event-form-section event-gallery-section" id="event-gallery" hidden>
-      <div class="grid">
-        <p class="event-form-section__label">Impressionen</p>
-        <div class="event-gallery" tabindex="0" aria-roledescription="Galerie" aria-label="Impressionen vom Event">
-          <ul class="event-gallery__track">
-            ${gallery
-              .map(
-                (src, i) =>
-                  `<li class="event-gallery__slide"><img src="${escapeHtml(src)}" alt="Impression ${i + 1} von ${gallery.length}" ${i ? 'loading="lazy"' : ''} /></li>`
-              )
-              .join('\n            ')}
-          </ul>
-          <button type="button" class="event-gallery__arrow event-gallery__arrow--prev" aria-label="Vorheriges Bild">‹</button>
-          <button type="button" class="event-gallery__arrow event-gallery__arrow--next" aria-label="Nächstes Bild">›</button>
-          <p class="event-gallery__counter" aria-live="polite">1 / ${gallery.length}</p>
+      ? `<section class="event-gallery-section" id="event-gallery" hidden>
+        <div class="grid divider-row divider-row--before-gallery2"><hr class="divider" /></div>
+        <div class="marquee gallery-marquee" aria-label="Impressionen vom Event">
+          <div class="marquee__inner">
+            <ul class="photo-gallery-2">
+            ${gallerySlides(' is-mobile-wrap-clone')}
+            ${gallerySlides('')}
+            ${gallerySlides(' is-mobile-wrap-clone')}
+            </ul>
+          </div>
+          <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorheriges Bild">‹</button>
+          <button type="button" class="marquee__arrow marquee__arrow--next" aria-label="Nächstes Bild">›</button>
         </div>
-      </div>
-    </section>`
+      </section>`
       : ''
 
     const html = template
