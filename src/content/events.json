@@ -158,6 +158,86 @@
           "bio": "Verantwortet das Deutschland-Geschäft von Material Bank, einer Plattform für Materialmuster mit über 60.000 Produkten (Stuttgart).",
           "image": "/speaker-alexander-tetz.jpg"
         }
+      ],
+      "facts": [
+        {
+          "label": "Fortbildung",
+          "value": "5 Fortbildungspunkte der Architektenkammer Berlin"
+        }
+      ],
+      "program": [
+        {
+          "title": "Session 1: Practice & Business Management",
+          "text": "Bürosteuerung, Teamarbeit und digitale Werkzeuge im Planungsalltag – mit Eike Becker (Eike Becker_Architekten), Will Jones (Gendo) und Wolfram Putz (GRAFT)."
+        },
+        {
+          "title": "Session 2: Architectural Visualization & Digital Media",
+          "text": "KI-Visualisierung und digitale Präsentation – mit Mark Szoke (Visoid), Knut Ramstad (Nordic Office of Architecture) und Martin Jasper (Jasper Architects)."
+        },
+        {
+          "title": "Session 3: BIM, Digital Workflows & Construction Delivery",
+          "text": "Materialien, BIM und Climate Tech – mit Jolene Lee (Kinzo Architekten), Gheyath Harb (Henning Larsen), Björn Maack (Revalu) und Alexander Tetz (Material Bank)."
+        },
+        {
+          "title": "Networking & Tech-Ausstellung",
+          "text": "Jede Session dauerte 45 Minuten, moderiert und getragen von den Fragen aus dem Publikum. Nach jeder Session 20 Minuten Networking-Pause, zum Abschluss offenes Networking. In einem zweiten Raum zeigten Technologie-Anbieter aktuelle digitale Werkzeuge für Architektur und Planung."
+        }
+      ],
+      "hosts": [
+        {
+          "name": "Maria Stasevich",
+          "role": "Architectural Designer, Gründerin von OBLIK",
+          "url": "https://oblik.media",
+          "image": "/team-maria-stasevich.jpg"
+        },
+        {
+          "name": "Ann-Kathrin Salich",
+          "role": "Architektin, Gründerin von NewBuild Kollektiv",
+          "url": "https://newbuild-kollektiv.com",
+          "image": "/team-ann-kathrin-salich.jpg"
+        }
+      ],
+      "partners": [
+        {
+          "category": "Technical Partner",
+          "name": "Visoid",
+          "url": "https://visoid.com"
+        },
+        {
+          "category": "Technical Partner",
+          "name": "Gendo",
+          "url": "https://gendo.ai"
+        },
+        {
+          "category": "Technical Partner",
+          "name": "Material Bank",
+          "url": "https://materialbank.eu"
+        },
+        {
+          "category": "Technical Partner",
+          "name": "Revalu",
+          "url": "https://revalu.io"
+        },
+        {
+          "category": "Media Partner",
+          "name": "DesignDays Berlin",
+          "url": "https://designdays.berlin"
+        },
+        {
+          "category": "Media Partner",
+          "name": "CreCon Forum",
+          "url": "https://creconforum.com"
+        },
+        {
+          "category": "Media Partner",
+          "name": "BauNetz",
+          "url": "https://www.baunetz.de"
+        },
+        {
+          "category": "Media Partner",
+          "name": "Bundesstiftung Baukultur",
+          "url": "https://www.bundesstiftung-baukultur.de"
+        }
       ]
     },
     {

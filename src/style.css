@@ -1527,7 +1527,9 @@ ul {
 
 .event-detail__speaker-meta dt {
   flex: 0 0 auto;
-  min-width: calc(120 * var(--px));
+  /* Breit genug fuer laengere Bezeichnungen aus "Weitere Eckdaten" (z.B.
+     FORTBILDUNG), damit alle Inhalte buendig in einer Spalte stehen. */
+  min-width: 9em;
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
@@ -1566,6 +1568,122 @@ ul {
 
   .event-detail__speaker-photo {
     margin-block-start: var(--space-6);
+  }
+}
+
+/* ---------- Programm / Praesentiert von / Partner (Eventseite, optional) ----------
+   Label in Spalte 2 (wie "SESSION 01" oben), Inhalt Spalte 5-12 (wie die
+   Beschreibung). Texte in denselben Groessen wie Beschreibung/Referent:in. */
+.event-detail__block .section__eyebrow {
+  white-space: nowrap;
+}
+
+.event-detail__block-body {
+  grid-column: 5 / 13;
+}
+
+.event-program {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.event-program__time,
+.event-partners__category {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-capital);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  color: var(--color-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.event-program__title {
+  margin: 0;
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  font-weight: var(--font-weight-bold);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.event-program__text,
+.event-hosts__role {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  color: var(--color-muted);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.event-hosts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.event-hosts__item {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+}
+
+.event-hosts__photo {
+  flex: 0 0 auto;
+  width: calc(1.5 * var(--balken));
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.event-hosts__name {
+  margin: 0;
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  font-weight: var(--font-weight-bold);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.event-hosts__name a,
+.event-partners__list a {
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+
+.event-partners {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-7) var(--grid-gutter);
+}
+
+.event-partners__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 768px) {
+  .event-detail__block-body {
+    grid-column: 1 / -1;
+    margin-block-start: var(--space-4);
+  }
+
+  .event-partners {
+    grid-template-columns: 1fr;
+  }
+
+  .event-hosts__photo {
+    width: 96px;
   }
 }
 

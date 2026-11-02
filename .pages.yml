@@ -72,6 +72,84 @@ content:
           - name: description
             label: Beschreibung
             type: text
+          - name: facts
+            label: "Weitere Eckdaten (optional) - erscheinen unter Zeit/Ort, z.B. Fortbildung: 5 Punkte AK Berlin"
+            type: object
+            required: false
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{label}"
+            fields:
+              - name: label
+                label: "Bezeichnung (kurz, z.B. Fortbildung, Einlass, Gastgeber)"
+                type: string
+              - name: value
+                label: Inhalt
+                type: string
+          - name: program
+            label: "Programm (optional) - Programmpunkte, Sessions, Ablauf"
+            type: object
+            required: false
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{title}"
+            fields:
+              - name: time
+                label: "Uhrzeit (optional, z.B. 18:30)"
+                type: string
+                required: false
+              - name: title
+                label: Titel
+                type: string
+              - name: text
+                label: "Beschreibung (optional)"
+                type: text
+                required: false
+          - name: hosts
+            label: "Präsentiert von (optional) - Gastgeber:innen/Co-Veranstalter:innen"
+            type: object
+            required: false
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{name}"
+            fields:
+              - name: name
+                label: Name
+                type: string
+              - name: role
+                label: "Rolle/Firma (optional)"
+                type: string
+                required: false
+              - name: url
+                label: "Link (optional)"
+                type: string
+                required: false
+              - name: image
+                label: "Foto (optional)"
+                type: image
+                required: false
+          - name: partners
+            label: "Partner (optional) - werden nach Kategorie gruppiert. Ohne eigene Sponsoren laufen sie auch im Laufband"
+            type: object
+            required: false
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{category}: {name}"
+            fields:
+              - name: category
+                label: "Kategorie (z.B. Technical Partner, Media Partner, Venue Partner)"
+                type: string
+              - name: name
+                label: Name
+                type: string
+              - name: url
+                label: "Link (optional)"
+                type: string
+                required: false
           - name: speakers
             label: "Speaker (optional, mehrere möglich) - ab 2 Einträgen wird der Bereich auf der Eventseite zum Slider. Leer lassen = die einzelnen Referent:in-Felder oben gelten"
             type: object

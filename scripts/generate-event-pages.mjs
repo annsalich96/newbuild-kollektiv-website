@@ -95,6 +95,13 @@ export function generateEventPages() {
           <dt>Ort</dt>
           <dd>${escapeHtml(event.location)}</dd>
         </div>
+        ${(event.facts || [])
+          .filter((f) => f && f.label && f.value)
+          .map((f) => `<div>
+          <dt>${escapeHtml(f.label)}</dt>
+          <dd>${escapeHtml(f.value)}</dd>
+        </div>`)
+          .join('\n        ')}
       </dl>`
 
     const speakerSlides = (extraClass) =>
@@ -129,6 +136,72 @@ export function generateEventPages() {
           `${eventMetaBlock}\n        $1`,
         )}
       </section>`
+
+    // Weitere optionale Bereiche aus dem CMS (seit 2026-11-02, erstmals fuer
+    // das DAZ-Event): Programm, "Praesentiert von" (Gastgeber:innen) und
+    // Partner nach Kategorie. Jeder Block nur, wenn Inhalt da ist - Label
+    // links (Spalte 2), Inhalt Spalte 5-12, je mit Trennlinie davor.
+    const link = (url, text) =>
+      url
+        ? `<a href="${escapeHtml(/^https?:\/\//.test(url) ? url : 'https://' + url)}" target="_blank" rel="noreferrer">${text}</a>`
+        : text
+    const block = (label, body) => `<div class="grid divider-row"><hr class="divider" /></div>
+      <section class="grid event-detail__block">
+        <p class="section__eyebrow">${label}</p>
+        <div class="event-detail__block-body">${body}</div>
+      </section>`
+    const program = (event.program || []).filter((p) => p && p.title)
+    const hosts = (event.hosts || []).filter((h) => h && h.name)
+    const partners = (event.partners || []).filter((p) => p && p.name)
+    const partnerGroups = [...new Set(partners.map((p) => p.category || 'Partner'))]
+    const extraSections = [
+      program.length
+        ? block(
+            'Programm',
+            `<ol class="event-program">${program
+              .map(
+                (p) => `<li class="event-program__item">
+            ${p.time ? `<p class="event-program__time">${escapeHtml(p.time)}</p>` : ''}
+            <h3 class="event-program__title">${escapeHtml(p.title)}</h3>
+            ${p.text ? `<p class="event-program__text">${escapeHtml(p.text)}</p>` : ''}
+          </li>`,
+              )
+              .join('')}</ol>`,
+          )
+        : '',
+      hosts.length
+        ? block(
+            'Präsentiert von',
+            `<ul class="event-hosts">${hosts
+              .map(
+                (h) => `<li class="event-hosts__item">
+            ${h.image ? `<img class="event-hosts__photo" src="${escapeHtml(h.image)}" alt="" loading="lazy" />` : ''}
+            <div>
+              <h3 class="event-hosts__name">${link(h.url, escapeHtml(h.name))}</h3>
+              ${h.role ? `<p class="event-hosts__role">${escapeHtml(h.role)}</p>` : ''}
+            </div>
+          </li>`,
+              )
+              .join('')}</ul>`,
+          )
+        : '',
+      partners.length
+        ? block(
+            'Partner',
+            `<div class="event-partners">${partnerGroups
+              .map(
+                (g) => `<div class="event-partners__group">
+            <h3 class="event-partners__category">${escapeHtml(g)}</h3>
+            <ul class="event-partners__list">${partners
+              .filter((p) => (p.category || 'Partner') === g)
+              .map((p) => `<li>${link(p.url, escapeHtml(p.name))}</li>`)
+              .join('')}</ul>
+          </div>`,
+              )
+              .join('')}</div>`,
+          )
+        : '',
+    ].join('\n')
 
     // Galerie (CMS-Feld "gallery", optional): gleiches Bauteil wie die
     // Fotogalerie auf der Startseite (.gallery-marquee, Logik in
@@ -175,7 +248,7 @@ export function generateEventPages() {
       .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
       .replaceAll('__GALLERY_SECTION__', gallerySection)
-      .replaceAll('__SPEAKER_SECTION__', speakerSection)
+      .replaceAll('__SPEAKER_SECTION__', speakerSection + '\n' + extraSections)
       // Eventfarbe aus Pages CMS (Feld "Farbe") -> Hintergrund-Verlauf der
       // Seite (.event-hero), dieselbe Farbe wie auf der Mail-Karte.
       .replaceAll('__EVENT_FARBE__', eventFarbe(event))

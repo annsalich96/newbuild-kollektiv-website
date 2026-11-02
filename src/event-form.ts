@@ -10,12 +10,16 @@ import { initCarousel } from './carousel'
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
 // JSON weg. Ohne eigene Sponsoren traegt renderSponsorMarquee() automatisch
 // die allgemeine Sponsoren-Leiste aus content/sponsors.json nach (Fallback).
-type EventWithSponsors = { slug: string; sponsors?: { name: string }[] }
+type EventWithSponsors = { slug: string; sponsors?: { name: string }[]; partners?: { name: string }[] }
 const eventSlug = document.getElementById('event-form')?.getAttribute('data-event-slug')
 const currentEvent = (eventsData.events as EventWithSponsors[]).find((e) => e.slug === eventSlug)
+// Ohne eigene Sponsoren laufen die Partner des Events (CMS-Feld "partners")
+// im Laufband, erst danach die allgemeine Sponsoren-Leiste.
 const eventSponsorNames = currentEvent?.sponsors?.length
   ? currentEvent.sponsors.map((s) => s.name)
-  : undefined
+  : currentEvent?.partners?.length
+    ? currentEvent.partners.map((p) => p.name)
+    : undefined
 
 renderSponsorMarquee(eventSponsorNames)
 initStickyNav()
