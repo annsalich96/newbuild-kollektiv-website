@@ -3,26 +3,29 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { generateEventPages } from './scripts/generate-event-pages.mjs'
 import { generateMailCards } from './scripts/generate-mail-cards.mjs'
-import { isPortrait } from './scripts/image-orientation.mjs'
+import { imageRatio } from './scripts/image-orientation.mjs'
 
 // Erzeugt events/<slug>/index.html aus src/content/events.json - muss vor
 // dem rollupOptions.input unten passieren, da Rollup die Dateien physisch
 // auf der Platte braucht.
 const eventEntries = generateEventPages()
 
-// Hochformat-Fotos der Startseiten-Galerie (content/gallery.json) - main.ts
-// gibt ihnen die schmale Breite (4 statt 8 Spalten), siehe style.css.
-const galleryPortraits = (
-  JSON.parse(
-    readFileSync(fileURLToPath(new URL('./src/content/gallery.json', import.meta.url)), 'utf-8'),
-  ).photos as { photo?: string }[]
+// Seitenverhaeltnis jedes Fotos der Startseiten-Galerie (content/gallery.json)
+// - main.ts zeigt jedes Foto in seinem Originalformat, siehe style.css.
+const galleryRatios = Object.fromEntries(
+  (
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('./src/content/gallery.json', import.meta.url)), 'utf-8'),
+    ).photos as { photo?: string }[]
+  )
+    .map((p) => p.photo)
+    .filter((src): src is string => !!src)
+    .map((src) => [src, imageRatio(src)]),
 )
-  .map((p) => p.photo)
-  .filter((src): src is string => !!src && isPortrait(src))
 
 export default defineConfig({
   define: {
-    __GALERIE_HOCHFORMAT__: JSON.stringify(galleryPortraits),
+    __GALERIE_FORMATE__: JSON.stringify(galleryRatios),
   },
   plugins: [
     {

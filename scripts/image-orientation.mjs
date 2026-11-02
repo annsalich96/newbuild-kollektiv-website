@@ -1,8 +1,8 @@
-// Hoch- oder Querformat eines Bildes aus public/ (fuer die Fotogalerien:
-// Hochformat 4 Spalten breit, Querformat 8 Spalten - siehe style.css). Liest
-// nur den Dateikopf (JPEG inkl. EXIF-Drehung, PNG), keine Abhaengigkeit.
-// Wird beim Build ausgewertet, damit die Breiten schon im HTML stehen und
-// beim Laden nichts springt.
+// Seitenverhaeltnis eines Bildes aus public/ fuer die Fotogalerien: jedes Foto
+// wird in seinem Originalformat gezeigt (gleiche Hoehe, Breite ergibt sich),
+// nichts wird abgeschnitten - siehe style.css. Liest nur den Dateikopf (JPEG
+// inkl. EXIF-Drehung, PNG), keine Abhaengigkeit. Wird beim Build ausgewertet,
+// damit die Breiten schon im HTML stehen und beim Laden nichts springt.
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -47,12 +47,14 @@ function imageSize(path) {
   return null
 }
 
-// true = Hochformat. Unlesbare/fehlende Dateien gelten als Querformat.
-export function isPortrait(src) {
+// "Breite / Hoehe" fuer CSS aspect-ratio, z.B. "1600 / 1067". Unlesbare oder
+// fehlende Dateien bekommen 3 / 2.
+export function imageRatio(src) {
   try {
     const size = imageSize(join(publicDir, decodeURIComponent(String(src).replace(/^\//, ''))))
-    return !!size && size.h > size.w
+    if (size && size.w && size.h) return `${size.w} / ${size.h}`
   } catch {
-    return false
+    // faellt auf Standard zurueck
   }
+  return '3 / 2'
 }

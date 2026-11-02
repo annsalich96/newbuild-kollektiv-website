@@ -174,10 +174,9 @@ if (galleryRow && galleryData.photos.length > 0) {
 
   const galleryItem = (photo: GalleryPhoto, extraClass: string | null) => {
     const li = document.createElement('li')
-    const classes = ['photo-gallery-2__slide']
-    if (photo.photo && __GALERIE_HOCHFORMAT__.includes(photo.photo)) classes.push('photo-gallery-2__slide--hoch')
-    if (extraClass) classes.push(extraClass)
-    li.className = classes.join(' ')
+    li.className = extraClass ? `photo-gallery-2__slide ${extraClass}` : 'photo-gallery-2__slide'
+    // Originalformat des Fotos (beim Build gelesen), siehe style.css.
+    if (photo.photo && __GALERIE_FORMATE__[photo.photo]) li.style.aspectRatio = __GALERIE_FORMATE__[photo.photo]
     li.setAttribute('aria-hidden', 'true')
     li.innerHTML = photo.photo ? `<img src="${photo.photo}" alt="${photo.alt ?? ''}" />` : 'Foto folgt'
     return li

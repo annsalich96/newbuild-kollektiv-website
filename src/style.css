@@ -1091,19 +1091,14 @@ ul {
     margin-inline-end: 0 !important;
   }
 
-  /* Fotogalerie: Querformat volle Breite (3:2), Hochformat gleich hoch (2:3,
-     also 2/3 x 2/3 = 44,4% breit) - kleiner Abstand, da Hochformate neben
+  /* Fotogalerie: Hoehe so, dass ein 3:2-Querformat genau die Bildschirmbreite
+     fuellt; jedes Foto in seinem Originalformat (Breite folgt), breitere
+     Panoramen maximal bildschirmbreit. Kleiner Abstand, da Hochformate neben
      dem naechsten Bild stehen. */
   .gallery-marquee .photo-gallery-2__slide {
-    flex: 0 0 100%;
-    height: auto;
-    aspect-ratio: 3 / 2;
+    height: calc(100vw / 1.5);
+    max-width: 100vw;
     margin-inline-end: var(--space-2) !important;
-  }
-
-  .gallery-marquee .photo-gallery-2__slide--hoch {
-    flex-basis: 44.444%;
-    aspect-ratio: 2 / 3;
   }
 }
 
@@ -1169,14 +1164,16 @@ ul {
   margin-inline-end: var(--grid-gutter);
 }
 
-/* Zwei Breiten je nach Bildformat (Absprache 2026-11-02), gleiche Hoehe:
-   Querformat 8 Spalten (1088px @1920, ~3:2), Hochformat 4 Spalten (536px,
-   ~2:3) - so wird kaum etwas abgeschnitten. Hoehe 500px + 2 Balken = 744px
-   @1920. Hoch/quer wird beim Build aus der Bilddatei gelesen
-   (scripts/image-orientation.mjs). Gilt fuer Startseite und Event-Galerien. */
+/* Jedes Foto in seinem Originalformat (Absprache 2026-11-02): gleiche Hoehe
+   (500px + 2 Balken = 744px @1920), die Breite ergibt sich aus dem
+   Seitenverhaeltnis, das beim Build aus der Bilddatei gelesen und inline als
+   aspect-ratio gesetzt wird (scripts/image-orientation.mjs) - nichts wird
+   abgeschnitten. Fallback ohne Angabe: 3:2. Gilt fuer Startseite und
+   Event-Galerien. */
 .photo-gallery-2__slide {
-  flex: 0 0 calc((8 * 122 + 7 * 16) * var(--px));
+  flex: 0 0 auto;
   height: calc(744 * var(--px));
+  aspect-ratio: 3 / 2;
   background: #1a1a1a;
   display: flex;
   align-items: center;
@@ -1186,10 +1183,6 @@ ul {
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
   overflow: hidden;
-}
-
-.photo-gallery-2__slide--hoch {
-  flex-basis: calc((4 * 122 + 3 * 16) * var(--px));
 }
 
 /* Nur vorhanden, sobald ueber Pages CMS ein Foto hochgeladen wurde - bis

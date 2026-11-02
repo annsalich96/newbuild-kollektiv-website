@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { eventFarbe } from './event-farbe.mjs'
-import { isPortrait } from './image-orientation.mjs'
+import { imageRatio } from './image-orientation.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
@@ -104,7 +104,7 @@ export function generateEventPages() {
       gallery
         .map(
           (src) =>
-            `<li class="photo-gallery-2__slide${isPortrait(src) ? ' photo-gallery-2__slide--hoch' : ''}${extraClass}" aria-hidden="true"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></li>`
+            `<li class="photo-gallery-2__slide${extraClass}" style="aspect-ratio: ${imageRatio(src)}" aria-hidden="true"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></li>`
         )
         .join('\n            ')
     const gallerySection = gallery.length
