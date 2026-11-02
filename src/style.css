@@ -1086,10 +1086,24 @@ ul {
    statt mehrerer kleiner Karten. scroll-snap-align steht schon oben
    unconditional. */
 @media (max-width: 768px) {
-  .team-marquee .team-row__member,
-  .gallery-marquee .photo-gallery-2__slide {
+  .team-marquee .team-row__member {
     flex: 0 0 100%;
     margin-inline-end: 0 !important;
+  }
+
+  /* Fotogalerie: Querformat volle Breite (3:2), Hochformat gleich hoch (2:3,
+     also 2/3 x 2/3 = 44,4% breit) - kleiner Abstand, da Hochformate neben
+     dem naechsten Bild stehen. */
+  .gallery-marquee .photo-gallery-2__slide {
+    flex: 0 0 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    margin-inline-end: var(--space-2) !important;
+  }
+
+  .gallery-marquee .photo-gallery-2__slide--hoch {
+    flex-basis: 44.444%;
+    aspect-ratio: 2 / 3;
   }
 }
 
@@ -1127,6 +1141,13 @@ ul {
 
 /* Sponsoren-Leiste selbst ist genau 1 Balken hoch — sie ist der Block
    zwischen Trennlinie und Fusszeile, kein Leerraum drumherum. */
+/* Bewegung kommt aus sponsors-marquee.ts (festes Tempo, Kopien je nach
+   Bildschirmbreite) statt aus der CSS-Animation von .marquee__inner. */
+.sponsor-marquee .marquee__inner {
+  animation: none;
+  will-change: transform;
+}
+
 .sponsor-marquee,
 .sponsor-marquee .marquee__inner,
 .sponsor-marquee .marquee__track {
@@ -1148,11 +1169,14 @@ ul {
   margin-inline-end: var(--grid-gutter);
 }
 
+/* Zwei Breiten je nach Bildformat (Absprache 2026-11-02), gleiche Hoehe:
+   Querformat 8 Spalten (1088px @1920, ~3:2), Hochformat 4 Spalten (536px,
+   ~2:3) - so wird kaum etwas abgeschnitten. Hoehe 500px + 2 Balken = 744px
+   @1920. Hoch/quer wird beim Build aus der Bilddatei gelesen
+   (scripts/image-orientation.mjs). Gilt fuer Startseite und Event-Galerien. */
 .photo-gallery-2__slide {
-  flex: 0 0 calc((6 * 122 + 5 * 16) * var(--px)); /* 6 Spalten inkl. 5 interner Gutter = 812px @1920 */
-  /* 500px + 2 Balken (2 x 122px) hoch bei 1920px (Absprache 2026-11-02) -
-     gilt fuer Startseite und Event-Galerien. */
-  aspect-ratio: 812 / 744;
+  flex: 0 0 calc((8 * 122 + 7 * 16) * var(--px));
+  height: calc(744 * var(--px));
   background: #1a1a1a;
   display: flex;
   align-items: center;
@@ -1162,6 +1186,10 @@ ul {
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
   overflow: hidden;
+}
+
+.photo-gallery-2__slide--hoch {
+  flex-basis: calc((4 * 122 + 3 * 16) * var(--px));
 }
 
 /* Nur vorhanden, sobald ueber Pages CMS ein Foto hochgeladen wurde - bis

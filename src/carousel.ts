@@ -25,16 +25,22 @@ export function initCarousel(marquee: HTMLElement) {
   const slides = Array.from(list.children) as HTMLElement[]
   const realCount = slides.length / 3 // Klon-Kopie + echte Liste + Klon-Kopie
 
-  // Schrittweite = Abstand zwischen zwei Slides (Kartenbreite + Gap). Bei
-  // der mobilen Team-Galerie ist das die volle Containerbreite (ein Bild =
-  // ein Bildschirm) - bei der auf Desktop slidbaren Fotogalerie sind
-  // mehrere Karten gleichzeitig sichtbar, dort waere inner.clientWidth
-  // viel zu groß und die Wrap-Sprungziele wuerden nie exakt getroffen.
-  const stepWidth = () =>
-    slides.length > 1 ? slides[1].offsetLeft - slides[0].offsetLeft : inner.clientWidth
+  // Slides koennen unterschiedlich breit sein (Fotogalerie: Hoch-/Querformat),
+  // deshalb wird nicht mit fester Schrittweite gerechnet, sondern mit der
+  // tatsaechlichen Position jedes Slides im Scroll-Container.
+  const posOf = (index: number) => slides[index].offsetLeft - slides[0].offsetLeft
+  const setWidth = () => posOf(realCount) // Breite einer kompletten Kopie
+
+  const currentIndex = () => {
+    let best = 0
+    slides.forEach((_, i) => {
+      if (Math.abs(posOf(i) - inner.scrollLeft) < Math.abs(posOf(best) - inner.scrollLeft)) best = i
+    })
+    return best
+  }
 
   const jumpTo = (index: number, smooth: boolean) => {
-    inner.scrollTo({ left: index * stepWidth(), behavior: smooth ? 'smooth' : 'instant' })
+    inner.scrollTo({ left: posOf(index), behavior: smooth ? 'smooth' : 'instant' })
   }
 
   // Startet am Anfang der echten (mittleren) Kopie - davor liegt die volle
@@ -55,24 +61,30 @@ export function initCarousel(marquee: HTMLElement) {
       if (!isScrollable() || realCount <= 0) return
       clearTimeout(settleTimer)
       settleTimer = setTimeout(() => {
-        const index = Math.round(inner.scrollLeft / stepWidth())
-        if (index < realCount) {
-          jumpTo(index + realCount, false)
-        } else if (index >= realCount * 2) {
-          jumpTo(index - realCount, false)
+        pending = null
+        // In einer Klon-Kopie gelandet -> um eine volle Kopie zurueck in die
+        // echte Mitte springen (ohne Animation, sieht identisch aus).
+        const width = setWidth()
+        if (inner.scrollLeft < width - 1) {
+          inner.scrollTo({ left: inner.scrollLeft + width, behavior: 'instant' })
+        } else if (inner.scrollLeft >= 2 * width - 1) {
+          inner.scrollTo({ left: inner.scrollLeft - width, behavior: 'instant' })
         }
       }, 120)
     },
     { passive: true }
   )
 
-  prev?.addEventListener('click', () => {
-    inner.scrollBy({ left: -stepWidth(), behavior: 'smooth' })
-  })
-
-  next?.addEventListener('click', () => {
-    inner.scrollBy({ left: stepWidth(), behavior: 'smooth' })
-  })
+  // Ziel des letzten Klicks merken, damit schnelles Mehrfachklicken waehrend
+  // der Animation keinen Schritt verschluckt (wird nach dem Einrasten verworfen).
+  let pending: number | null = null
+  const step = (delta: number) => {
+    const from = pending ?? currentIndex()
+    pending = Math.min(slides.length - 1, Math.max(0, from + delta))
+    jumpTo(pending, true)
+  }
+  prev?.addEventListener('click', () => step(-1))
+  next?.addEventListener('click', () => step(1))
 
   // Klick-und-Ziehen mit der Maus: Touch/Trackpad scrollen bereits nativ
   // (overflow-x:auto reicht dafuer), eine Maus ohne Trackpad hat aber
