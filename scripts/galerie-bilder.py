@@ -3,11 +3,12 @@
 Aufruf (Originalfotos aus Photos des Events, ohne Wasserzeichen, 20-25 Stueck):
     python3 scripts/galerie-bilder.py <event-slug> <foto1.jpg> <foto2.jpg> ...
 
-Schreibt public/galerie/<slug>/<slug>-01.jpg ... (lange Kante 1600 px, JPEG ohne Metadaten,
+Schreibt public/galerie/<slug>/<slug>-01-<kennung>.jpg ... (lange Kante 1600 px, JPEG ohne Metadaten,
 deutlich unter dem 4,5-MB-Limit von Pages CMS) und setzt das Feld "gallery" des Events in
 src/content/events.json. Vorhandene Bilder des Events werden ersetzt.
 """
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -37,8 +38,12 @@ def main():
     for i, src in enumerate(sources, 1):
         im = ImageOps.exif_transpose(Image.open(src)).convert('RGB')
         im.thumbnail((LONG_EDGE, LONG_EDGE), Image.LANCZOS)
-        name = f'{slug}-{i:02d}.jpg'
-        im.save(out_dir / name, 'JPEG', quality=80, optimize=True, progressive=True)
+        tmp = out_dir / f'{slug}-{i:02d}.tmp.jpg'
+        im.save(tmp, 'JPEG', quality=80, optimize=True, progressive=True)
+        # Inhalts-Kennung im Namen: geaenderte Bilder bekommen einen neuen Namen,
+        # sonst zeigen Browser-Caches noch die alte Version (passiert 02.11.2026).
+        name = f'{slug}-{i:02d}-{hashlib.sha256(tmp.read_bytes()).hexdigest()[:8]}.jpg'
+        tmp.rename(out_dir / name)
         paths.append(f'/galerie/{slug}/{name}')
         print(f'{name}  {(out_dir / name).stat().st_size // 1024} KB  <- {src.name}')
 
