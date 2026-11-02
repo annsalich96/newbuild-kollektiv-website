@@ -42,6 +42,7 @@ Jedes Event bekommt beim Build automatisch eine eigene Unterseite unter `events/
 - Neues Event-Feld `introLabel` (Standard: `"Mission"`) ist das Eyebrow-Label über dem Titel — **kein Session-Nummer-Feld**, sondern frei editierbar über Pages CMS (Ann kann daraus z.B. auch "Session 01" machen, wenn gewünscht).
 - Grid-Positionen der Event-Seite (Spalten/Balken) sind in `04-projects/newbuild-kollektiv-website/design files/Anmeldeseite_Spaltensystem.pdf` vorgegeben und am 2026-07-31 direkt aus den PDF-Koordinaten (nicht per Augenmaß) ausgemessen worden — Element-Tabelle mit den exakten Werten steht in [`docs/anmeldeseite-grid-tabelle.md`](./docs/anmeldeseite-grid-tabelle.md).
 - Registrierungsformular (`src/event-form.ts`) sendet an Google Apps Script, siehe nächster Abschnitt.
+- **Galerie nach dem Event** (seit 2026-11-02): CMS-Feld `gallery` (Liste von Bildpfaden). Ab dem Tag nach dem Event (Prüfung im Browser, `src/event-date.ts`, gleiche Logik wie „View Past“) ersetzt sie das Formular (`src/event-gallery.ts`); ohne Fotos bleibt das Formular, mit `?checkin=1` ebenfalls. Fotos: 10–12 aus `Photos_watermarked` des Events (Drive „NewBuild Kollektiv/Events/<Event>/“) auswählen und mit `python3 scripts/galerie-bilder.py <slug> <fotos…>` verkleinern → `public/galerie/<slug>/`, trägt `gallery` in events.json ein.
 
 ## Geteilte Bausteine (Nav, Footer, Sponsoren-Leiste)
 

@@ -20,6 +20,20 @@
         {
           "name": "Sponsor & Gastgeber ist Projo Berlin "
         }
+      ],
+      "gallery": [
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-01.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-02.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-03.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-04.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-05.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-06.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-07.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-08.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-09.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-10.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-11.jpg",
+        "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-12.jpg"
       ]
     },
     {
@@ -34,7 +48,21 @@
       "location": "DAZ, Wilhelmine-Gemberg-Weg 6, 10179 Berlin",
       "speakerName": "SPEAKERS",
       "speakerBio": "Mariana Cabugueira - MC Studios,\nMartin Jasper - Jasper Architect,\nEike Becker - Eike Becker Architekten,\nMark Szoke - VISOID,\nGeorg Schmidthals - GRAFT ",
-      "description": "Neue KI-Tools, Visualisierungslösungen und digitale Workflows erscheinen fast täglich. Die Möglichkeiten sind enorm – gleichzeitig fehlt im Büroalltag oft die Zeit, alles selbst zu testen und herauszufinden, was wirklich funktioniert.\n\nGenau deshalb habe ich gemeinsam mit Maria Stasevich “Architecture Intelligence” ins Leben gerufen: eine Veranstaltung für den Austausch zwischen Architektur und Technologie.\n\nAm 24. September 2026 bringen wir im Deutsches Architektur Zentrum DAZ in Berlin Architekt:innen, Planer:innen und Technologieunternehmen zusammen.\n\nIn drei moderierten Sessions sprechen wir über:\n\n→ Practice & Leadership\n→ Visualization & Creative Technologies\n→ BIM, Collaboration & Digital Construction\n"
+      "description": "Neue KI-Tools, Visualisierungslösungen und digitale Workflows erscheinen fast täglich. Die Möglichkeiten sind enorm – gleichzeitig fehlt im Büroalltag oft die Zeit, alles selbst zu testen und herauszufinden, was wirklich funktioniert.\n\nGenau deshalb habe ich gemeinsam mit Maria Stasevich “Architecture Intelligence” ins Leben gerufen: eine Veranstaltung für den Austausch zwischen Architektur und Technologie.\n\nAm 24. September 2026 bringen wir im Deutsches Architektur Zentrum DAZ in Berlin Architekt:innen, Planer:innen und Technologieunternehmen zusammen.\n\nIn drei moderierten Sessions sprechen wir über:\n\n→ Practice & Leadership\n→ Visualization & Creative Technologies\n→ BIM, Collaboration & Digital Construction\n",
+      "gallery": [
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-01.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-02.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-03.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-04.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-05.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-06.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-07.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-08.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-09.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-10.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-11.jpg",
+        "/galerie/session-02-architecture-intelligence/session-02-architecture-intelligence-12.jpg"
+      ]
     },
     {
       "slug": "session-03-ordner-zum-tool",
@@ -56,6 +84,20 @@
         {
           "name": "Sponsored by KALDEWEI"
         }
+      ],
+      "gallery": [
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-01.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-02.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-03.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-04.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-05.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-06.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-07.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-08.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-09.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-10.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-11.jpg",
+        "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-12.jpg"
       ]
     }
   ]

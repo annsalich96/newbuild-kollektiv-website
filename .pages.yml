@@ -84,6 +84,11 @@ content:
               - name: name
                 label: Name
                 type: string
+          - name: gallery
+            label: "Galerie nach dem Event (optional, 10-12 Fotos) - sobald das Event vorbei ist, ersetzt sie auf der Eventseite das Anmeldeformular"
+            type: image
+            required: false
+            list: true
 
   - name: team
     label: Team

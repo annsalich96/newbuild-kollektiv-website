@@ -91,6 +91,32 @@ export function generateEventPages() {
         </div>
       </dl>`
 
+    // Galerie (CMS-Feld "gallery", optional): wird immer mitgeneriert, aber
+    // versteckt - event-form.ts blendet sie erst ein und das Formular aus,
+    // wenn das Event vorbei ist (Pruefung im Browser, wie "View Past" auf
+    // der Startseite). Ohne Fotos bleibt alles wie bisher.
+    const gallery = (event.gallery || []).filter(Boolean)
+    const gallerySection = gallery.length
+      ? `<section class="event-form-section event-gallery-section" id="event-gallery" hidden>
+      <div class="grid">
+        <p class="event-form-section__label">Impressionen</p>
+        <div class="event-gallery" tabindex="0" aria-roledescription="Galerie" aria-label="Impressionen vom Event">
+          <ul class="event-gallery__track">
+            ${gallery
+              .map(
+                (src, i) =>
+                  `<li class="event-gallery__slide"><img src="${escapeHtml(src)}" alt="Impression ${i + 1} von ${gallery.length}" ${i ? 'loading="lazy"' : ''} /></li>`
+              )
+              .join('\n            ')}
+          </ul>
+          <button type="button" class="event-gallery__arrow event-gallery__arrow--prev" aria-label="Vorheriges Bild">‹</button>
+          <button type="button" class="event-gallery__arrow event-gallery__arrow--next" aria-label="Nächstes Bild">›</button>
+          <p class="event-gallery__counter" aria-live="polite">1 / ${gallery.length}</p>
+        </div>
+      </div>
+    </section>`
+      : ''
+
     const html = template
       .replaceAll('__TITLE__', escapeHtml(event.title))
       .replaceAll('__NUMBER__', escapeHtml(event.number || ''))
@@ -107,6 +133,7 @@ export function generateEventPages() {
       .replaceAll('__EVENT_META_BLOCK__', eventMetaBlock)
       .replaceAll('__SPEAKER_PHOTO__', speakerPhoto)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
+      .replaceAll('__GALLERY_SECTION__', gallerySection)
       // Eventfarbe aus Pages CMS (Feld "Farbe") -> Hintergrund-Verlauf der
       // Seite (.event-hero), dieselbe Farbe wie auf der Mail-Karte.
       .replaceAll('__EVENT_FARBE__', eventFarbe(event))

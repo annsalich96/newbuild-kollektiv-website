@@ -3,6 +3,7 @@ import eventsData from './content/events.json'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
+import { initEventGallery } from './event-gallery'
 
 // sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
@@ -32,6 +33,8 @@ const status = form?.querySelector<HTMLParagraphElement>('.event-form__status')
 // leitet das Skript hierher weiter: ?checkin=1&vorname=…&nachname=…&foto=1
 const params = new URLSearchParams(window.location.search)
 const fromCheckin = params.get('checkin') === '1'
+
+initEventGallery(form?.getAttribute('data-event-date') ?? '', fromCheckin)
 
 if (form instanceof HTMLFormElement && status) {
   const prefill = (name: string, value: string | null) => {

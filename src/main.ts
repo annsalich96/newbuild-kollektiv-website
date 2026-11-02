@@ -1,5 +1,6 @@
 import './style.css'
 import eventsData from './content/events.json'
+import { isPastEvent } from './event-date'
 import teamData from './content/team.json'
 import missionAboutData from './content/mission-about.json'
 import heroData from './content/hero.json'
@@ -79,18 +80,6 @@ if (nextEvent) {
   setText('next-event-location', nextEvent.location)
   const nextEventCta = document.getElementById('next-event-cta')
   if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
-}
-
-// Vergangen = Event-Tag ist komplett vorbei. Wird im Browser beim Laden
-// geprueft (nicht beim Build), damit der Button am Tag nach dem Event von
-// selbst umspringt, ohne neues Deployment. Datum kommt aus dem CMS-Feld
-// "date" im Format "Di., 01.09.2026".
-const isPastEvent = (date: string) => {
-  const match = date.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
-  if (!match) return false
-  const [, day, month, year] = match
-  const dayAfter = new Date(Number(year), Number(month) - 1, Number(day) + 1)
-  return Date.now() >= dayAfter.getTime()
 }
 
 const sessionRow = document.getElementById('session-row')
