@@ -706,6 +706,11 @@ ul {
   margin: 0;
 }
 
+/* "Stay tuned": kein kommendes Event -> Zeit/Ort/Referent ausblenden (main.ts). */
+.event-card__meta[hidden] {
+  display: none;
+}
+
 .event-card__meta {
   /* Endet bei Spalte 12 statt 13 (einen Balken frueher, Absprache), buendig
      mit .event-card__title - siehe Kommentar dort. */
@@ -1683,6 +1688,13 @@ ul {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
   min-height: 1.2em;
+}
+
+/* Hinweis unter dem Newsletter-Formular (Pruefung durch das Kollektiv). */
+.event-form__hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
 }
 
 /* Solange keine Statusmeldung da ist, kein Platz reservieren (sonst kommt

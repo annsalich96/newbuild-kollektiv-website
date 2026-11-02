@@ -125,7 +125,7 @@ function eventSeiteUrl_(slug) {
 
 // Formularseite auf der Website (funktioniert unabhaengig vom Google-Login,
 // sendet im Hintergrund an dieses Skript). do = abmelden | checkin | feedback
-// | referent | fotowiderspruch | fotoinfo
+// | referent | fotowiderspruch | fotoinfo | nlbestaetigen | nlfreigabe
 const SITE_FORM_URL = 'https://newbuild-kollektiv.com/f/'
 
 const SHEET_HEADERS = [
@@ -175,6 +175,9 @@ function doPost(e) {
         if (data.action === 'referent') return jsonResponse(referentVerarbeiten_(data))
         if (data.action === 'fotowiderspruch') return jsonResponse(fotoWiderspruchVerarbeiten_(data))
         if (data.action === 'medien') return jsonResponse(medienAntwortVerarbeiten_(data))
+        if (data.action === 'newsletter') return jsonResponse(newsletterAnmelden_(data))
+        if (data.action === 'nlbestaetigen') return jsonResponse(newsletterBestaetigen_(data))
+        if (data.action === 'nlfreigabe') return jsonResponse(newsletterFreigabe_(data))
         if (data.action === 'mailvorschau') return jsonResponse({ ok: true, html: mailVorschauHtml_(String(data.slug || '')) })
         if (data.action === 'mailtest') return jsonResponse({ ok: true, html: mailTestHtml_(String(data.slug || '')) })
         return jsonResponse({ ok: false, html: '<h1>Unbekannt</h1><p>Aktion nicht erkannt.</p>' })
@@ -1139,6 +1142,295 @@ function referentVerarbeiten_(p) {
 
 function referentLink_() {
   return SITE_FORM_URL + '?do=referent'
+}
+
+// ── Newsletter-Anmeldung mit Pruefung (seit 02.11.2026) ─────────────────────
+// Ablauf: Formular auf newbuild-kollektiv.com/newsletter/ -> Zeile in
+// "Newsletter-Anfragen" + Eingangsmail an die Person (mit Link zum Bestaetigen
+// der Adresse = Double-Opt-in, rechtlich fuer Newsletter noetig) -> nach dem
+// Bestaetigen Pruef-Mail an NEWSLETTER_PRUEFER mit "Aufnehmen"/"Ablehnen" ->
+// Aufnehmen: Zusage-Mail + Eintrag in "History Anmeldungen" (Newsletter = Ja).
+// Ablehnen: nur Status, keine Mail an die Person.
+const NEWSLETTER_SHEET_NAME = 'Newsletter-Anfragen'
+const NEWSLETTER_HEADERS = [
+  'Datum',
+  'Anrede',
+  'Vorname',
+  'Nachname',
+  'E-Mail',
+  'Unternehmen',
+  'Unternehmensadresse',
+  'Telefonnummer',
+  'Berufsstand',
+  'Profil',
+  'Status',
+  'E-Mail bestätigt',
+  'Entschieden',
+  'Token',
+  'Freigabe-Token',
+]
+const NEWSLETTER_PRUEFER = NOTIFY_EMAIL
+// false = Pruef-Mail sofort nach dem Absenden statt erst nach dem Bestaetigen
+// der Adresse (dann fehlt der rechtlich noetige Double-Opt-in).
+const NEWSLETTER_DOI = true
+
+function newsletterSheet_() {
+  const vorhanden = allgemeineDatei_(NEWSLETTER_SHEET_NAME)
+  if (vorhanden) return SpreadsheetApp.open(vorhanden).getSheets()[0]
+  const ss = SpreadsheetApp.create(NEWSLETTER_SHEET_NAME)
+  moveFileIntoFolder(DriveApp.getFileById(ss.getId()), allgemeinOrdner_())
+  const sheet = ss.getSheets()[0]
+  sheet.appendRow(NEWSLETTER_HEADERS)
+  sheet.setFrozenRows(1)
+  sheet.hideColumns(NEWSLETTER_HEADERS.indexOf('Token') + 1, 2)
+  return sheet
+}
+
+// Zeile als Objekt {Spaltenname: Wert, _row: Zeilennummer} – sucht per Spalte/Wert.
+function newsletterZeile_(sheet, spalte, wert) {
+  if (!wert) return null
+  const werte = sheet.getDataRange().getValues()
+  const kopf = werte[0]
+  const i = kopf.indexOf(spalte)
+  for (let r = werte.length - 1; r >= 1; r--) {
+    if (String(werte[r][i]).trim().toLowerCase() === String(wert).trim().toLowerCase()) {
+      const z = { _row: r + 1 }
+      kopf.forEach(function (k, j) { z[k] = werte[r][j] })
+      return z
+    }
+  }
+  return null
+}
+
+function newsletterSetze_(sheet, row, felder) {
+  Object.keys(felder).forEach(function (k) {
+    sheet.getRange(row, ensureColumn_(sheet, k)).setValue(felder[k])
+  })
+}
+
+function newsletterToken_() {
+  return Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8)
+}
+
+function newsletterLink_(aktion, token, ja) {
+  return SITE_FORM_URL + '?do=' + aktion + '&t=' + token + (ja === undefined ? '' : '&a=' + (ja ? 'ja' : 'nein'))
+}
+
+function profilUrl_(roh) {
+  const s = String(roh || '').trim()
+  if (!s) return ''
+  return /^https?:\/\//i.test(s) ? s : 'https://' + s
+}
+
+function mailButton_(href, text) {
+  return (
+    '<p><a href="' + href + '" style="display:inline-block;padding:11px 26px;border:2px solid #111;' +
+    'border-radius:999px;color:#111;text-decoration:none;text-transform:uppercase;letter-spacing:.08em;' +
+    'font-size:12px">' + escapeHtml_(text) + '</a></p>'
+  )
+}
+
+function newsletterAnmelden_(p) {
+  const d = {
+    Anrede: String(p.anrede || '').trim(),
+    Vorname: String(p.firstName || '').trim(),
+    Nachname: String(p.lastName || '').trim(),
+    'E-Mail': String(p.email || '').trim(),
+    Unternehmen: String(p.company || '').trim(),
+    Unternehmensadresse: String(p.companyAddress || '').trim(),
+    Telefonnummer: normalizePhone(p.phone),
+    Berufsstand: String(p.profession || '').trim(),
+    Profil: profilUrl_(p.profileUrl),
+  }
+  if (!d.Vorname || !d.Nachname || !d.Unternehmen || !d.Berufsstand || !p.privacy ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d['E-Mail'])) {
+    return { ok: false, error: 'Bitte alle Pflichtfelder ausfüllen.' }
+  }
+
+  const sheet = newsletterSheet_()
+  const lock = LockService.getScriptLock()
+  lock.waitLock(20000)
+  let zeile
+  try {
+    const alt = newsletterZeile_(sheet, 'E-Mail', d['E-Mail'])
+    if (alt && alt.Status === 'angenommen') {
+      return { ok: true, message: 'Du bist schon in unserem Newsletter – schön, dass du dabei bist!' }
+    }
+    if (alt && alt.Status !== 'abgelehnt') {
+      // Erneut abgeschickt, solange noch offen: Angaben aktualisieren statt Dublette.
+      newsletterSetze_(sheet, alt._row, d)
+      zeile = newsletterZeile_(sheet, 'E-Mail', d['E-Mail'])
+    } else {
+      const neu = Object.assign({}, d, {
+        Datum: Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
+        Status: 'offen',
+        Token: newsletterToken_(),
+        'Freigabe-Token': newsletterToken_(),
+      })
+      sheet.appendRow(NEWSLETTER_HEADERS.map(function (h) { return neu[h] || '' }))
+      zeile = newsletterZeile_(sheet, 'Token', neu.Token)
+    }
+  } finally {
+    lock.releaseLock()
+  }
+
+  try {
+    newsletterEingangMail_(zeile)
+  } catch (err) {
+    Logger.log('Newsletter — Eingangsmail fehlgeschlagen (' + d['E-Mail'] + '): ' + err)
+  }
+  if (!NEWSLETTER_DOI && !zeile['E-Mail bestätigt']) {
+    try { newsletterPruefMail_(zeile) } catch (err) { Logger.log('Newsletter — Pruef-Mail fehlgeschlagen: ' + err) }
+  }
+  return {
+    ok: true,
+    message: NEWSLETTER_DOI
+      ? 'Danke! Wir haben dir eine E-Mail geschickt – bitte bestätige darin kurz deine Adresse. Danach prüfen wir deine Anmeldung.'
+      : 'Danke! Deine Anmeldung ist bei uns eingegangen. Wir prüfen sie und melden uns per E-Mail.',
+  }
+}
+
+function newsletterEingangMail_(z) {
+  const html = wrapMail_(
+    '<p>' + escapeHtml_(anrede_(z.Anrede, z.Vorname)) + ',</p>' +
+      '<p>vielen Dank für deine Anmeldung zum Newsletter des NewBuild Kollektiv! Deine Anmeldung ist bei uns eingegangen.</p>' +
+      (NEWSLETTER_DOI
+        ? '<p>Bitte bestätige noch kurz deine E-Mail-Adresse:</p>' +
+          mailButton_(newsletterLink_('nlbestaetigen', z.Token), 'E-Mail-Adresse bestätigen')
+        : '') +
+      '<p>Danach prüfen wir, ob wir dich in die Liste aufnehmen können, und melden uns bei dir.</p>' +
+      '<p>Liebe Grüße,</p>' +
+      (NEWSLETTER_DOI
+        ? '<p style="color:#666;font-size:13px;margin-top:20px">Du hast dich nicht angemeldet? Dann ignoriere diese E-Mail einfach.</p>'
+        : ''),
+  )
+  sendeTeilnehmerMail_(z['E-Mail'], 'Deine Anmeldung beim NewBuild Kollektiv', html)
+}
+
+function newsletterPruefMail_(z) {
+  const zeilen = [
+    ['Name', [z.Anrede, z.Vorname, z.Nachname].filter(Boolean).join(' ')],
+    ['E-Mail', z['E-Mail']],
+    ['Unternehmen', z.Unternehmen],
+    ['Adresse', z.Unternehmensadresse],
+    ['Telefon', z.Telefonnummer],
+    ['Berufsstand', z.Berufsstand],
+    ['Profil', z.Profil ? '<a href="' + escapeHtml_(z.Profil) + '">' + escapeHtml_(z.Profil) + '</a>' : ''],
+  ]
+  const tabelle =
+    '<table style="border-collapse:collapse;margin:0 0 18px">' +
+    zeilen
+      .filter(function (r) { return r[1] })
+      .map(function (r) {
+        return '<tr><td style="padding:3px 18px 3px 0;color:#666">' + r[0] + '</td><td style="padding:3px 0">' +
+          (r[0] === 'Profil' ? r[1] : escapeHtml_(r[1])) + '</td></tr>'
+      })
+      .join('') +
+    '</table>'
+  const html = wrapMail_(
+    '<p>Neue Newsletter-Anmeldung' + (NEWSLETTER_DOI ? ' (E-Mail-Adresse bestätigt)' : '') + ':</p>' +
+      tabelle +
+      mailButton_(newsletterLink_('nlfreigabe', z['Freigabe-Token'], true), 'Aufnehmen') +
+      '<p><a href="' + newsletterLink_('nlfreigabe', z['Freigabe-Token'], false) + '" style="color:#666">Ablehnen</a></p>' +
+      '<p style="color:#666;font-size:13px">Alle Anfragen: <a href="' + newsletterSheet_().getParent().getUrl() +
+      '" style="color:#666">Newsletter-Anfragen</a></p>',
+  )
+  GmailApp.sendEmail(
+    NEWSLETTER_PRUEFER,
+    'Newsletter-Anmeldung prüfen: ' + z.Vorname + ' ' + z.Nachname + ' (' + z.Unternehmen + ')',
+    htmlToPlain_(html),
+    { name: SENDER_NAME, from: SENDER_EMAIL, replyTo: z['E-Mail'], htmlBody: html },
+  )
+}
+
+function newsletterBestaetigen_(p) {
+  const sheet = newsletterSheet_()
+  const z = newsletterZeile_(sheet, 'Token', p.t)
+  if (!z) return abmeldeSeite_('<h1>Hm</h1><p>Dieser Link ist nicht (mehr) gültig.</p>')
+  if (!z['E-Mail bestätigt']) {
+    newsletterSetze_(sheet, z._row, {
+      'E-Mail bestätigt': Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
+    })
+    if (z.Status === 'offen') {
+      newsletterSetze_(sheet, z._row, { Status: 'bestätigt' })
+      z.Status = 'bestätigt'
+    }
+    if (NEWSLETTER_DOI && z.Status === 'bestätigt') newsletterPruefMail_(z)
+  }
+  return abmeldeSeite_(
+    '<h1>Danke!</h1><p>Deine E-Mail-Adresse ist bestätigt. Wir prüfen deine Anmeldung und melden uns bei dir.</p>',
+    'Danke – NewBuild Kollektiv',
+  )
+}
+
+function newsletterFreigabe_(p) {
+  const sheet = newsletterSheet_()
+  const z = newsletterZeile_(sheet, 'Freigabe-Token', p.t)
+  if (!z) return abmeldeSeite_('<h1>Hm</h1><p>Dieser Link ist nicht (mehr) gültig.</p>')
+  const name = escapeHtml_(z.Vorname + ' ' + z.Nachname)
+  if (z.Status === 'angenommen' || z.Status === 'abgelehnt') {
+    return abmeldeSeite_('<h1>Schon erledigt</h1><p>' + name + ' ist bereits ' + z.Status + '.</p>')
+  }
+  const jetzt = Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm')
+  if (p.a !== 'ja') {
+    newsletterSetze_(sheet, z._row, { Status: 'abgelehnt', Entschieden: jetzt })
+    return abmeldeSeite_('<h1>Abgelehnt</h1><p>' + name + ' wurde nicht aufgenommen und bekommt keine E-Mail.</p>')
+  }
+  newsletterSetze_(sheet, z._row, { Status: 'angenommen', Entschieden: jetzt })
+  newsletterInHistory_(z)
+  let mailHinweis = 'Die Zusage-Mail ist raus.'
+  try {
+    newsletterZusageMail_(z)
+  } catch (err) {
+    mailHinweis = 'Die Zusage-Mail konnte nicht gesendet werden (' + escapeHtml_(err) + ') – bitte von Hand schreiben.'
+    Logger.log('Newsletter — Zusage-Mail fehlgeschlagen: ' + err)
+  }
+  return abmeldeSeite_(
+    '<h1>Aufgenommen</h1><p>' + name + ' steht jetzt in History Anmeldungen. ' + mailHinweis + '</p>',
+  )
+}
+
+function newsletterZusageMail_(z) {
+  const html = wrapMail_(
+    '<p>' + escapeHtml_(anrede_(z.Anrede, z.Vorname)) + ',</p>' +
+      '<p>schöne Nachrichten: Das NewBuild Kollektiv hat dich in den Newsletter aufgenommen!</p>' +
+      '<p>Ab jetzt erfährst du als Erste:r von unseren nächsten Events. Wir freuen uns, dich bald persönlich kennenzulernen.</p>' +
+      '<p>Liebe Grüße,</p>' +
+      '<p style="color:#666;font-size:13px;margin-top:20px">Du möchtest keine E-Mails mehr von uns? Antworte einfach kurz auf diese E-Mail.</p>',
+  )
+  sendeTeilnehmerMail_(z['E-Mail'], 'Willkommen im NewBuild Kollektiv', html, undefined, true)
+}
+
+// Aufgenommene Person in "History Anmeldungen": vorhandene Zeile (gleiche
+// E-Mail) bekommt Newsletter = Ja + Berufsstand/Profil, sonst neue Zeile mit
+// Quelle "Newsletter-Anmeldung" (ohne Event, Anzahl Anmeldungen 0).
+function newsletterInHistory_(z) {
+  const sheet = getOrCreateHistorySpreadsheet().getSheets()[0]
+  const vorhanden = newsletterZeile_(sheet, 'E-Mail', z['E-Mail'])
+  let row
+  if (vorhanden) {
+    row = vorhanden._row
+    newsletterSetze_(sheet, row, { Newsletter: 'Ja' })
+  } else {
+    sheet.appendRow([
+      z.Vorname,
+      z.Nachname,
+      z['E-Mail'],
+      z.Unternehmen,
+      z.Unternehmensadresse,
+      z.Telefonnummer,
+      'Ja',
+      Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy'),
+      '',
+      0,
+      anredeCode_(z.Anrede),
+    ])
+    row = sheet.getLastRow()
+    newsletterSetze_(sheet, row, { Quelle: 'Newsletter-Anmeldung' })
+  }
+  const extra = { Berufsstand: z.Berufsstand }
+  if (z.Profil) extra.Profil = z.Profil
+  newsletterSetze_(sheet, row, extra)
 }
 
 // ── Feedback-Umfrage (nur Freitext) ────────────────────────────────────────

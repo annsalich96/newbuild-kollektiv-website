@@ -67,7 +67,13 @@ type EventItem = {
 }
 
 const events = eventsData.events as EventItem[]
-const nextEvent = events.find((e) => e.isNext) ?? events[0]
+// Angepinntes Event ("Als Next Event zeigen?"), solange es nicht vorbei ist -
+// sonst das naechste kommende Event. Gibt es keins (z.B. nach dem letzten
+// Event, bevor das naechste im CMS steht), zeigt der Kasten "Stay tuned" und
+// verweist auf die Newsletter-Anmeldung statt auf ein abgelaufenes Event.
+const upcoming = events.filter((e) => !isPastEvent(e.date))
+const nextEvent = upcoming.find((e) => e.isNext) ?? upcoming[0]
+const nextEventCta = document.getElementById('next-event-cta')
 if (nextEvent) {
   const speaker = nextEvent.speakerCompany
     ? `${nextEvent.speakerName ?? ''} — ${nextEvent.speakerCompany}`
@@ -79,8 +85,14 @@ if (nextEvent) {
   setText('next-event-speaker', speaker)
   setText('next-event-time', `${nextEvent.date}, ${nextEvent.time}`)
   setText('next-event-location', nextEvent.location)
-  const nextEventCta = document.getElementById('next-event-cta')
   if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
+} else {
+  setText('next-event-title', 'Stay tuned – das nächste Event wird bald bekanntgegeben.')
+  document.querySelector('.event-card--next .event-card__meta')?.setAttribute('hidden', '')
+  if (nextEventCta instanceof HTMLAnchorElement) {
+    nextEventCta.href = '/newsletter/'
+    nextEventCta.textContent = 'Newsletter'
+  }
 }
 
 const sessionRow = document.getElementById('session-row')

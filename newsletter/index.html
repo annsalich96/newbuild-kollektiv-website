@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Newsletter — NewBuild Kollektiv</title>
+    <meta name="description" content="Newsletter des NewBuild Kollektiv: als Erste:r von unseren nächsten Events erfahren." />
+  </head>
+  <body>
+    <div class="event-hero">
+      <div class="mobile-nav-bar">
+        <h1 class="hero__logo">
+          <img src="/logo-wordmark.png" alt="NewBuild Kollektiv" width="815" height="195" />
+        </h1>
+        <button
+          type="button"
+          class="mobile-nav-toggle"
+          aria-label="Menü öffnen"
+          aria-expanded="false"
+          aria-controls="mobile-nav-panel"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+      </div>
+      <nav id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Hauptnavigation" hidden>
+        <a href="/#mission">Mission</a>
+        <a href="/#events">Events</a>
+        <a href="/#sponsoring">Sponsoring</a>
+        <a href="/#about">About</a>
+      </nav>
+
+      <header class="site-nav">
+        <div class="site-nav__pill">
+          <a href="/" class="site-nav__logo" aria-label="NewBuild Kollektiv Startseite">
+            <img src="/logo-mark.png" alt="" width="29" height="28" />
+          </a>
+          <nav aria-label="Hauptnavigation">
+            <a href="/#mission">Mission</a>
+            <a href="/#events">Events</a>
+            <a href="/#sponsoring">Sponsoring</a>
+            <a href="/#about">About</a>
+          </nav>
+        </div>
+      </header>
+
+      <section class="grid event-detail__intro">
+        <p class="section__eyebrow">Newsletter</p>
+        <h2 class="event-detail__title">Bleib auf dem Laufenden</h2>
+        <p class="event-detail__description">Das NewBuild Kollektiv bringt Architekt:innen, Planer:innen und Menschen aus der Baubranche zusammen, die die Zukunft des Planens und Bauens aktiv gestalten wollen. Über unseren Newsletter erfährst du als Erste:r von unseren nächsten Events.</p>
+        <p class="event-detail__description">Damit die Runde passt, prüfen wir jede Anmeldung persönlich.</p>
+      </section>
+
+      <div class="grid divider-row divider-row--before-sponsoring"><hr class="divider" /></div>
+
+      <div class="marquee sponsor-marquee" aria-label="Sponsoren">
+        <div class="marquee__inner">
+          <ul class="marquee__track" id="sponsor-track"></ul>
+        </div>
+      </div>
+    </div>
+
+    <section class="event-form-section">
+      <div class="grid">
+        <p class="event-form-section__label">Anmeldung</p>
+        <form class="event-form" id="newsletter-form">
+          <div class="event-form__row">
+            <label>
+              <span>Anrede</span>
+              <select name="anrede" required>
+                <option value="" disabled selected></option>
+                <option value="Frau">Frau</option>
+                <option value="Herr">Herr</option>
+                <option value="Divers">Divers</option>
+              </select>
+            </label>
+          </div>
+          <div class="event-form__row">
+            <label>
+              <span>Vorname</span>
+              <input type="text" name="firstName" required />
+            </label>
+            <label>
+              <span>Nachname</span>
+              <input type="text" name="lastName" required />
+            </label>
+          </div>
+          <div class="event-form__row">
+            <label>
+              <span>Unternehmen</span>
+              <input type="text" name="company" required />
+            </label>
+            <label>
+              <span>Unternehmensadresse</span>
+              <input type="text" name="companyAddress" />
+            </label>
+          </div>
+          <div class="event-form__row">
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" required />
+            </label>
+            <label>
+              <span>Telefonnummer</span>
+              <input
+                type="tel"
+                name="phone"
+                placeholder="+49 151 23456789"
+                pattern="^\+?[0-9\s/()-]{6,20}$"
+                title="Bitte gib eine gültige Telefonnummer ein, z. B. +49 151 23456789"
+              />
+            </label>
+          </div>
+          <div class="event-form__row">
+            <label>
+              <span>Berufsstand</span>
+              <select name="profession" required>
+                <option value="" disabled selected></option>
+                <option value="Architektur">Architektur</option>
+                <option value="Innenarchitektur">Innenarchitektur</option>
+                <option value="Landschaftsarchitektur">Landschaftsarchitektur</option>
+                <option value="Stadtplanung">Stadtplanung</option>
+                <option value="Fachplanung / Ingenieurwesen">Fachplanung / Ingenieurwesen</option>
+                <option value="Projektentwicklung">Projektentwicklung</option>
+                <option value="Bauherr / Immobilienwirtschaft">Bauherr / Immobilienwirtschaft</option>
+                <option value="Bauunternehmen / Handwerk">Bauunternehmen / Handwerk</option>
+                <option value="Hersteller / Industrie">Hersteller / Industrie</option>
+                <option value="Vertrieb">Vertrieb</option>
+                <option value="Software / Technologie">Software / Technologie</option>
+                <option value="Studium / Lehre / Forschung">Studium / Lehre / Forschung</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select>
+            </label>
+            <label>
+              <span>Profil-Link (optional)</span>
+              <input type="text" name="profileUrl" placeholder="LinkedIn, Instagram oder Website" />
+            </label>
+          </div>
+          <label class="event-form__checkbox">
+            <input type="checkbox" name="privacy" required />
+            <span
+              >Ich habe die
+              <a href="/datenschutzerklaerung.html" target="_blank" rel="noreferrer"
+                >Datenschutzerklärung</a
+              >
+              gelesen und stimme zu.</span
+            >
+          </label>
+          <p class="event-form__hint">
+            Das NewBuild Kollektiv prüft, ob wir dich in die Liste aufnehmen können. Du bekommst gleich
+            eine E-Mail zur Bestätigung deiner Adresse und nach unserer Prüfung Bescheid.
+          </p>
+          <button type="submit" class="button event-form__submit">Anmelden</button>
+          <p class="event-form__status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="grid">
+        <div class="site-footer__col">
+          <span id="footer-address">Wilmersdorfer Str. 108–111, 10627 Berlin</span>
+          <a id="footer-phone" href="tel:+491702828889">+49 170 2828889</a>
+          <a id="footer-email" href="mailto:request@newbuild-kollektiv.com"
+            >request@newbuild-kollektiv.com</a
+          >
+        </div>
+        <div class="site-footer__col">
+          <a id="footer-impressum-label" href="/impressum.html">Impressum</a>
+          <a id="footer-datenschutz-label" href="/datenschutzerklaerung.html">Datenschutz</a>
+          <a id="footer-widerrufsrecht-label" href="/widerrufsrecht.html">Widerrufsrecht</a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/newsletter-form.ts"></script>
+  </body>
+</html>

@@ -44,6 +44,7 @@ export default defineConfig({
           new URL('./datenschutzerklaerung.html', import.meta.url),
         ),
         widerrufsrecht: fileURLToPath(new URL('./widerrufsrecht.html', import.meta.url)),
+        newsletter: fileURLToPath(new URL('./newsletter/index.html', import.meta.url)),
         ...eventEntries,
       },
     },
