@@ -16,6 +16,30 @@ export function initStickyNav() {
     let naturalTop: number | null = null
     let stuckOffset = 0
 
+    // Platzhalter: haelt den Platz der Leiste im Seitenfluss frei, solange
+    // sie fixiert ist - sonst rutschte der Inhalt darunter beim Einrasten
+    // schlagartig um ihre Hoehe nach oben (Ann 2026-11-09: "springt").
+    const spacer = document.createElement('div')
+    spacer.setAttribute('aria-hidden', 'true')
+    spacer.style.display = 'none'
+    bar.before(spacer)
+    // Unsichtbare Leiste (Desktop-Nav auf Mobile display:none, Mobile-Leiste
+    // auf Desktop display:contents) braucht keinen Platzhalter.
+    const isRendered = () => getComputedStyle(bar).display !== 'none' && bar.getClientRects().length > 0
+
+    const setStuck = (stuck: boolean) => {
+      if (stuck === bar.classList.contains('is-stuck')) return
+      if (stuck && isRendered()) {
+        const style = getComputedStyle(bar)
+        spacer.style.height = `${bar.getBoundingClientRect().height}px`
+        spacer.style.marginTop = style.marginTop
+        spacer.style.display = 'block'
+      } else {
+        spacer.style.display = 'none'
+      }
+      bar.classList.toggle('is-stuck', stuck)
+    }
+
     // Misst den CSS-"top"-Wert von .is-stuck (z.B. 0.125*Balken bei der
     // Desktop-Nav, 0 bei der Mobile-Leiste) live ueber das Layout, statt ihn
     // hier als Zahl zu duplizieren — bleibt so automatisch korrekt, egal was
@@ -45,7 +69,7 @@ export function initStickyNav() {
       // blieb sie dadurch faelschlich im blurry/sticky Zustand haengen,
       // obwohl man sichtbar ganz oben war.
       const threshold = naturalTop - stuckOffset + 2
-      bar.classList.toggle('is-stuck', window.scrollY > threshold)
+      setStuck(window.scrollY > threshold)
     }
 
     stuckOffset = measureStuckOffset()
@@ -62,7 +86,7 @@ export function initStickyNav() {
     window.addEventListener('resize', () => {
       if (window.innerWidth === lastWidth) return
       lastWidth = window.innerWidth
-      bar.classList.remove('is-stuck')
+      setStuck(false)
       naturalTop = null
       stuckOffset = measureStuckOffset()
       update()

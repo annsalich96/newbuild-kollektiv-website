@@ -232,6 +232,7 @@ ul {
     /* Im Ruhezustand (noch nicht sticky) durchsichtig, damit das
        Hintergrundbild hinter Logo/Plus sichtbar bleibt (Absprache). */
     background: transparent;
+    transition: background-color 0.3s ease;
   }
 
   /* position:sticky allein reichte nicht (Eltern-Element .hero ist auf
@@ -383,6 +384,8 @@ ul {
   border-radius: 999px;
   /* Alle Kästen sind durchsichtig — nur die 1pt-Linie, Hintergrund scheint durch */
   background: transparent;
+  /* Glas-Hintergrund beim Einrasten weich einblenden statt schlagartig. */
+  transition: background-color 0.3s ease;
 }
 
 /* Schwebend (fixiert): durchscheinendes Weiss mit Weichzeichner statt
@@ -394,7 +397,9 @@ ul {
   background: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: var(--line-thickness) solid var(--color-border);
+  /* Kein zusaetzlicher border mehr: die outline (siehe oben) ist schon der
+     Rand - der border machte die Pille beim Einrasten ein paar Pixel hoeher,
+     sichtbar als kleiner Sprung (Ann 2026-11-09). */
 }
 
 .site-nav__logo {
