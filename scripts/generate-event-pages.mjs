@@ -49,17 +49,13 @@ export function generateEventPages() {
     //   Website:  Name, darunter "Position, Firma" (roleLine unten)
     //   E-Mail:   "Name, Position Firma"  (siehe Code.gs -> referentText_)
 
-    // Zweiteilige Titel ("Teil 1: Teil 2" oder "Teil 1 - Teil 2"): zweiter
-    // Teil in eigener Zeile, erster Teil endet immer mit Doppelpunkt statt
-    // Strich (Ann 2026-11-09). Gleiche Regel in src/main.ts.
-    const titleParts = (title) => {
-      const t = String(title || '').trim()
-      const m = t.match(/^(.+?):\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
-      return m ? [`${m[1]}:`, m[2]] : [t]
-    }
+    // Zweiteilige Titel: Doppelpunkt statt Strich zwischen den Teilen, auch
+    // wenn im CMS ein Strich steht; kein Zeilenumbruch, Text laeuft weiter
+    // (Ann 2026-11-09). Gleiche Regel in src/main.ts.
+    const titleText = (title) => String(title || '').trim().replace(/^(.+?)\s+[-–—]\s+/, '$1: ')
     // Zeitspannen einheitlich mit Halbgeviertstrich (wie timeRange in main.ts).
     const time = String(event.time || '').trim().replace(/\s*[-–—]\s*/g, '–')
-    const titleHtml = titleParts(event.title).map(escapeHtml).join('<br />')
+    const titleHtml = escapeHtml(titleText(event.title))
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
     // eigener Absatz, wie im PDF-Layout vorgegeben.
@@ -249,7 +245,7 @@ export function generateEventPages() {
 
     const html = template
       .replaceAll('__TITLE_HTML__', titleHtml)
-      .replaceAll('__TITLE__', escapeHtml(String(event.title || '').trim()))
+      .replaceAll('__TITLE__', escapeHtml(titleText(event.title)))
       .replaceAll('__NUMBER__', escapeHtml(event.number || ''))
       .replaceAll('__INTRO_LABEL__', escapeHtml(event.introLabel))
       .replaceAll('__DATE__', escapeHtml(event.date))

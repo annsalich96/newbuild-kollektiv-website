@@ -107,14 +107,10 @@ if (nextEvent) {
   }
 }
 
-// Zweiteilige Titel: zweiter Teil in eigener Zeile, erster Teil endet immer
-// mit Doppelpunkt, auch wenn im CMS ein Strich steht (Ann 2026-11-09;
-// gleiche Regel wie titleParts in scripts/generate-event-pages.mjs).
-const titleHtml = (title: string) => {
-  const t = title.trim()
-  const m = t.match(/^(.+?):\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
-  return m ? `${m[1]}:<br />${m[2]}` : t
-}
+// Zweiteilige Titel: Doppelpunkt statt Strich zwischen den Teilen, auch wenn
+// im CMS ein Strich steht; Text laeuft normal weiter (Ann 2026-11-09;
+// gleiche Regel wie titleText in scripts/generate-event-pages.mjs).
+const titleHtml = (title: string) => title.trim().replace(/^(.+?)\s+[-–—]\s+/, '$1: ')
 
 const sessionRow = document.getElementById('session-row')
 if (sessionRow) {
