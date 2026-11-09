@@ -1474,6 +1474,12 @@ ul {
   background: var(--color-bg);
 }
 
+/* Newsletter-Seite: kein Laufband, daher auch keine Abschlusslinie - nur
+   1 Balken Luft bis zum Formular (Ann 2026-11-09). */
+.event-hero__end {
+  height: var(--balken);
+}
+
 .event-detail__title {
   /* Spalten 5-11 (E-K) laut Element-Tabelle, Balken 7. */
   grid-column: 5 / 12;
