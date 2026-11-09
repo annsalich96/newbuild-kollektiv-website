@@ -445,8 +445,10 @@ ul {
 
 .site-nav nav a {
   text-decoration: none;
-  font-size: var(--font-size-ui);
-  letter-spacing: 0.01em;
+  /* Versalien bleiben in der Navigation (Ann 2026-11-09). */
+  text-transform: uppercase;
+  font-size: var(--font-size-capital);
+  letter-spacing: var(--letter-spacing-label);
   white-space: nowrap;
   /* Ohne min-width:0 wuchs die Spalte von "Sponsoring" (laengstes Wort)
      ueber ihren nominalen 1fr-Anteil hinaus (Grid-Items schrumpfen sonst
