@@ -518,7 +518,7 @@ ul {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-muted);
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-sm);
@@ -542,7 +542,7 @@ ul {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
-  color: var(--color-muted);
+  color: var(--color-text);
   margin: 0;
   /* Kompensiert das Leading der eigenen Zeilenhöhe (1.5× Body-Zeilenhöhe),
      damit der sichtbare Textanfang exakt mit .section__statement fluchtet
@@ -644,7 +644,7 @@ ul {
   display: block;
   font-size: var(--font-size-ui-small);
   font-weight: var(--font-weight-light);
-  color: var(--color-muted);
+  color: var(--color-text);
 }
 
 /* ---------- Events: Next-Event-Kasten (grid-tabelle.md Nr. 8–12) ----------
@@ -670,7 +670,11 @@ ul {
   padding-inline: 0;
   /* Ueber "Next Event"/"Session 01 - ..." soll 1 Balken frei sein statt
      der generischen space-7-Polsterung (Absprache). */
-  padding-block: var(--balken) var(--space-7);
+  /* Mindestens 0,5 Balken oben/unten; src/balken-snap.ts rundet die
+     Gesamthoehe auf ganze Balken auf (aktuell 3), der Inhalt sitzt
+     mittig - oben und unten gleich viel Luft (Hoehengrid, Ann 2026-11-09). */
+  padding-block: calc(0.5 * var(--balken));
+  align-content: center;
   background: transparent;
 }
 
@@ -687,7 +691,7 @@ ul {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
-  color: var(--color-muted);
+  color: var(--color-text);
   margin: 0;
   /* Spalte B ist schmaler als "NEXT EVENT" — ohne nowrap brach es auf
      "NEXT"/"EVENT" um. Ueberlaeuft jetzt sichtbar in die Gutter statt
@@ -751,7 +755,7 @@ ul {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
+  color: var(--color-text);
 }
 
 .event-card__meta dd {
@@ -822,9 +826,17 @@ ul {
   gap: var(--grid-gutter);
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
-  padding: var(--space-6) 0;
+  /* 0,5 Balken oben/unten (Hoehengrid, Ann 2026-11-09); Gesamthoehe wird
+     von src/balken-snap.ts auf ganze Balken gerundet. */
+  padding: calc(0.5 * var(--balken)) 0;
   background: transparent;
   text-align: center;
+}
+
+/* Zeile 2 (Titel) nimmt die beim Runden auf ganze Balken gewonnene Hoehe
+   auf, damit Referent/Datum und Button unten in allen Kaesten fluchten. */
+.page-section--6 .grid:has(> .session-row) {
+  grid-template-rows: auto 1fr auto auto;
 }
 
 /* Volle Kastenbreite statt nur der mittleren 2 Spalten — weniger Zeilenumbrüche,
@@ -863,7 +875,7 @@ ul {
 .session-card__text {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  color: var(--color-muted);
+  color: var(--color-text);
   margin-block: var(--line-height-regular-text) 0;
 }
 
@@ -874,7 +886,7 @@ ul {
 .session-card__meta-block {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  color: var(--color-muted);
+  color: var(--color-text);
   margin-block: var(--line-height-regular-text) 0;
 }
 
@@ -1135,7 +1147,7 @@ ul {
   text-transform: uppercase;
   font-size: var(--font-size-capital);
   letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
+  color: var(--color-text);
   background: transparent;
   white-space: nowrap;
 }
@@ -1193,7 +1205,7 @@ ul {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-muted);
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
@@ -1280,9 +1292,11 @@ ul {
 
 .site-footer__col a,
 .site-footer__col span {
-  /* Versalien wie die Navigation (Ann 2026-11-09). */
+  /* Versalien wie die Navigation, aber Light - weiss auf Schwarz wirkt
+     Regular zu kraeftig (Ann 2026-11-09). */
   text-transform: uppercase;
   font-size: var(--font-size-capital);
+  font-weight: var(--font-weight-light);
   letter-spacing: var(--letter-spacing-label);
   text-decoration: none;
 }
@@ -1514,7 +1528,7 @@ ul {
      (dieselbe Groesse wie .event-detail__description). */
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  color: var(--color-muted);
+  color: var(--color-text);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
@@ -1543,13 +1557,13 @@ ul {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
+  color: var(--color-text);
 }
 
 .event-detail__speaker-meta dd {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  color: var(--color-muted);
+  color: var(--color-text);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
   margin: 0;
 }
@@ -1607,7 +1621,7 @@ ul {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  color: var(--color-muted);
+  color: var(--color-text);
   font-weight: var(--font-weight-regular);
 }
 
@@ -1624,7 +1638,7 @@ ul {
   margin: var(--space-2) 0 0;
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  color: var(--color-muted);
+  color: var(--color-text);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
@@ -1859,7 +1873,7 @@ ul {
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
   font-size: var(--font-size-capital);
-  color: var(--color-muted);
+  color: var(--color-text);
   margin-block-end: var(--space-2);
 }
 
@@ -1908,7 +1922,7 @@ ul {
 
 .event-form__checkbox span,
 .event-form__checkbox a {
-  color: var(--color-muted);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
 }
 
@@ -1926,7 +1940,7 @@ ul {
 }
 
 .event-form__status {
-  color: var(--color-muted);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
   min-height: 1.2em;
 }
@@ -1934,7 +1948,7 @@ ul {
 /* Hinweis unter dem Newsletter-Formular (Pruefung durch das Kollektiv). */
 .event-form__hint {
   margin: 0;
-  color: var(--color-muted);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
 }
 

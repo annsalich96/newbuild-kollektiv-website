@@ -11,6 +11,7 @@ import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
 import { initCarousel } from './carousel'
 import { avoidOrphans } from './no-orphans'
+import { snapToBalken } from './balken-snap'
 
 // --- Content-Rendering aus content/*.json (editierbar via Pages CMS) ---
 // Muss vor der Marquee-Logik weiter unten laufen, da diese die bereits
@@ -236,3 +237,4 @@ initMobileNavToggle()
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach(initCarousel)
 
 avoidOrphans()
+snapToBalken('.event-card--next, .session-card')
