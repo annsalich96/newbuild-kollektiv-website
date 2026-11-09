@@ -1499,6 +1499,15 @@ ul {
   margin: var(--space-6) 0 0;
 }
 
+.event-detail__list {
+  list-style: none;
+  padding: 0;
+}
+
+.event-detail__list li {
+  margin: 0;
+}
+
 .event-detail__description + .event-detail__description {
   margin-block-start: var(--space-4);
 }

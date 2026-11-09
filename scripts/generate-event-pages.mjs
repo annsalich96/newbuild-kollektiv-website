@@ -59,11 +59,23 @@ export function generateEventPages() {
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
     // eigener Absatz, wie im PDF-Layout vorgegeben.
-    const descriptionParagraphs = String(event.description || '')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => `<p class="event-detail__description">${escapeHtml(line)}</p>`)
+    // Zeilen, die mit einem Aufzaehlungszeichen beginnen (→, -, –, •, *),
+    // werden zu einer ruhigen Liste ohne Zeichen und ohne Leerzeilen
+    // dazwischen zusammengefasst (Ann 2026-11-09: Pfeile nicht schoen).
+    const bullet = /^(?:→|->|[-–•*])\s+/
+    const descriptionBlocks = []
+    for (const line of String(event.description || '').split('\n').map((l) => l.trim()).filter(Boolean)) {
+      if (bullet.test(line)) {
+        const item = `<li>${escapeHtml(line.replace(bullet, ''))}</li>`
+        const last = descriptionBlocks[descriptionBlocks.length - 1]
+        if (Array.isArray(last)) last.push(item)
+        else descriptionBlocks.push([item])
+      } else {
+        descriptionBlocks.push(`<p class="event-detail__description">${escapeHtml(line)}</p>`)
+      }
+    }
+    const descriptionParagraphs = descriptionBlocks
+      .map((b) => (Array.isArray(b) ? `<ul class="event-detail__description event-detail__list">${b.join('')}</ul>` : b))
       .join('\n')
 
     // Referent:innen-Bereich: Name + Bio links, Foto rechts. Liste "speakers"
