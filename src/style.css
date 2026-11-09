@@ -1629,6 +1629,11 @@ ul {
   margin: 0;
 }
 
+.event-detail__speaker-photo a {
+  display: block;
+  height: 100%;
+}
+
 .event-detail__speaker-photo img {
   width: 100%;
   height: 100%;
@@ -1719,8 +1724,14 @@ ul {
   grid-column: 3 / -1;
 }
 
+.event-hosts__item > a {
+  grid-column: 1 / 3;
+  display: block;
+}
+
 .event-hosts__photo {
   grid-column: 1 / 3;
+  display: block;
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;

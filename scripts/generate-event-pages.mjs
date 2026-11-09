@@ -79,6 +79,12 @@ export function generateEventPages() {
     // laesst Pages CMS ganz weg, wenn sie leer bleiben - daher || ''.
     // Seit 2026-11-09 Name (gross, Light) und Position/Firma (Versal-Label)
     // getrennt - gleiche Kombination wie Label + Statement auf der Startseite.
+    // Fotos von Speakern/Gastgeber:innen verlinken auf die Website des
+    // Unternehmens (statt unterstrichener Namen, Ann 2026-11-09).
+    const photoLink = (url, img, name) =>
+      url
+        ? `<a href="${escapeHtml(/^https?:\/\//.test(url) ? url : 'https://' + url)}" target="_blank" rel="noreferrer" draggable="false" aria-label="${escapeHtml(name)} – Website">${img}</a>`
+        : img
     const roleLine = (role, company) =>
       [role, company]
         .map((v) => String(v || '').trim())
@@ -86,14 +92,14 @@ export function generateEventPages() {
         .join(', ')
     const speakers = (event.speakers || []).filter((s) => s && s.name)
     const speakerList = speakers.length
-      ? speakers.map((s) => ({ name: s.name, role: roleLine(s.role, s.company), bio: s.bio, image: s.image }))
-      : [{ name: event.speakerName || '', role: roleLine(event.speakerRole, event.speakerCompany), bio: event.speakerBio, image: event.speakerImage }]
+      ? speakers.map((s) => ({ name: s.name, role: roleLine(s.role, s.company), bio: s.bio, image: s.image, url: s.url }))
+      : [{ name: event.speakerName || '', role: roleLine(event.speakerRole, event.speakerCompany), bio: event.speakerBio, image: event.speakerImage, url: event.speakerUrl }]
     const speakerBlock = (s) => `<div class="event-detail__speaker-info">
           <h3 class="event-detail__speaker-name">${escapeHtml(s.name)}</h3>
           ${s.role ? `<p class="event-detail__speaker-role">${escapeHtml(s.role)}</p>` : ''}
           ${s.bio ? `<p class="event-detail__speaker-bio">${escapeHtml(s.bio)}</p>` : ''}
         </div>
-        <figure class="event-detail__speaker-photo">${s.image ? `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.name)}" loading="lazy" />` : ''}</figure>`
+        <figure class="event-detail__speaker-photo">${s.image ? photoLink(s.url, `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.name)}" loading="lazy" draggable="false" />`, s.name) : ''}</figure>`
 
     // Datum/Uhrzeit/Ort/Eckdaten direkt unter der Beschreibung, oberhalb der
     // Linie zu den Speakern (Ann 2026-11-09) - gleiche dt/dd-Struktur wie die
@@ -181,9 +187,9 @@ export function generateEventPages() {
             `<ul class="event-hosts">${hosts
               .map(
                 (h) => `<li class="event-hosts__item">
-            ${h.image ? `<img class="event-hosts__photo" src="${escapeHtml(h.image)}" alt="" loading="lazy" />` : ''}
+            ${h.image ? photoLink(h.url, `<img class="event-hosts__photo" src="${escapeHtml(h.image)}" alt="" loading="lazy" />`, h.name) : ''}
             <div>
-              <h3 class="event-hosts__name">${link(h.url, escapeHtml(h.name))}</h3>
+              <h3 class="event-hosts__name">${h.image ? escapeHtml(h.name) : link(h.url, escapeHtml(h.name))}</h3>
               ${h.role ? `<p class="event-hosts__role">${escapeHtml(h.role)}</p>` : ''}
             </div>
           </li>`,
