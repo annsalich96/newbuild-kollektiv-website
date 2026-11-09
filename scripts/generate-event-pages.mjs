@@ -50,12 +50,12 @@ export function generateEventPages() {
     //   E-Mail:   "Name, Position Firma"  (siehe Code.gs -> referentText_)
 
     // Zweiteilige Titel ("Teil 1: Teil 2" oder "Teil 1 - Teil 2"): zweiter
-    // Teil in eigener Zeile (Ann 2026-11-09). Beim Bindestrich faellt der
-    // Strich weg, der Doppelpunkt bleibt. Gleiche Regel in src/main.ts.
+    // Teil in eigener Zeile, erster Teil endet immer mit Doppelpunkt statt
+    // Strich (Ann 2026-11-09). Gleiche Regel in src/main.ts.
     const titleParts = (title) => {
       const t = String(title || '').trim()
-      const m = t.match(/^(.+?:)\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
-      return m ? [m[1], m[2]] : [t]
+      const m = t.match(/^(.+?):\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+      return m ? [`${m[1]}:`, m[2]] : [t]
     }
     const titleHtml = titleParts(event.title).map(escapeHtml).join('<br />')
 

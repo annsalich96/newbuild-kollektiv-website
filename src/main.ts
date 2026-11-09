@@ -80,18 +80,18 @@ const nextEvent = upcoming.find((e) => e.isNext) ?? upcoming[0]
 const nextEventCta = document.getElementById('next-event-cta')
 if (nextEvent) {
   const speaker = nextEvent.speakerCompany
-    ? `${nextEvent.speakerName ?? ''} — ${nextEvent.speakerCompany}`
+    ? `${nextEvent.speakerName ?? ''}, ${nextEvent.speakerCompany}`
     : (nextEvent.speakerName ?? '')
   setText(
     'next-event-title',
-    nextEvent.number ? `${nextEvent.number} — ${nextEvent.title}` : nextEvent.title,
+    nextEvent.number ? `${nextEvent.number}: ${nextEvent.title}` : nextEvent.title,
   )
   setText('next-event-speaker', speaker)
   setText('next-event-time', `${nextEvent.date}, ${nextEvent.time}`)
   setText('next-event-location', nextEvent.location)
   if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
 } else {
-  setText('next-event-title', 'Stay tuned – das nächste Event wird bald bekanntgegeben.')
+  setText('next-event-title', 'Stay tuned: Das nächste Event wird bald bekanntgegeben.')
   setText(
     'next-event-text',
     'Melde dich für den Newsletter an, damit du über die nächsten Treffen per Mail informiert wirst.',
@@ -104,12 +104,13 @@ if (nextEvent) {
   }
 }
 
-// Zweiteilige Titel: zweiter Teil in eigener Zeile (gleiche Regel wie
-// titleParts in scripts/generate-event-pages.mjs).
+// Zweiteilige Titel: zweiter Teil in eigener Zeile, erster Teil endet immer
+// mit Doppelpunkt, auch wenn im CMS ein Strich steht (Ann 2026-11-09;
+// gleiche Regel wie titleParts in scripts/generate-event-pages.mjs).
 const titleHtml = (title: string) => {
   const t = title.trim()
-  const m = t.match(/^(.+?:)\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
-  return m ? `${m[1]}<br />${m[2]}` : t
+  const m = t.match(/^(.+?):\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+  return m ? `${m[1]}:<br />${m[2]}` : t
 }
 
 const sessionRow = document.getElementById('session-row')
