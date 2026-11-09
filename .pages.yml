@@ -197,13 +197,13 @@ content:
             list: true
 
   - name: team
-    label: Team
+    label: "Team & Speaker-Galerie (Startseite)"
     type: file
     path: src/content/team.json
     format: json
     fields:
       - name: members
-        label: Team-Mitglieder
+        label: "Team / weitere Personen - alle Speaker aus den Events kommen automatisch dazu (nach diesen Einträgen), hier also nur Personen eintragen, die in keinem Event als Speaker stehen"
         type: object
         list:
           collapsible:

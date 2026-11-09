@@ -608,6 +608,8 @@ ul {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Speaker-Galerie einheitlich schwarz-weiss (Ann, 2026-11-09). */
+  filter: grayscale(1);
 }
 
 /* Name (+ optionale Rolle/Firma darunter, duennere Schrift, Absprache)

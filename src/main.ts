@@ -63,6 +63,7 @@ type EventItem = {
   speakerCompany?: string
   speakerBio?: string
   speakerImage?: string
+  speakers?: { name: string; role?: string; company?: string; image?: string }[]
   description: string
 }
 
@@ -121,13 +122,51 @@ if (sessionRow) {
 // 2x volle Duplizierung fuer den nahtloser Desktop-Loop, 1x Klon des ersten
 // Mitglieds am Ende) — jetzt aus content/team.json erzeugt statt statisch
 // im Markup zu stehen. Funktioniert unabhaengig von der Mitgliederanzahl.
+// image/role sind optional (`?`), weil Pages CMS ein leer gelassenes
+// optionales Feld komplett weglaesst statt eines leeren Strings - ein
+// Team-Mitglied ohne Foto/Rolle hat also schlicht keinen "image"/"role"-
+// Schluessel in der JSON.
+type Member = { name: string; image?: string; role?: string }
+
+// Speaker-Galerie: zuerst die Eintraege aus content/team.json, danach
+// automatisch jede:r Speaker:in aus allen Events (vergangen und kommend, in
+// der Reihenfolge von events.json) - aus der Liste `speakers` bzw. den
+// Einzelfeldern `speakerName`/... Wer schon drin ist (gleicher Name), kommt
+// nicht doppelt; der erste Eintrag mit Foto gewinnt.
+const galleryMembers: Member[] = []
+const memberByName = new Map<string, Member>()
+const addMember = (member: Member) => {
+  const name = member.name?.trim()
+  if (!name || name.toUpperCase() === 'SPEAKERS') return
+  const key = name.toLowerCase().replace(/\s+/g, ' ')
+  const existing = memberByName.get(key)
+  if (existing) {
+    existing.image ??= member.image
+    existing.role ??= member.role
+    return
+  }
+  const entry = { ...member, name }
+  memberByName.set(key, entry)
+  galleryMembers.push(entry)
+}
+;(teamData.members as Member[]).forEach(addMember)
+events.forEach((e) => {
+  const speakers = e.speakers?.length
+    ? e.speakers
+    : e.speakerName
+      ? [{ name: e.speakerName, company: e.speakerCompany, image: e.speakerImage }]
+      : []
+  speakers.forEach((s) =>
+    addMember({
+      name: s.name,
+      image: s.image || undefined,
+      role: s.company?.trim() || s.role?.trim() || undefined,
+    }),
+  )
+})
+
 const teamRow = document.getElementById('team-row')
-if (teamRow && teamData.members.length > 0) {
-  // image/role sind optional (`?`), weil Pages CMS ein leer gelassenes
-  // optionales Feld komplett weglaesst statt eines leeren Strings - ein
-  // Team-Mitglied ohne Foto/Rolle hat also schlicht keinen "image"/"role"-
-  // Schluessel in der JSON.
-  type Member = { name: string; image?: string; role?: string }
+if (teamRow && galleryMembers.length > 0) {
 
   const memberItem = (member: Member, extraClass: string | null) => {
     const li = document.createElement('li')
@@ -150,7 +189,7 @@ if (teamRow && teamData.members.length > 0) {
     return li
   }
 
-  const members = teamData.members
+  const members = galleryMembers
 
   // Volle Kopie der Liste vor UND nach den echten Eintraegen statt nur je
   // einem einzelnen Klon-Element: auf breiten Bildschirmen sind mehrere
