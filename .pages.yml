@@ -69,6 +69,10 @@ content:
             label: Referent:in — Foto (optional)
             type: image
             required: false
+          - name: speakerUrl
+            label: "Referent:in — Website des Unternehmens (optional, z.B. https://firma.de) - Klick aufs Foto in der Speaker-Galerie der Startseite"
+            type: string
+            required: false
           - name: description
             label: Beschreibung
             type: text
@@ -178,6 +182,10 @@ content:
                 label: "Foto (optional, am besten Hochformat 3:4)"
                 type: image
                 required: false
+              - name: url
+                label: "Website des Unternehmens (optional, z.B. https://firma.de) - Klick aufs Foto in der Speaker-Galerie der Startseite"
+                type: string
+                required: false
           - name: sponsors
             label: "Sponsoren für dieses Event (optional - leer lassen zeigt die allgemeine Sponsoren-Leiste von der Startseite)"
             type: object
@@ -219,6 +227,10 @@ content:
             required: false
           - name: role
             label: "Rolle/Firma (optional, erscheint unter dem Namen)"
+            type: string
+            required: false
+          - name: url
+            label: "Website des Unternehmens (optional, z.B. https://firma.de) - Klick aufs Foto"
             type: string
             required: false
 

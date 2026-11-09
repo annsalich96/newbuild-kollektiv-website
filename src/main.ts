@@ -65,7 +65,8 @@ type EventItem = {
   speakerCompany?: string
   speakerBio?: string
   speakerImage?: string
-  speakers?: { name: string; role?: string; company?: string; image?: string }[]
+  speakerUrl?: string
+  speakers?: { name: string; role?: string; company?: string; image?: string; url?: string }[]
   description: string
 }
 
@@ -133,7 +134,7 @@ if (sessionRow) {
 // optionales Feld komplett weglaesst statt eines leeren Strings - ein
 // Team-Mitglied ohne Foto/Rolle hat also schlicht keinen "image"/"role"-
 // Schluessel in der JSON.
-type Member = { name: string; image?: string; role?: string }
+type Member = { name: string; image?: string; role?: string; url?: string }
 
 // Speaker-Galerie: zuerst die Eintraege aus content/team.json, danach
 // automatisch jede:r Speaker:in aus allen Events (vergangen und kommend, in
@@ -150,6 +151,7 @@ const addMember = (member: Member) => {
   if (existing) {
     existing.image ??= member.image
     existing.role ??= member.role
+    existing.url ??= member.url
     return
   }
   const entry = { ...member, name }
@@ -161,13 +163,14 @@ events.forEach((e) => {
   const speakers = e.speakers?.length
     ? e.speakers
     : e.speakerName
-      ? [{ name: e.speakerName, company: e.speakerCompany, image: e.speakerImage }]
+      ? [{ name: e.speakerName, company: e.speakerCompany, image: e.speakerImage, url: e.speakerUrl }]
       : []
   speakers.forEach((s) =>
     addMember({
       name: s.name,
       image: s.image || undefined,
       role: s.company?.trim() || s.role?.trim() || undefined,
+      url: s.url?.trim() || undefined,
     }),
   )
 })
@@ -185,14 +188,19 @@ if (teamRow && galleryMembers.length > 0) {
     // dass main.ts nochmal angefasst werden muss.
     const photo = member.image ? `<img src="${member.image}" alt="" />` : ''
     const role = member.role ? `<span class="team-row__role">${member.role}</span>` : ''
-    li.innerHTML = `
-      <div class="team-row__photo" aria-hidden="true">
+    const caption = `
         ${photo}
         <div class="team-row__caption">
           <span class="team-row__name">${member.name}</span>
           ${role}
-        </div>
-      </div>`
+        </div>`
+    // Mit Website (Feld "Link" im CMS): ganzes Bild ist ein Link auf die
+    // Website des Unternehmens, neuer Tab (Ann 2026-11-09). Klone fuer den
+    // Endlos-Loop nicht per Tab erreichbar.
+    li.innerHTML = member.url
+      ? `<a class="team-row__photo" href="${member.url}" target="_blank" rel="noreferrer" draggable="false"${extraClass ? ' tabindex="-1"' : ''} aria-label="${member.name} – Website">${caption}</a>`
+      : `<div class="team-row__photo" aria-hidden="true">${caption}</div>`
+    li.querySelector('img')?.setAttribute('draggable', 'false')
     return li
   }
 

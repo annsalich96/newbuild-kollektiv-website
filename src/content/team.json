@@ -3,32 +3,38 @@
     {
       "name": "Ann-Kathrin Salich",
       "image": "/team-ann-kathrin-salich.jpg",
-      "role": "An(n) Architecture Solution"
+      "role": "An(n) Architecture Solution",
+      "url": "https://annarchitecturesolution.com"
     },
     {
       "name": "Markus Kolb",
       "image": "/team-markus-kolb.jpg",
-      "role": "Bräunlin Kolb Architekten"
+      "role": "Bräunlin Kolb Architekten",
+      "url": "https://www.braeunlin-kolb.com"
     },
     {
       "name": "Maria Stasevich",
       "image": "/team-maria-stasevich.jpg",
-      "role": "OBLIK"
+      "role": "OBLIK",
+      "url": "https://oblik.media"
     },
     {
       "name": "Georg Schmidthals",
       "image": "/team-georg-schmidthals.jpg",
-      "role": "GRAFT"
+      "role": "GRAFT",
+      "url": "https://graftlab.com"
     },
     {
       "name": "Martin Jasper",
       "image": "/team-martin-jasper.jpg",
-      "role": "Jasper Architects"
+      "role": "Jasper Architects",
+      "url": "https://www.jasperarchitects.com"
     },
     {
       "name": "Eike Becker",
       "image": "/team-eike-becker.jpg",
-      "role": "Eike Becker Architekten"
+      "role": "Eike Becker Architekten",
+      "url": "http://www.eb-a.de"
     }
   ]
 }

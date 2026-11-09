@@ -93,28 +93,53 @@ export function initCarousel(marquee: HTMLElement) {
   // nativen Touch-Scrollen in die Quere kommt (setPointerCapture wuerde
   // sonst z.B. Klicks auf die Pfeil-Buttons waehrend eines Touch-Scrolls
   // stoeren).
+  // Ziehen startet erst ab ein paar Pixeln Bewegung - sonst schluckt die
+  // Pointer-Capture jeden Klick, und verlinkte Bilder (Speaker-Galerie)
+  // liessen sich mit der Maus nicht anklicken. Nach echtem Ziehen wird der
+  // folgende Klick verworfen, damit das Loslassen keinen Link oeffnet.
+  const DRAG_THRESHOLD = 5
+  let isPointerDown = false
   let isDragging = false
+  let suppressClick = false
   let dragStartX = 0
   let dragStartScrollLeft = 0
 
   inner.addEventListener('pointerdown', (event) => {
     if (event.pointerType !== 'mouse' || !isScrollable()) return
-    isDragging = true
+    isPointerDown = true
+    isDragging = false
     dragStartX = event.clientX
     dragStartScrollLeft = inner.scrollLeft
-    inner.setPointerCapture(event.pointerId)
-    inner.classList.add('is-dragging')
   })
 
   inner.addEventListener('pointermove', (event) => {
-    if (!isDragging) return
-    inner.scrollLeft = dragStartScrollLeft - (event.clientX - dragStartX)
+    if (!isPointerDown) return
+    const dx = event.clientX - dragStartX
+    if (!isDragging) {
+      if (Math.abs(dx) < DRAG_THRESHOLD) return
+      isDragging = true
+      inner.setPointerCapture(event.pointerId)
+      inner.classList.add('is-dragging')
+    }
+    inner.scrollLeft = dragStartScrollLeft - dx
   })
 
   const endDrag = () => {
+    if (isDragging) suppressClick = true
+    isPointerDown = false
     isDragging = false
     inner.classList.remove('is-dragging')
   }
+  inner.addEventListener(
+    'click',
+    (event) => {
+      if (!suppressClick) return
+      suppressClick = false
+      event.preventDefault()
+      event.stopPropagation()
+    },
+    true,
+  )
   inner.addEventListener('pointerup', endDrag)
   inner.addEventListener('pointercancel', endDrag)
 

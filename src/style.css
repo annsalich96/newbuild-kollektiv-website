@@ -594,6 +594,11 @@ ul {
 }
 
 .team-row__photo {
+  /* Mit Website ist das Foto ein <a> (main.ts) - display:block, damit es
+     sich wie der bisherige <div> verhaelt. */
+  display: block;
+  color: inherit;
+  text-decoration: none;
   position: relative;
   aspect-ratio: 3 / 4;
   background: #1a1a1a;

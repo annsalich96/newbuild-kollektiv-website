@@ -46,7 +46,8 @@
         "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-22-611a0c68.jpg",
         "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-23-0604d27a.jpg",
         "/galerie/session-01-ki-belohnt-ordnung/session-01-ki-belohnt-ordnung-24-ca1cd25a.jpg"
-      ]
+      ],
+      "speakerUrl": "https://www.braeunlin-kolb.com"
     },
     {
       "slug": "session-02-architecture-intelligence",
@@ -93,70 +94,80 @@
           "role": "Gründer",
           "company": "Eike Becker_Architekten",
           "bio": "Architekt, studierte in Aachen, Paris und Stuttgart und arbeitete bei Norman Foster Associates und Richard Rogers Partnership in London. 1999 gründete er Eike Becker_Architekten in Berlin.",
-          "image": "/speaker-eike-becker.jpg"
+          "image": "/speaker-eike-becker.jpg",
+          "url": "http://www.eb-a.de"
         },
         {
           "name": "Will Jones",
           "role": "Co-Founder & CTO",
           "company": "Gendo",
           "bio": "Software-Engineer mit über zehn Jahren Erfahrung in Softwareentwicklung und Produktaufbau. Gendo ist eine kollaborative KI-Rendering-Plattform für Architektur und Design (London).",
-          "image": "/speaker-will-jones.jpg"
+          "image": "/speaker-will-jones.jpg",
+          "url": "https://gendo.ai"
         },
         {
           "name": "Wolfram Putz",
           "role": "Co-Founder",
           "company": "GRAFT",
           "bio": "Architekt und Mitgründer von GRAFT (Berlin, Los Angeles, Seoul u. a.). Er denkt Architektur über Megatrends, Neugier und Innovation – mit Fokus auf Natur und Schönheit.",
-          "image": "/speaker-wolfram-putz.jpg"
+          "image": "/speaker-wolfram-putz.jpg",
+          "url": "https://graftlab.com"
         },
         {
           "name": "Mark Szoke",
           "role": "Co-Founder & CEO",
           "company": "Visoid",
           "bio": "Architekt und Gründer von Visoid, einer KI-gestützten Visualisierungsplattform für Architekt:innen (Oslo). Zuvor bei LINK und früh bei Spacemaker, heute Autodesk Forma.",
-          "image": "/speaker-mark-szoke.jpg"
+          "image": "/speaker-mark-szoke.jpg",
+          "url": "https://www.visoid.com"
         },
         {
           "name": "Knut Ramstad",
           "role": "Partner & CTO",
           "company": "Nordic Office of Architecture",
           "bio": "Architekt mit über 30 Jahren Erfahrung im Einsatz von Designtechnologie bei großen Bau- und Stadtentwicklungsprojekten. Professor an der NTNU in Trondheim, Schwerpunkt KI im Entwurf.",
-          "image": "/speaker-knut-ramstad.jpg"
+          "image": "/speaker-knut-ramstad.jpg",
+          "url": "https://nordicarch.com"
         },
         {
           "name": "Martin Jasper",
           "role": "Gründer",
           "company": "Jasper Architects",
           "bio": "Architekt mit Büros in Buenos Aires, Berlin, New York u. a. Die Philosophie „Beyond Context“ seines Büros beginnt mit der Erforschung der physischen und sozialen Bedingungen jedes Ortes.",
-          "image": "/speaker-martin-jasper.jpg"
+          "image": "/speaker-martin-jasper.jpg",
+          "url": "https://www.jasperarchitects.com"
         },
         {
           "name": "Jolene Lee",
           "role": "BIM-Strategin",
           "company": "Kinzo Architekten",
           "bio": "Architektin und BIM-Beraterin in Berlin mit zehn Jahren Erfahrung, Schwerpunkt auf der Umnutzung bestehender Gebäude.",
-          "image": "/speaker-jolene-lee.jpg"
+          "image": "/speaker-jolene-lee.jpg",
+          "url": "https://kinzo-berlin.de"
         },
         {
           "name": "Gheyath Harb",
           "role": "ClimateTech & Innovation Lead",
           "company": "Henning Larsen",
           "bio": "Architekt in Berlin. Entwickelt computergestützte und KI-basierte Werkzeuge, die Klimawissen direkt in den Entwurfsprozess bringen.",
-          "image": "/speaker-gheyath-harb.jpg"
+          "image": "/speaker-gheyath-harb.jpg",
+          "url": "https://henninglarsen.com"
         },
         {
           "name": "Björn Maack",
           "role": "Partner & Managing Director",
           "company": "Revalu",
           "bio": "Revalu ist eine digitale Plattform und Materialdatenbank für nachhaltige Baustoffe (Berlin). Sein Fokus: KI für Materialauswahl, Ökobilanzierung und Dokumentation.",
-          "image": "/speaker-bjorn-maack.jpg"
+          "image": "/speaker-bjorn-maack.jpg",
+          "url": "https://revalu.io"
         },
         {
           "name": "Alexander Tetz",
           "role": "Manager",
           "company": "Material Bank Germany",
           "bio": "Verantwortet das Deutschland-Geschäft von Material Bank, einer Plattform für Materialmuster mit über 60.000 Produkten (Stuttgart).",
-          "image": "/speaker-alexander-tetz.jpg"
+          "image": "/speaker-alexander-tetz.jpg",
+          "url": "https://materialbank.eu"
         }
       ],
       "facts": [
@@ -286,7 +297,8 @@
         "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-22-f5479cda.jpg",
         "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-23-84a345c3.jpg",
         "/galerie/session-03-ordner-zum-tool/session-03-ordner-zum-tool-24-e01f7902.jpg"
-      ]
+      ],
+      "speakerUrl": "https://davidchipperfield.com"
     }
   ]
 }
