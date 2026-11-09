@@ -1555,14 +1555,19 @@ ul {
      unten gezogen. Als ein gemeinsames Flex-Item bleibt der Abstand
      zwischen Name und Bio unabhaengig von der Fotohoehe - der Ueberschuss
      landet als Leerraum unterhalb des Blocks statt zwischen Name und Bio. */
-  /* Seit 2026-11-09 Spalte 5-8 (Label "Speaker" in Spalte 2, wie bei
-     Programm/Praesentiert von), Spalte 9 frei, Foto 10-12. */
-  grid-column: 5 / 9;
+  /* Seit 2026-11-09 (Ann): Label "Speaker" oben in Spalte 2, darunter der
+     ganze Text (Name, Position, Bio) ab Spalte 2 bis 8, unten buendig mit
+     dem Foto; Spalte 9 frei, Foto 10-12. Label und Text liegen bewusst in
+     derselben Grid-Zeile uebereinander (explizit platziert). */
+  grid-column: 2 / 9;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
 }
 
 .event-detail__speaker-label {
+  grid-row: 1;
   white-space: nowrap;
   min-width: 0;
 }
@@ -1592,12 +1597,11 @@ ul {
   font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
-  /* Unten buendig mit dem Foto (margin-top:auto im Flex-Stapel von
-     .event-detail__speaker-info), mindestens eine Leerzeile Abstand zu
-     Name/Position. Der negative Rand gleicht den Zeilendurchschuss unter
-     der letzten Zeile aus, damit die Schrift selbst auf der Bildkante sitzt. */
-  margin: auto 0 calc(-6 * var(--px));
-  padding-block-start: var(--line-height-regular-text);
+  /* Eine Leerzeile unter Name/Position; der ganze Block sitzt unten
+     (justify-content:flex-end in .event-detail__speaker-info). Der negative
+     Rand gleicht den Zeilendurchschuss unter der letzten Zeile aus, damit
+     die Schrift selbst auf der Bildkante sitzt. */
+  margin: var(--line-height-regular-text) 0 calc(-6 * var(--px));
 }
 
 .event-detail__speaker-bio + .event-detail__speaker-bio {
@@ -1649,6 +1653,7 @@ ul {
      in Spalte 2 steht der Text in 5-8, Spalte 9 bleibt als Luft frei
      (Ann 2026-11-09). */
   grid-column: 10 / 13;
+  grid-row: 1;
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
   overflow: hidden;
@@ -1671,6 +1676,17 @@ ul {
   .event-detail__speaker-info,
   .event-detail__speaker-photo {
     grid-column: 1 / -1;
+  }
+
+  /* Mobil untereinander: Label, Text, Foto. */
+  .event-detail__speaker-label,
+  .event-detail__speaker-info,
+  .event-detail__speaker-photo {
+    grid-row: auto;
+  }
+
+  .event-detail__speaker-info {
+    margin-block-start: var(--space-4);
   }
 
   .event-detail__speaker-photo {
