@@ -3,6 +3,7 @@ import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
 import sponsorsData from './content/sponsors.json'
+import { avoidOrphans } from './no-orphans'
 
 // Wie auf der Startseite: Sponsoring-Spruch + allgemeine Sponsoren-Leiste.
 renderSponsorMarquee(undefined, sponsorsData.statement)
@@ -55,3 +56,5 @@ if (form instanceof HTMLFormElement && status) {
     }
   })
 }
+
+avoidOrphans()

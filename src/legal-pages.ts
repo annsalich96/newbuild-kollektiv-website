@@ -4,6 +4,7 @@ import datenschutzData from './content/datenschutz.json'
 import widerrufsrechtData from './content/widerrufsrecht.json'
 import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderFooter } from './footer'
+import { avoidOrphans } from './no-orphans'
 
 initStickyNav()
 initMobileNavToggle()
@@ -53,3 +54,5 @@ function escapeHtml(value: string) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
 }
+
+avoidOrphans()

@@ -5,6 +5,7 @@ import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
 import { initEventGallery } from './event-gallery'
 import { initCarousel } from './carousel'
+import { avoidOrphans } from './no-orphans'
 
 // sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
@@ -118,3 +119,5 @@ if (form instanceof HTMLFormElement && status) {
     }
   })
 }
+
+avoidOrphans()

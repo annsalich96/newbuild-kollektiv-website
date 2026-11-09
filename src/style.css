@@ -52,6 +52,9 @@ body {
   line-height: var(--line-height-base);
   color: var(--color-text);
   background: var(--color-bg);
+  /* Keine einzelnen Woerter in der letzten Zeile (Ann 2026-11-09), dazu
+     src/no-orphans.ts fuer Browser ohne text-wrap: pretty. */
+  text-wrap: pretty;
 }
 
 /* Ein durchgehender Farbverlauf über die komplette Seitenhöhe — alle
@@ -1242,7 +1245,7 @@ ul {
 
 /* Zwei Spalten statt Zeilen (Absprache): links Kontakt (Adresse/Telefon/
    Email), rechts Rechtliches (Impressum/Datenschutz/Widerruf), ohne
-   Ueberschriften. Alle Texte einheitlich Text Capital. */
+   Ueberschriften. Alle Texte einheitlich in Navigationsgroesse. */
 .site-footer .grid {
   row-gap: var(--space-6);
 }
@@ -1270,9 +1273,9 @@ ul {
 
 .site-footer__col a,
 .site-footer__col span {
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-label);
-  font-size: var(--font-size-capital);
+  /* Normale Schreibweise wie die Navigation (Typo-System 2026-11-09). */
+  font-size: var(--font-size-ui);
+  letter-spacing: 0.01em;
   text-decoration: none;
 }
 

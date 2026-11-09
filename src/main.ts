@@ -10,6 +10,7 @@ import { initMobileNavToggle, initStickyNav } from './nav'
 import { renderSponsorMarquee } from './sponsors-marquee'
 import { renderFooter } from './footer'
 import { initCarousel } from './carousel'
+import { avoidOrphans } from './no-orphans'
 
 // --- Content-Rendering aus content/*.json (editierbar via Pages CMS) ---
 // Muss vor der Marquee-Logik weiter unten laufen, da diese die bereits
@@ -233,3 +234,5 @@ initStickyNav()
 initMobileNavToggle()
 
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach(initCarousel)
+
+avoidOrphans()
