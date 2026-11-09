@@ -613,11 +613,22 @@ ul {
   filter: grayscale(1);
 }
 
+/* Schwarzer Verlauf unten im Bild, damit Name/Firma auf hellen Fotos immer
+   lesbar sind (Ann, 2026-11-09). */
+.team-row__photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.35) 20%, rgba(0, 0, 0, 0) 40%);
+  pointer-events: none;
+}
+
 /* Name (+ optionale Rolle/Firma darunter, duennere Schrift, Absprache)
    liegt im Bild unten links statt als eigene Zeile darunter (aeltere
    Absprache), Text Capital wie die anderen Labels der Seite. */
 .team-row__caption {
   position: absolute;
+  z-index: 1;
   left: var(--space-3);
   bottom: var(--space-3);
   display: flex;
@@ -1485,9 +1496,9 @@ ul {
      Placement in unterschiedlichen impliziten Zeilen, und egal wie die
      Zeilenhoehen verteilt wurden, zog die Fotohoehe die Bio quer durchs
      Foto nach unten - dadurch die riesige Luecke zwischen Name und Bio.
-     Jetzt oben ausgerichtet, siehe .event-detail__speaker-info fuer den
-     eigentlichen Fix. */
-  align-items: start;
+     Jetzt gestreckt: Name/Position oben buendig mit dem Foto, Bio unten
+     buendig (Ann 2026-11-09), siehe .event-detail__speaker-bio. */
+  align-items: stretch;
 }
 
 .event-detail__speaker-info {
@@ -1530,8 +1541,12 @@ ul {
   font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
-  /* Eine Leerzeile Abstand zu Name/Position. */
-  margin: var(--line-height-regular-text) 0 0;
+  /* Unten buendig mit dem Foto (margin-top:auto im Flex-Stapel von
+     .event-detail__speaker-info), mindestens eine Leerzeile Abstand zu
+     Name/Position. Der negative Rand gleicht den Zeilendurchschuss unter
+     der letzten Zeile aus, damit die Schrift selbst auf der Bildkante sitzt. */
+  margin: auto 0 calc(-6 * var(--px));
+  padding-block-start: var(--line-height-regular-text);
 }
 
 .event-detail__speaker-bio + .event-detail__speaker-bio {
