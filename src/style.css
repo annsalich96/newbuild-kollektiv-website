@@ -897,7 +897,7 @@ ul {
   letter-spacing: var(--letter-spacing-label);
   font-weight: var(--font-weight-regular);
   padding: var(--space-3) var(--space-6);
-  border: var(--line-thickness-button) solid var(--color-text);
+  border: var(--line-thickness) solid var(--color-text);
   border-radius: 999px;
 }
 
