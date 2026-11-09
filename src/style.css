@@ -1547,9 +1547,16 @@ ul {
      unten gezogen. Als ein gemeinsames Flex-Item bleibt der Abstand
      zwischen Name und Bio unabhaengig von der Fotohoehe - der Ueberschuss
      landet als Leerraum unterhalb des Blocks statt zwischen Name und Bio. */
-  grid-column: 2 / 8;
+  /* Seit 2026-11-09 Spalte 5-8 (Label "Speaker" in Spalte 2, wie bei
+     Programm/Praesentiert von), Spalte 9 frei, Foto 10-12. */
+  grid-column: 5 / 9;
   display: flex;
   flex-direction: column;
+}
+
+.event-detail__speaker-label {
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .event-detail__speaker-name {
@@ -1630,8 +1637,10 @@ ul {
 }
 
 .event-detail__speaker-photo {
-  /* Spalten 9-12 laut Element-Tabelle. */
-  grid-column: 9 / 13;
+  /* Spalten 10-12 (war 9-12 laut Element-Tabelle): seit dem Speaker-Label
+     in Spalte 2 steht der Text in 5-8, Spalte 9 bleibt als Luft frei
+     (Ann 2026-11-09). */
+  grid-column: 10 / 13;
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
   overflow: hidden;

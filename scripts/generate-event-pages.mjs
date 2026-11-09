@@ -102,7 +102,10 @@ export function generateEventPages() {
     const speakerList = speakers.length
       ? speakers.map((s) => ({ name: s.name, role: roleLine(s.role, s.company), bio: s.bio, image: s.image, url: s.url }))
       : [{ name: event.speakerName || '', role: roleLine(event.speakerRole, event.speakerCompany), bio: event.speakerBio, image: event.speakerImage, url: event.speakerUrl }]
-    const speakerBlock = (s) => `<div class="event-detail__speaker-info">
+    // Label links wie bei Programm/Praesentiert von (Ann 2026-11-09).
+    const speakerLabel = speakerList.length > 1 ? 'Speakers' : 'Speaker'
+    const speakerBlock = (s) => `<p class="section__eyebrow event-detail__speaker-label">${speakerLabel}</p>
+        <div class="event-detail__speaker-info">
           <h3 class="event-detail__speaker-name">${escapeHtml(s.name)}</h3>
           ${s.role ? `<p class="event-detail__speaker-role">${escapeHtml(s.role)}</p>` : ''}
           ${s.bio ? `<p class="event-detail__speaker-bio">${escapeHtml(s.bio)}</p>` : ''}
