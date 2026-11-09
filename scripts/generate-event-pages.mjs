@@ -46,16 +46,8 @@ export function generateEventPages() {
     // Referent:in kommt als drei getrennte CMS-Felder (Name / Position /
     // Firma), damit derselbe Datensatz auch fuer die E-Mails und die
     // Grafiken taugt. Die Satzzeichen setzt der Code, nicht das CMS:
-    //   Website:  "Name — Position, Firma"
+    //   Website:  Name, darunter "Position, Firma" (roleLine unten)
     //   E-Mail:   "Name, Position Firma"  (siehe Code.gs -> referentText_)
-    const speakerLine = (name, role, company) => {
-      const extra = [role, company]
-        .map((v) => String(v || '').trim())
-        .filter(Boolean)
-        .join(', ')
-      return extra ? `${name || ''} — ${extra}` : name || ''
-    }
-    const speaker = speakerLine(event.speakerName, event.speakerRole, event.speakerCompany)
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
     // eigener Absatz, wie im PDF-Layout vorgegeben.
@@ -73,20 +65,28 @@ export function generateEventPages() {
     // Karussell wie die Fotogalerie (src/carousel.ts, je eine volle
     // Klon-Kopie davor und danach fuer den Endlos-Loop). Optionale Felder
     // laesst Pages CMS ganz weg, wenn sie leer bleiben - daher || ''.
+    // Seit 2026-11-09 Name (gross, Light) und Position/Firma (Versal-Label)
+    // getrennt - gleiche Kombination wie Label + Statement auf der Startseite.
+    const roleLine = (role, company) =>
+      [role, company]
+        .map((v) => String(v || '').trim())
+        .filter(Boolean)
+        .join(', ')
     const speakers = (event.speakers || []).filter((s) => s && s.name)
     const speakerList = speakers.length
-      ? speakers.map((s) => ({ line: speakerLine(s.name, s.role, s.company), bio: s.bio, image: s.image }))
-      : [{ line: speaker, bio: event.speakerBio, image: event.speakerImage }]
+      ? speakers.map((s) => ({ name: s.name, role: roleLine(s.role, s.company), bio: s.bio, image: s.image }))
+      : [{ name: event.speakerName || '', role: roleLine(event.speakerRole, event.speakerCompany), bio: event.speakerBio, image: event.speakerImage }]
     const speakerBlock = (s) => `<div class="event-detail__speaker-info">
-          <h3 class="event-detail__speaker-name">${escapeHtml(s.line)}</h3>
+          <h3 class="event-detail__speaker-name">${escapeHtml(s.name)}</h3>
+          ${s.role ? `<p class="event-detail__speaker-role">${escapeHtml(s.role)}</p>` : ''}
           ${s.bio ? `<p class="event-detail__speaker-bio">${escapeHtml(s.bio)}</p>` : ''}
         </div>
-        <figure class="event-detail__speaker-photo">${s.image ? `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.line.split(' — ')[0])}" loading="lazy" />` : ''}</figure>`
+        <figure class="event-detail__speaker-photo">${s.image ? `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.name)}" loading="lazy" />` : ''}</figure>`
 
-    // Datum/Uhrzeit/Ort unter der Referent:innen-Beschreibung, gleiche
-    // dt/dd-Struktur wie die "Next Event"-Karte auf der Startseite
-    // (.event-card__meta). Beim Slider fest unter den Slides.
-    const eventMetaBlock = `<dl class="event-detail__speaker-meta">
+    // Datum/Uhrzeit/Ort/Eckdaten direkt unter der Beschreibung, oberhalb der
+    // Linie zu den Speakern (Ann 2026-11-09) - gleiche dt/dd-Struktur wie die
+    // "Next Event"-Karte auf der Startseite (.event-card__meta).
+    const eventMetaBlock = `<dl class="event-detail__meta">
         <div>
           <dt>Zeit</dt>
           <dd>${escapeHtml(event.date)}, ${escapeHtml(event.time)}</dd>
@@ -126,15 +126,9 @@ export function generateEventPages() {
         </div>
         <button type="button" class="marquee__arrow marquee__arrow--prev" aria-label="Vorherige:r Speaker:in">‹</button>
         <button type="button" class="marquee__arrow marquee__arrow--next" aria-label="Nächste:r Speaker:in">›</button>
-      </div>
-      <div class="grid event-detail__speaker-after">
-        <div class="event-detail__speaker-info">${eventMetaBlock}</div>
       </div>`
         : `<section class="grid event-detail__speaker">
-        ${speakerBlock(speakerList[0]).replace(
-          /(<\/div>\s*<figure)/,
-          `${eventMetaBlock}\n        $1`,
-        )}
+        ${speakerBlock(speakerList[0])}
       </section>`
 
     // Weitere optionale Bereiche aus dem CMS (seit 2026-11-02, erstmals fuer
@@ -245,7 +239,7 @@ export function generateEventPages() {
       .replaceAll('__SPEAKER_NAME__', escapeHtml(event.speakerName || ''))
       .replaceAll('__SPEAKER_ROLE__', escapeHtml(event.speakerRole || ''))
       .replaceAll('__SPEAKER_COMPANY__', escapeHtml(event.speakerCompany || ''))
-      .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs)
+      .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs + '\n' + eventMetaBlock)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
       .replaceAll('__GALLERY_SECTION__', gallerySection)
       .replaceAll('__SPEAKER_SECTION__', speakerSection + '\n' + extraSections)

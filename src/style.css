@@ -250,11 +250,6 @@ ul {
     -webkit-backdrop-filter: blur(16px);
   }
 
-  /* .hero__logo ist ein <img>, text-shadow greift nur beim Plus (Text). */
-  .mobile-nav-bar.is-stuck .mobile-nav-toggle {
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-  }
-
   /* Gleiches Problem wie beim Plus-Toggle: Logo, Toggle und Panel sind
      Geschwister in derselben Stacking-Context — ohne eigenen z-index
      ueber dem Panel (19) verschwand das Logo hinter dem Vollbild-Menue,
@@ -400,10 +395,6 @@ ul {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: var(--line-thickness) solid var(--color-border);
-  /* Auf den hellsten Verlaufsabschnitten (z.B. Uebergang zu Sektion 8)
-     wird Weiss auf dem durchscheinenden Glas sonst kontrastarm — dezenter
-     Schatten haelt Logo und Links ueberall lesbar. */
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 .site-nav__logo {
@@ -553,7 +544,7 @@ ul {
 .section__statement {
   /* Spalte E–K (grid-tabelle.md Nr. 5/22), Linien 5–12 im 12er-Grid — Text Bold.
      Kein Kasten/Hintergrund — Text liegt direkt auf dem Farbverlauf, nur
-     Text-Shadow für Lesbarkeit (wie .section__eyebrow). */
+     ohne Text-Schatten (Ann 2026-11-09: keine Schatten auf Texten). */
   grid-column: 5 / 13; /* E bis L — nutzt die volle Restbreite statt bei K aufzuhören */
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
@@ -1446,7 +1437,6 @@ ul {
   /* Kompensiert das Leading von line-height-bold, damit der Titel oben
      buendig mit dem Eyebrow-Label sitzt - wie .section__statement. */
   margin-block-start: calc(-12 * var(--px));
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-detail__description {
@@ -1465,7 +1455,6 @@ ul {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   margin: var(--space-6) 0 0;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-detail__description + .event-detail__description {
@@ -1513,13 +1502,20 @@ ul {
 }
 
 .event-detail__speaker-name {
-  /* 24pt = Text Capital, gemessen aus der Layout-Vorlage (nicht 36pt wie
-     zuvor angenommen). */
+  /* Gross und Light wie "Stay tuned" auf der Startseite, darunter Position/
+     Firma als Versal-Label - Kontrast ueber Groesse statt Fettung
+     (Ann 2026-11-09). */
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
+  font-weight: var(--font-weight-light);
+  margin: 0;
+}
+
+.event-detail__speaker-role {
   font-size: var(--font-size-capital);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
-  margin: 0 0 var(--space-4);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  margin: var(--space-3) 0 0;
 }
 
 .event-detail__speaker-bio {
@@ -1529,27 +1525,36 @@ ul {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  /* Eine Leerzeile Abstand zu Name/Position. */
+  margin: var(--line-height-regular-text) 0 0;
 }
 
 .event-detail__speaker-bio + .event-detail__speaker-bio {
   margin-block-start: var(--space-3);
 }
 
-.event-detail__speaker-meta {
+.event-detail__meta {
+  /* Unter der Beschreibung, Spalten 5-12, eine Leerzeile Abstand. */
+  grid-column: 5 / 13;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin: var(--space-5) 0 0;
+  margin: var(--line-height-regular-text) 0 0;
 }
 
-.event-detail__speaker-meta > div {
+@media (max-width: 768px) {
+  .event-detail__meta {
+    grid-column: 1 / -1;
+  }
+}
+
+.event-detail__meta > div {
   display: flex;
   gap: var(--space-3);
   align-items: baseline;
 }
 
-.event-detail__speaker-meta dt {
+.event-detail__meta dt {
   flex: 0 0 auto;
   /* Breit genug fuer laengere Bezeichnungen aus "Weitere Eckdaten" (z.B.
      FORTBILDUNG), damit alle Inhalte buendig in einer Spalte stehen. */
@@ -1560,11 +1565,10 @@ ul {
   color: var(--color-text);
 }
 
-.event-detail__speaker-meta dd {
+.event-detail__meta dd {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
   margin: 0;
 }
 
@@ -1630,7 +1634,6 @@ ul {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   font-weight: var(--font-weight-bold);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-program__text,
@@ -1639,7 +1642,6 @@ ul {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-hosts {
@@ -1669,7 +1671,6 @@ ul {
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
   font-weight: var(--font-weight-bold);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .event-hosts__name a,
@@ -1693,7 +1694,6 @@ ul {
   gap: var(--space-2);
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 @media (max-width: 768px) {
@@ -1716,7 +1716,7 @@ ul {
    scrollt mit scroll-snap, je eine Klon-Kopie davor/danach fuer den
    Endlos-Loop. Jede Slide ist eine volle Seitenbreite mit demselben Grid wie
    der Einzel-Speaker (Name/Bio Spalte 2-7, Foto 9-12). Zeit/Ort stehen fest
-   darunter (.event-detail__speaker-after). */
+   darunter. */
 .speaker-marquee .marquee__inner {
   animation: none;
   transform: none;
@@ -1772,10 +1772,6 @@ ul {
 
 .speaker-marquee .marquee__arrow--next {
   right: var(--space-3);
-}
-
-.event-detail__speaker-after .event-detail__speaker-meta {
-  margin-block-start: var(--space-5);
 }
 
 @media (max-width: 768px) {
