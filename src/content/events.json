@@ -8,7 +8,7 @@
       "isNext": false,
       "color": "#ea5820",
       "date": "Di., 01.09.2026",
-      "time": "18:30–20:00",
+      "time": "18:30–22:00",
       "location": "Projo Berlin, Chausseestraße 123, 10115 Berlin",
       "speakerName": "Markus Kolb",
       "speakerRole": "Geschäftsführer",
@@ -58,7 +58,7 @@
       "date": "Do., 24.09.2026",
       "time": "17:00-23:00",
       "location": "DAZ, Wilhelmine-Gemberg-Weg 6, 10179 Berlin",
-      "speakerName": "SPEAKERS",
+      "speakerName": "Speakers",
       "speakerBio": "Mariana Cabugueira - MC Studios,\nMartin Jasper - Jasper Architect,\nEike Becker - Eike Becker Architekten,\nMark Szoke - VISOID,\nGeorg Schmidthals - GRAFT ",
       "description": "Neue KI-Tools, Visualisierungslösungen und digitale Workflows erscheinen fast täglich. Die Möglichkeiten sind enorm – gleichzeitig fehlt im Büroalltag oft die Zeit, alles selbst zu testen und herauszufinden, was wirklich funktioniert.\n\nGenau deshalb habe ich gemeinsam mit Maria Stasevich “Architecture Intelligence” ins Leben gerufen: eine Veranstaltung für den Austausch zwischen Architektur und Technologie.\n\nAm 24. September 2026 bringen wir im Deutsches Architektur Zentrum DAZ in Berlin Architekt:innen, Planer:innen und Technologieunternehmen zusammen.\n\nIn drei moderierten Sessions sprechen wir über:\n\n→ Practice & Leadership\n→ Visualization & Creative Technologies\n→ BIM, Collaboration & Digital Construction\n",
       "gallery": [
@@ -192,8 +192,8 @@
         },
         {
           "name": "Ann-Kathrin Salich",
-          "role": "Architektin, Gründerin von NewBuild Kollektiv",
-          "url": "https://newbuild-kollektiv.com",
+          "role": "Architektin, Gründerin von NewBuild Kollektiv und An(n) Architecture Solution",
+          "url": "https://annarchitecturesolution.com",
           "image": "/team-ann-kathrin-salich.jpg"
         }
       ],

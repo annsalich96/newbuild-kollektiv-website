@@ -91,6 +91,11 @@ if (nextEvent) {
   if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
 } else {
   setText('next-event-title', 'Stay tuned – das nächste Event wird bald bekanntgegeben.')
+  setText(
+    'next-event-text',
+    'Melde dich für den Newsletter an, damit du über die nächsten Treffen per Mail informiert wirst.',
+  )
+  document.getElementById('next-event-text')?.removeAttribute('hidden')
   document.querySelector('.event-card--next .event-card__meta')?.setAttribute('hidden', '')
   if (nextEventCta instanceof HTMLAnchorElement) {
     nextEventCta.href = '/newsletter/'
