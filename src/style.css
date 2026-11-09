@@ -1252,7 +1252,7 @@ ul {
 
 /* Zwei Spalten statt Zeilen (Absprache): links Kontakt (Adresse/Telefon/
    Email), rechts Rechtliches (Impressum/Datenschutz/Widerruf), ohne
-   Ueberschriften. Alle Texte einheitlich in Navigationsgroesse. */
+   Ueberschriften. Alle Texte einheitlich Versalien wie die Navigation. */
 .site-footer .grid {
   row-gap: var(--space-6);
 }
@@ -1280,9 +1280,10 @@ ul {
 
 .site-footer__col a,
 .site-footer__col span {
-  /* Normale Schreibweise wie die Navigation (Typo-System 2026-11-09). */
-  font-size: var(--font-size-ui);
-  letter-spacing: 0.01em;
+  /* Versalien wie die Navigation (Ann 2026-11-09). */
+  text-transform: uppercase;
+  font-size: var(--font-size-capital);
+  letter-spacing: var(--letter-spacing-label);
   text-decoration: none;
 }
 
