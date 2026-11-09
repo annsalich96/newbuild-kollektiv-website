@@ -49,6 +49,16 @@ export function generateEventPages() {
     //   Website:  Name, darunter "Position, Firma" (roleLine unten)
     //   E-Mail:   "Name, Position Firma"  (siehe Code.gs -> referentText_)
 
+    // Zweiteilige Titel ("Teil 1: Teil 2" oder "Teil 1 - Teil 2"): zweiter
+    // Teil in eigener Zeile (Ann 2026-11-09). Beim Bindestrich faellt der
+    // Strich weg, der Doppelpunkt bleibt. Gleiche Regel in src/main.ts.
+    const titleParts = (title) => {
+      const t = String(title || '').trim()
+      const m = t.match(/^(.+?:)\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+      return m ? [m[1], m[2]] : [t]
+    }
+    const titleHtml = titleParts(event.title).map(escapeHtml).join('<br />')
+
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
     // eigener Absatz, wie im PDF-Layout vorgegeben.
     const descriptionParagraphs = String(event.description || '')
@@ -230,7 +240,8 @@ export function generateEventPages() {
       : ''
 
     const html = template
-      .replaceAll('__TITLE__', escapeHtml(event.title))
+      .replaceAll('__TITLE_HTML__', titleHtml)
+      .replaceAll('__TITLE__', escapeHtml(String(event.title || '').trim()))
       .replaceAll('__NUMBER__', escapeHtml(event.number || ''))
       .replaceAll('__INTRO_LABEL__', escapeHtml(event.introLabel))
       .replaceAll('__DATE__', escapeHtml(event.date))

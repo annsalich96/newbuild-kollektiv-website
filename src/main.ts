@@ -104,6 +104,14 @@ if (nextEvent) {
   }
 }
 
+// Zweiteilige Titel: zweiter Teil in eigener Zeile (gleiche Regel wie
+// titleParts in scripts/generate-event-pages.mjs).
+const titleHtml = (title: string) => {
+  const t = title.trim()
+  const m = t.match(/^(.+?:)\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+  return m ? `${m[1]}<br />${m[2]}` : t
+}
+
 const sessionRow = document.getElementById('session-row')
 if (sessionRow) {
   sessionRow.innerHTML = events
@@ -112,7 +120,7 @@ if (sessionRow) {
         <li class="session-card">
           ${s.number ? `<p class="session-card__number">${s.number}</p>` : ''}
           <div class="session-card__text">
-            <p>${s.title}</p>
+            <p>${titleHtml(s.title)}</p>
           </div>
           <div class="session-card__meta-block">
             ${s.speakerName ? `<p>${s.speakerName}</p>` : ''}
