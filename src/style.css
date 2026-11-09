@@ -442,9 +442,8 @@ ul {
 
 .site-nav nav a {
   text-decoration: none;
-  text-transform: uppercase;
-  font-size: var(--font-size-capital);
-  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-ui);
+  letter-spacing: 0.01em;
   white-space: nowrap;
   /* Ohne min-width:0 wuchs die Spalte von "Sponsoring" (laengstes Wort)
      ueber ihren nominalen 1fr-Anteil hinaus (Grid-Items schrumpfen sonst
@@ -549,12 +548,13 @@ ul {
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
   line-height: var(--line-height-bold);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.02em;
   margin: 0;
   /* Kompensiert das Leading von line-height-bold (71px bei 48px Schrift =
      11.5px halbe Zeilendurchschuss oben) plus ~4px Versalhoehen-Differenz
      zum 24px-Label - per Messung auf Versal-Oberkante von "MISSION". */
-  margin-block-start: calc(-15.5 * var(--px));
+  margin-block-start: calc(-12 * var(--px));
 }
 
 @media (max-width: 768px) {
@@ -625,19 +625,15 @@ ul {
 }
 
 .team-row__name {
-  font-size: var(--font-size-capital);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-label);
+  font-size: var(--font-size-ui);
   /* Komplett weiss statt gedaempft (Absprache) — Groesse bleibt gleich. */
   color: var(--color-text);
 }
 
 .team-row__role {
   display: block;
-  font-size: var(--font-size-capital);
+  font-size: var(--font-size-ui-small);
   font-weight: var(--font-weight-light);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-label);
   color: var(--color-muted);
 }
 
@@ -704,14 +700,14 @@ ul {
      13 sass der Zeilenumbruch (z.B. "KI-Agenten") fast auf dem Kasten-
      rand, da die Karte selbst kein horizontales Innenpolster hat. */
   grid-column: 5 / 12;
-  font-size: var(--font-size-regular-text);
-  line-height: var(--line-height-regular-text);
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
   /* <h2> ist im Browser standardmaessig bold — ohne Reset sah der Text
      trotz Text-Regular-Groesse fett aus (Ursache fuer den gemeldeten
      Unterschied zur Session-01-Zahl in Sektion 6, die bewusst Text Bold
-     ist). Danach Regular - wirkte zu duenn (Absprache 2026-09-29), jetzt
-     Medium wie der Titel auf der Event-Seite, aber weiterhin 36pt. */
-  font-weight: var(--font-weight-bold);
+     ist). Seit 2026-11-09 Light wie alle grossen Texte (Typo-System:
+     2 Staerken, 5 Groessen, siehe tokens.css). */
+  font-weight: var(--font-weight-light);
   margin: 0;
 }
 
@@ -892,11 +888,11 @@ ul {
   display: inline-block;
   text-decoration: none;
   text-transform: uppercase;
-  font-size: var(--font-size-capital);
+  font-size: var(--font-size-ui-small);
   letter-spacing: var(--letter-spacing-label);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-regular);
   padding: var(--space-3) var(--space-6);
-  border: var(--line-thickness) solid var(--color-text);
+  border: var(--line-thickness-button) solid var(--color-text);
   border-radius: 999px;
 }
 
@@ -1419,11 +1415,12 @@ ul {
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
   line-height: var(--line-height-bold);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.02em;
   margin: 0;
   /* Kompensiert das Leading von line-height-bold, damit der Titel oben
      buendig mit dem Eyebrow-Label sitzt - wie .section__statement. */
-  margin-block-start: calc(-15.5 * var(--px));
+  margin-block-start: calc(-12 * var(--px));
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 

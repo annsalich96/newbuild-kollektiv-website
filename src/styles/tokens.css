@@ -45,7 +45,7 @@
   --font-family-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-weight-light: 300;
   --font-weight-regular: 400;
-  --font-weight-bold: 500; /* Medium statt Bold (700) — Name des Tokens bewusst beibehalten */
+  --font-weight-bold: 400; /* Regular statt Medium (eleganter, Ann 2026-11-09) — Name des Tokens bewusst beibehalten */
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -63,14 +63,19 @@
      Texte auf schmalen Viewports gegen Null schrumpfen. */
   /* 1pt = 1px bei 1920px-Referenz (72dpi-Kunstbrett), nicht CSS-Standard-pt
      (1,333px) — per PDF-Messung (Cap-Height "MISSION") bestätigt. */
-  --font-size-capital: calc(24 * var(--px)); /* 24pt */
-  --font-size-regular-text: calc(36 * var(--px)); /* 36pt */
-  --font-size-bold: calc(48 * var(--px)); /* 48pt */
-  --line-height-regular-text: calc(49 * var(--px)); /* 49pt */
-  --line-height-bold: calc(71 * var(--px)); /* 71pt */
-  --line-thickness: 2px; /* Kästen/Trennlinien — 1px war auf dem Screen zu duenn, jetzt 2px fix */
+  --font-size-capital: calc(20 * var(--px)); /* war 24pt, etwas kleiner (2026-11-09) */
+  --font-size-regular-text: calc(28 * var(--px)); /* war 36pt */
+  --font-size-bold: calc(54 * var(--px)); /* war 48pt Medium, jetzt etwas groesser aber Light */
+  --line-height-regular-text: calc(39 * var(--px));
+  --font-size-ui: calc(20 * var(--px)); /* Nav, Buttons, Namen - normale Schreibweise statt Versalien */
+  --font-size-ui-small: calc(16 * var(--px)); /* Nebeninfos wie Firma unter dem Namen, Button-Schrift */
+  --font-size-card-title: calc(36 * var(--px)); /* Next-Event-Titel bzw. "Stay tuned" */
+  --line-height-card-title: calc(48 * var(--px));
+  --line-thickness-button: 2px;
+  --line-height-bold: calc(70 * var(--px)); /* ~1.3 (Ann 2026-11-09: 1.1 war zu eng) */
+  --line-thickness: 1px; /* Kästen/Trennlinien — wieder 1px, passt zur duenneren Schrift (2026-11-09) */
 
-  --letter-spacing-label: 0.08em; /* Nav-Items, Eyebrow-Labels wie "MISSION" — Großbuchstaben, leicht gesperrt */
+  --letter-spacing-label: 0.1em; /* Nav-Items, Eyebrow-Labels wie "MISSION" — Großbuchstaben, leicht gesperrt */
 
   --line-height-tight: 1.1;
   --line-height-base: 1.5;
@@ -116,9 +121,14 @@
     --balken: 32px;
     --font-size-capital: 12px;
     --font-size-regular-text: 16px;
-    --font-size-bold: 26px;
+    --font-size-bold: 28px;
     --line-height-regular-text: 22px;
-    --line-height-bold: 32px;
+    --line-height-bold: 36px;
+    --font-size-ui: 14px;
+    --font-size-ui-small: 12px;
+    --font-size-card-title: 18px;
+    --line-height-card-title: 25px;
+    --line-thickness-button: 1px;
     /* Nur Mobile duenner: 2px auf dem kleinen Screen wirkte kraeftiger als
        auf Desktop gewollt (Absprache). 1,5px reichte noch nicht, jetzt 1px. */
     --line-thickness: 1px;
