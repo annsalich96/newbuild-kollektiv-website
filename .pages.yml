@@ -44,7 +44,7 @@ content:
             label: Datum
             type: string
           - name: time
-            label: Zeit
+            label: "Zeit (z.B. 18:30-22:00 - der Strich wird automatisch vereinheitlicht)"
             type: string
           - name: location
             label: Ort

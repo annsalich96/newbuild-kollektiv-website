@@ -57,6 +57,8 @@ export function generateEventPages() {
       const m = t.match(/^(.+?):\s+(.+)$/) || t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
       return m ? [`${m[1]}:`, m[2]] : [t]
     }
+    // Zeitspannen einheitlich mit Halbgeviertstrich (wie timeRange in main.ts).
+    const time = String(event.time || '').trim().replace(/\s*[-–—]\s*/g, '–')
     const titleHtml = titleParts(event.title).map(escapeHtml).join('<br />')
 
     // description ist ein mehrzeiliges Textfeld im CMS - jede Zeile wird ein
@@ -99,7 +101,7 @@ export function generateEventPages() {
     const eventMetaBlock = `<dl class="event-detail__meta">
         <div>
           <dt>Zeit</dt>
-          <dd>${escapeHtml(event.date)}, ${escapeHtml(event.time)}</dd>
+          <dd>${escapeHtml(event.date)}, ${escapeHtml(time)}</dd>
         </div>
         <div>
           <dt>Ort</dt>
@@ -245,7 +247,7 @@ export function generateEventPages() {
       .replaceAll('__NUMBER__', escapeHtml(event.number || ''))
       .replaceAll('__INTRO_LABEL__', escapeHtml(event.introLabel))
       .replaceAll('__DATE__', escapeHtml(event.date))
-      .replaceAll('__TIME__', escapeHtml(event.time))
+      .replaceAll('__TIME__', escapeHtml(time))
       .replaceAll('__LOCATION__', escapeHtml(event.location))
       .replaceAll('__SPEAKER_NAME__', escapeHtml(event.speakerName || ''))
       .replaceAll('__SPEAKER_ROLE__', escapeHtml(event.speakerRole || ''))

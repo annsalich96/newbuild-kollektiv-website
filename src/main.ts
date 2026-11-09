@@ -71,6 +71,9 @@ type EventItem = {
 }
 
 const events = eventsData.events as EventItem[]
+// Zeitspannen einheitlich mit Halbgeviertstrich ("18:30–22:00"), egal welcher
+// Strich im CMS getippt wurde (Ann 2026-11-09).
+const timeRange = (time: string) => time.trim().replace(/\s*[-–—]\s*/g, '–')
 // Angepinntes Event ("Als Next Event zeigen?"), solange es nicht vorbei ist -
 // sonst das naechste kommende Event. Gibt es keins (z.B. nach dem letzten
 // Event, bevor das naechste im CMS steht), zeigt der Kasten "Stay tuned" und
@@ -87,7 +90,7 @@ if (nextEvent) {
     nextEvent.number ? `${nextEvent.number}: ${nextEvent.title}` : nextEvent.title,
   )
   setText('next-event-speaker', speaker)
-  setText('next-event-time', `${nextEvent.date}, ${nextEvent.time}`)
+  setText('next-event-time', `${nextEvent.date}, ${timeRange(nextEvent.time)}`)
   setText('next-event-location', nextEvent.location)
   if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
 } else {
@@ -126,7 +129,7 @@ if (sessionRow) {
           <div class="session-card__meta-block">
             ${s.speakerName ? `<p>${s.speakerName}</p>` : ''}
             <p>${s.date}</p>
-            <p>${s.time}</p>
+            <p>${timeRange(s.time)}</p>
           </div>
           <a class="button session-card__button" href="${eventHref(s.slug)}">${isPastEvent(s.date) ? 'View Past' : 'Anmeldung'}</a>
         </li>`
