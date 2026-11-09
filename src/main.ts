@@ -71,6 +71,10 @@ type EventItem = {
 }
 
 const events = eventsData.events as EventItem[]
+// Bei mehreren Speakern (CMS-Liste) steht in den Kaesten "Multiple Speakers"
+// statt eines Namens (Ann 2026-11-09).
+const speakerLabel = (e: EventItem) =>
+  (e.speakers?.length ?? 0) > 1 ? 'Multiple Speakers' : (e.speakerName ?? '')
 // Zeitspannen einheitlich mit Halbgeviertstrich ("18:30–22:00"), egal welcher
 // Strich im CMS getippt wurde (Ann 2026-11-09).
 const timeRange = (time: string) => time.trim().replace(/\s*[-–—]\s*/g, '–')
@@ -83,8 +87,8 @@ const nextEvent = upcoming.find((e) => e.isNext) ?? upcoming[0]
 const nextEventCta = document.getElementById('next-event-cta')
 if (nextEvent) {
   const speaker = nextEvent.speakerCompany
-    ? `${nextEvent.speakerName ?? ''}, ${nextEvent.speakerCompany}`
-    : (nextEvent.speakerName ?? '')
+    ? `${speakerLabel(nextEvent)}, ${nextEvent.speakerCompany}`
+    : speakerLabel(nextEvent)
   setText(
     'next-event-title',
     nextEvent.number ? `${nextEvent.number}: ${nextEvent.title}` : nextEvent.title,
@@ -123,7 +127,7 @@ if (sessionRow) {
             <p>${titleHtml(s.title)}</p>
           </div>
           <div class="session-card__meta-block">
-            ${s.speakerName ? `<p>${s.speakerName}</p>` : ''}
+            ${speakerLabel(s) ? `<p>${speakerLabel(s)}</p>` : ''}
             <p>${s.date}</p>
             <p>${timeRange(s.time)}</p>
           </div>
@@ -153,7 +157,7 @@ const galleryMembers: Member[] = []
 const memberByName = new Map<string, Member>()
 const addMember = (member: Member) => {
   const name = member.name?.trim()
-  if (!name || name.toUpperCase() === 'SPEAKERS') return
+  if (!name || /^(multiple )?speakers$/i.test(name)) return
   const key = name.toLowerCase().replace(/\s+/g, ' ')
   const existing = memberByName.get(key)
   if (existing) {
