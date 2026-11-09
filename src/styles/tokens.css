@@ -39,10 +39,12 @@
   --space-10: 128px;
 
   /* ---------- Typografie-Skala ---------- */
-  /* Referenz-PDF nutzt Helvetica (Light/Regular/Bold). Web-Fallback-Stack,
-     da Helvetica Neue nicht frei lizenzierbar ist. */
-  --font-family-base: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-family-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Referenz-PDF nutzt Helvetica. Helvetica Neue ist nicht frei als
+     Webfont lizenzierbar - Apple-Geraete haben sie eingebaut, alle anderen
+     bekommen die selbst gehostete Inter Tight (style.css) statt Arial.
+     Bewusst ohne "Helvetica": Windows leitet den Namen auf Arial um. */
+  --font-family-base: "Helvetica Neue", "Inter Tight", Arial, sans-serif;
+  --font-family-display: "Helvetica Neue", "Inter Tight", Arial, sans-serif;
   --font-weight-light: 300;
   --font-weight-regular: 400;
   --font-weight-bold: 400; /* Regular statt Medium (eleganter, Ann 2026-11-09) — Name des Tokens bewusst beibehalten */

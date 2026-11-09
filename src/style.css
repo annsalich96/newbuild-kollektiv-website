@@ -1,4 +1,9 @@
 @import "./styles/tokens.css";
+/* Inter Tight als Ersatz fuer Helvetica Neue auf Windows/Android statt
+   Arial (Ann 2026-11-09). Selbst gehostet (Vite buendelt die woff2), keine
+   Verbindung zu Google. Geraete mit Helvetica Neue laden sie nicht. */
+@import "@fontsource/inter-tight/300.css";
+@import "@fontsource/inter-tight/400.css";
 
 * {
   box-sizing: border-box;
