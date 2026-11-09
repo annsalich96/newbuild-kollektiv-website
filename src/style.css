@@ -751,6 +751,7 @@ ul {
 
 .event-card__meta dd {
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   margin: var(--space-1) 0 0;
 }
@@ -865,6 +866,7 @@ ul {
    als margin-block-start auf dem jeweils folgenden Block. */
 .session-card__text {
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
   margin-block: var(--line-height-regular-text) 0;
@@ -876,6 +878,7 @@ ul {
 
 .session-card__meta-block {
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
   margin-block: var(--line-height-regular-text) 0;
@@ -1453,6 +1456,7 @@ ul {
      die Beschreibung direkt mit normalem Absatzabstand auf den Titel. */
   grid-column: 5 / 13;
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   margin: var(--space-6) 0 0;
 }
@@ -1523,6 +1527,7 @@ ul {
      statt "Text Regular 36pt" wie in der Element-Tabelle vorgegeben
      (dieselbe Groesse wie .event-detail__description). */
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
   /* Eine Leerzeile Abstand zu Name/Position. */
@@ -1567,6 +1572,7 @@ ul {
 
 .event-detail__meta dd {
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
   margin: 0;
@@ -1640,6 +1646,7 @@ ul {
 .event-hosts__role {
   margin: var(--space-2) 0 0;
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   color: var(--color-text);
 }
@@ -1693,6 +1700,7 @@ ul {
   flex-direction: column;
   gap: var(--space-2);
   font-size: var(--font-size-regular-text);
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
 }
 
