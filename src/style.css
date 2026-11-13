@@ -1558,11 +1558,11 @@ ul {
      unten gezogen. Als ein gemeinsames Flex-Item bleibt der Abstand
      zwischen Name und Bio unabhaengig von der Fotohoehe - der Ueberschuss
      landet als Leerraum unterhalb des Blocks statt zwischen Name und Bio. */
-  /* Seit 2026-11-10 (Ann): Foto links unter dem Label (Spalte 2-4), Text
-     (Name, Position, Bio) ab Spalte 5 wie alle anderen Texte der Seite,
-     unten buendig mit dem Foto. Label, Foto und Text liegen bewusst in
-     derselben Grid-Zeile (explizit platziert). */
-  grid-column: 5 / 13;
+  /* Seit 2026-11-09 (Ann): Label "Speaker" oben in Spalte 2, darunter der
+     ganze Text (Name, Position, Bio) ab Spalte 2 bis 8, unten buendig mit
+     dem Foto; Spalte 9 frei, Foto 10-12. Label und Text liegen bewusst in
+     derselben Grid-Zeile uebereinander (explizit platziert). */
+  grid-column: 2 / 9;
   grid-row: 1;
   display: flex;
   flex-direction: column;
@@ -1652,17 +1652,15 @@ ul {
 }
 
 .event-detail__speaker-photo {
-  /* Spalten 2-4 links (Ann 2026-11-10, vorher 10-12 rechts), genau
-     1 Balken unter der Oberkante des Abschnitts, damit das Label
-     "Speaker" darueber Platz hat und das Foto auf dem Hoehengrid sitzt. */
-  grid-column: 2 / 5;
+  /* Spalten 10-12 (war 9-12 laut Element-Tabelle): seit dem Speaker-Label
+     in Spalte 2 steht der Text in 5-8, Spalte 9 bleibt als Luft frei
+     (Ann 2026-11-09). */
+  grid-column: 10 / 13;
   grid-row: 1;
-  margin-block-start: var(--balken);
   aspect-ratio: 3 / 4;
   background: #1a1a1a;
   overflow: hidden;
-  margin-inline: 0;
-  margin-block-end: 0;
+  margin: 0;
 }
 
 .event-detail__speaker-photo a {
@@ -1842,7 +1840,7 @@ ul {
    Gleiches Karussell wie die Fotogalerie (src/carousel.ts): .marquee__inner
    scrollt mit scroll-snap, je eine Klon-Kopie davor/danach fuer den
    Endlos-Loop. Jede Slide ist eine volle Seitenbreite mit demselben Grid wie
-   der Einzel-Speaker (Foto Spalte 2-4, Name/Bio 5-12). Zeit/Ort stehen fest
+   der Einzel-Speaker (Name/Bio Spalte 2-7, Foto 9-12). Zeit/Ort stehen fest
    darunter. */
 .speaker-marquee .marquee__inner {
   animation: none;
