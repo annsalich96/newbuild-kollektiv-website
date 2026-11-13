@@ -155,16 +155,18 @@ ul {
   margin-block-end: var(--balken);
 }
 
-/* Team-Galerie -> Next-Event-Kasten: 1 Balken (Absprache). */
-.next-event-row {
-  margin-block-start: var(--balken);
-}
-
-/* Next-Event-Kasten <-> Trennstrich vor Session-Kästen: beide Seiten
-   1 Balken, symmetrisch (Absprache: "derselbe Abstand oben und unten"). */
-.divider-row--before-sessions .divider {
+/* Team-Galerie <-> Trennstrich <-> Next-Event-Kasten: je 1 Balken
+   (Ann 2026-11-13: Linie unter die Speaker-Fotos statt zwischen Next Event
+   und Sessions). */
+.divider-row--before-next-event .divider {
   margin-block-start: var(--balken);
   margin-block-end: var(--balken);
+}
+
+/* Next-Event-Kasten -> Session-Kästen: 1 Balken, ohne Linie dazwischen -
+   die Kästen stehen einfach untereinander (Ann 2026-11-13). */
+.page-section--6 > .grid {
+  margin-block-start: var(--balken);
 }
 
 /* Session-Kästen <-> Trennstrich vor Fotogalerie 2: kein Wert genannt,
