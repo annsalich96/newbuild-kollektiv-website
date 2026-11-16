@@ -20,7 +20,9 @@ const eventSponsorNames = currentEvent?.sponsors?.length
   ? currentEvent.sponsors.map((s) => s.name)
   : currentEvent?.partners?.length
     ? currentEvent.partners.map((p) => p.name)
-    : undefined
+    : // Noch keine Sponsoren: Aufruf statt des allgemeinen Startseiten-Satzes
+      // (Ann 2026-11-16).
+      ['Werde Sponsor für dieses Event. Melde dich bei uns.']
 
 renderSponsorMarquee(eventSponsorNames)
 initStickyNav()
