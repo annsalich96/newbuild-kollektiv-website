@@ -86,7 +86,7 @@ Jeder HTML-Entry-Point (`index.html`, `scripts/event-page.template.html`, `impre
 - **Hintergrund-Rauschen**: `src/assets/noise.png` (512px, angezeigt 256px, nie hochskaliert) per Overlay über `public/background-smooth.jpg` (Startseite) bzw. den Verlauf von `.event-hero` – kein eingebackenes Korn mehr.
 - **Rechtsseiten** im Eventseiten-Layout, Inhalte in `src/content/{impressum,datenschutz,widerrufsrecht}.json` (Leerzeile = neuer Absatz).
 - **Session-Galerie Startseite** (seit 2026-11-16): Session-Kästen als waagrechte Galerie statt zweiter Reihe, neuestes Event links (`main.ts` dreht events.json um), 3 sichtbar auf Desktop, 85 % Breite mobil, Pfeile im Seitenrand (verschwinden am Ende, kein Endlos-Kreislauf).
-- **Navigation** (seit 2026-11-16): fünfter Punkt „Newsletter“ → `/newsletter/` auf allen Seiten (Desktop + Handy-Menü). Spalten: Mission 2, Events 5, Sponsoring 8, About 10 (vorher 11), Newsletter rechtsbündig in 12.
+- **Navigation** (seit 2026-11-16): fünfter Punkt „Newsletter“ → `/newsletter/` auf allen Seiten (Desktop + Handy-Menü). Spalten: Mission 2, Events 5, Sponsoring 8, About 10 (vorher 11), Newsletter absolut am rechten Pillenrand (32px), nicht an Spalte 12 – bei sichtbarer Scrollleiste ragt Spalte 12 über die Pille (--px rechnet mit 100vw).
 - **Startseiten-Kästen bei 2 Speakern**: beide Namen mit „und“, ab 3 „Multiple Speakers“.
 - **Next Event** auf der Startseite: angepinntes Event nur, solange es nicht vorbei ist, sonst nächstes kommendes; gibt es keins → „Stay tuned“ + Button zur Newsletter-Seite.
 - Noch offen: geschlechtsspezifische Anrede („Liebe/Lieber") — braucht ein Anrede-Feld im Anmeldeformular.

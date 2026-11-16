@@ -448,12 +448,22 @@ ul {
   grid-column: 10;
 }
 
-/* Newsletter: rechtsbuendig in der letzten Spalte, mit etwas Abstand zum
-   Rand der Pille (sonst beruehrte das R die Linie). */
+/* Newsletter: am rechten Rand der Pille ausgerichtet, gespiegelt zum Logo
+   links (gleicher Abstand). Nicht an Spalte 12: --px rechnet mit 100vw
+   inkl. Scrollleiste, bei sichtbarer Scrollleiste (Safari mit Maus) ragt
+   Spalte 12 ueber die Pille hinaus - das R lag auf der Linie (Ann
+   2026-11-16, Screenshot). */
+.site-nav__pill {
+  position: relative;
+}
+
 .site-nav nav a:nth-child(5) {
-  grid-column: 12;
-  justify-self: end;
-  margin-inline-end: var(--space-4);
+  position: absolute;
+  /* Etwas mehr als das Logo links (16px), da die Pille rechts stark
+     gerundet ist und Text naeher an der Linie wirkt als das kleine Logo. */
+  right: calc(2 * var(--space-4));
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .site-nav nav a {
