@@ -1509,6 +1509,13 @@ ul {
      hochskaliert, damit das Korn nicht verpixelt wirkt. */
   background:
     url("./assets/noise.png") 0 0 / 256px 256px repeat,
+    /* Eventfarbe ein zweites Mal unten links beim Speaker-Bereich
+       (Ann 2026-11-16). */
+    radial-gradient(
+      ellipse 70% 45% at 0% 100%,
+      var(--event-farbe, var(--color-accent-orange)) 0%,
+      transparent 100%
+    ),
     linear-gradient(
       135deg,
       /* Eventfarbe aus Pages CMS (inline am .event-hero gesetzt, siehe
@@ -1517,7 +1524,7 @@ ul {
       #4a4340 45%,
       #d8d5d2 100%
     );
-  background-blend-mode: overlay, normal;
+  background-blend-mode: overlay, normal, normal;
   /* Kein eigenes Bottom-Padding mehr: Sponsoren-Leiste ist bereits exakt
      1 Balken hoch, der Abstand zum Formular kommt allein aus
      .event-form-section (0,5 Balken oben) - siehe Element-Tabelle. Mit
@@ -1562,8 +1569,13 @@ ul {
 }
 
 .event-detail__title {
-  /* Spalten 5-11 (E-K) laut Element-Tabelle, Balken 7. */
-  grid-column: 5 / 12;
+  /* Spalten 5-12 wie die Beschreibung (Ann 2026-11-16: Titel soll die
+     ganze verfuegbare Breite nutzen; vorher 5-11 laut Element-Tabelle). */
+  grid-column: 5 / 13;
+  /* Normaler Umbruch statt "pretty" (body): pretty glich die Zeilen aus und
+     brach dadurch sichtbar zu frueh um. Einzelne Woerter am Ende verhindert
+     weiterhin src/no-orphans.ts. */
+  text-wrap: wrap;
   font-family: var(--font-family-display);
   font-size: var(--font-size-bold);
   line-height: var(--line-height-bold);
@@ -1592,6 +1604,7 @@ ul {
   font-weight: var(--font-weight-light);
   line-height: var(--line-height-regular-text);
   margin: var(--space-6) 0 0;
+  text-wrap: wrap; /* wie beim Titel, volle Zeilenlaenge */
 }
 
 .event-detail__list {
