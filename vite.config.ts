@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { generateEventPages } from './scripts/generate-event-pages.mjs'
 import { generateMailCards } from './scripts/generate-mail-cards.mjs'
+import { generateInvitations } from './scripts/generate-invitations.mjs'
 import { imageRatio } from './scripts/image-orientation.mjs'
 
 // Erzeugt events/<slug>/index.html aus src/content/events.json - muss vor
@@ -39,6 +40,11 @@ export default defineConfig({
         // Eventkarten fuer die Mails (+ Uebersicht unter /mail/), siehe
         // scripts/generate-mail-cards.mjs.
         for (const datei of await generateMailCards()) {
+          this.emitFile({ type: 'asset', fileName: datei.fileName, source: datei.source })
+        }
+        // Einladungsmails zum Weiterleiten (/einladung/), siehe
+        // scripts/generate-invitations.mjs.
+        for (const datei of generateInvitations()) {
           this.emitFile({ type: 'asset', fileName: datei.fileName, source: datei.source })
         }
         this.emitFile({

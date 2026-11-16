@@ -1,0 +1,4 @@
+{
+  "betreff": "Einladung: {Kurztitel}, NewBuild Kollektiv am {Datum}",
+  "text": "Hallo zusammen,\n\ndas NewBuild Kollektiv lädt zum nächsten Treffen ein: „{Titel}“.\n\n{Einstieg}\n\nEs spricht {Speaker}.\nModeration: {Moderation}\n\n{Karte}\n\nWann: {Datum}, {Zeit} Uhr\nWo: {Ort}\nAnmeldung: {Link}\n\nNewBuild Kollektiv bringt Architektinnen und Architekten zusammen, um darüber zu sprechen, wie KI und digitale Werkzeuge die Praxis verändern. Leitet diese Einladung gern an alle weiter, die das Thema interessiert.\n\nViele Grüße\nNewBuild Kollektiv"
+}

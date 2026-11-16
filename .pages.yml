@@ -364,6 +364,20 @@ content:
         label: Text
         type: text
 
+  - name: einladung
+    label: Einladungsmail (alle Events)
+    type: file
+    path: src/content/einladung.json
+    format: json
+    fields:
+      - name: betreff
+        label: Betreff
+        type: string
+        description: "Platzhalter wie im Text, z. B. {Kurztitel} und {Datum}."
+      - name: text
+        label: Text
+        type: text
+        description: "Wird pro Event automatisch gefüllt, Ergebnis unter newbuild-kollektiv.com/einladung/. Platzhalter: {Titel} · {Kurztitel} · {Untertitel} · {Datum} · {Zeit} · {Ort} · {Speaker} · {Moderation} · {Einstieg} (erster Satz der Eventbeschreibung) · {Link} (Anmeldeseite) · {Karte} (eigene Zeile: Eventkarte mit Button Anmeldung, verlinkt). Zeilen mit leerem Platzhalter fallen weg (z. B. Moderation)."
   - name: footer
     label: Fußzeile (global, alle Seiten)
     type: file
