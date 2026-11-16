@@ -816,8 +816,13 @@ ul {
 
   .event-card__label,
   .event-card__title,
+  .event-card__text,
   .event-card__meta,
   .event-card__cta {
+    /* .event-card__text fehlte hier: mit 5/12 aus dem Desktop-Raster legte
+       das 4-Spalten-Raster unsichtbare Zusatzspalten an - "Stay tuned"
+       brach Wort fuer Wort um, Hinweis lag ueber dem Titel, Button ragte
+       links aus dem Kasten (Screenshot Ann 2026-11-16). */
     grid-column: 1 / -1;
   }
 
