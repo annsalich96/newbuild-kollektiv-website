@@ -105,10 +105,24 @@ function karte(event, button = 'GOOGLE MAPS') {
   const [titel, untertitel] = titelTeile(event.title)
   const zeit = [event.date, event.time].map((s) => String(s || '').trim()).filter(Boolean).join(' · ')
   const bereinigt = (arr) => arr.map((z) => String(z || '').trim()).filter(Boolean)
+  // Name, darunter das Buero (CMS "Referent:in — Firma"). Position bewusst
+  // nicht auf der Karte (Absprache 2026-09-29: "es reicht das Buero").
+  // Speaker-Liste mit 2-3 Personen (Ann 2026-11-16, Session 04): alle auf die
+  // Karte, Rolle "Moderation" als eigener Block. Groessere Listen (DAZ, 10
+  // Speaker) passen nicht auf die Karte -> Einzelfelder wie bisher.
+  const liste = Array.isArray(event.speakers) && event.speakers.length >= 2 && event.speakers.length <= 3
+    ? event.speakers
+    : null
+  const istModeration = (sp) => /moderation/i.test(String(sp.role || ''))
+  const personen = (arr) => bereinigt(arr.flatMap((sp) => [sp.name, sp.company]))
+  const sprecherBloecke = liste
+    ? [
+        { label: 'Referent:in:', werte: personen(liste.filter((sp) => !istModeration(sp))) },
+        { label: 'Moderation:', werte: personen(liste.filter(istModeration)) },
+      ]
+    : [{ label: 'Referent:in:', werte: bereinigt([event.speakerName, event.speakerCompany]) }]
   const meta = [
-    // Name, darunter das Buero (CMS "Referent:in — Firma"). Position bewusst
-    // nicht auf der Karte (Absprache 2026-09-29: "es reicht das Buero").
-    { label: 'Referent:in:', werte: bereinigt([event.speakerName, event.speakerCompany]) },
+    ...sprecherBloecke,
     { label: 'Zeit:', werte: bereinigt([zeit]) },
     { label: 'Ort:', werte: bereinigt(ortZeilen(event.location)) },
   ].filter((b) => b.werte.length)
