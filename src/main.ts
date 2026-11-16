@@ -71,10 +71,15 @@ type EventItem = {
 }
 
 const events = eventsData.events as EventItem[]
-// Bei mehreren Speakern (CMS-Liste) steht in den Kaesten "Multiple Speakers"
-// statt eines Namens (Ann 2026-11-09).
-const speakerLabel = (e: EventItem) =>
-  (e.speakers?.length ?? 0) > 1 ? 'Multiple Speakers' : (e.speakerName ?? '')
+// Bei mehr als zwei Speakern (CMS-Liste) steht in den Kaesten "Multiple
+// Speakers" statt eines Namens (Ann 2026-11-09); bei genau zwei beide Namen
+// mit "und" (Ann 2026-11-16, Session 04: Ann + Moderation Jan Krause).
+const speakerCount = (e: EventItem) => e.speakers?.length ?? 0
+const speakerLabel = (e: EventItem) => {
+  const n = speakerCount(e)
+  if (n === 2) return e.speakers!.map((s) => s.name).join(' und ')
+  return n > 2 ? 'Multiple Speakers' : (e.speakerName ?? '')
+}
 // Zeitspannen einheitlich mit Halbgeviertstrich ("18:30–22:00"), egal welcher
 // Strich im CMS getippt wurde (Ann 2026-11-09).
 const timeRange = (time: string) => time.trim().replace(/\s*[-–—]\s*/g, '–')
@@ -86,7 +91,8 @@ const upcoming = events.filter((e) => !isPastEvent(e.date))
 const nextEvent = upcoming.find((e) => e.isNext) ?? upcoming[0]
 const nextEventCta = document.getElementById('next-event-cta')
 if (nextEvent) {
-  const speaker = nextEvent.speakerCompany
+  // Firma nur bei einer Person, sonst wuerde sie wie die Firma beider wirken.
+  const speaker = nextEvent.speakerCompany && speakerCount(nextEvent) < 2
     ? `${speakerLabel(nextEvent)}, ${nextEvent.speakerCompany}`
     : speakerLabel(nextEvent)
   setText(
