@@ -124,7 +124,10 @@ const titleHtml = (title: string) => title.trim().replace(/^(.+?)\s+[-–—]\s+
 
 const sessionRow = document.getElementById('session-row')
 if (sessionRow) {
-  sessionRow.innerHTML = events
+  // Galerie statt Umbruch in eine zweite Reihe: neuestes Event ganz links
+  // (Ann 2026-11-16) - events.json ist chronologisch, daher umgedreht.
+  sessionRow.innerHTML = [...events]
+    .reverse()
     .map(
       (s) => `
         <li class="session-card">
@@ -266,6 +269,28 @@ initStickyNav()
 initMobileNavToggle()
 
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach(initCarousel)
+
+// Session-Galerie: kein Endlos-Kreislauf (Events haben Anfang und Ende),
+// Pfeile blaettern um einen Kasten und verschwinden am jeweiligen Ende.
+const sessionSlider = document.querySelector<HTMLElement>('.session-slider')
+if (sessionSlider && sessionRow) {
+  const prevBtn = sessionSlider.querySelector<HTMLButtonElement>('.session-slider__arrow--prev')
+  const nextBtn = sessionSlider.querySelector<HTMLButtonElement>('.session-slider__arrow--next')
+  const step = () => {
+    const cards = sessionRow.querySelectorAll<HTMLElement>('.session-card')
+    return cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : sessionRow.clientWidth
+  }
+  const update = () => {
+    const max = sessionRow.scrollWidth - sessionRow.clientWidth
+    prevBtn?.toggleAttribute('hidden', sessionRow.scrollLeft <= 2)
+    nextBtn?.toggleAttribute('hidden', sessionRow.scrollLeft >= max - 2)
+  }
+  prevBtn?.addEventListener('click', () => sessionRow.scrollBy({ left: -step(), behavior: 'smooth' }))
+  nextBtn?.addEventListener('click', () => sessionRow.scrollBy({ left: step(), behavior: 'smooth' }))
+  sessionRow.addEventListener('scroll', update, { passive: true })
+  window.addEventListener('resize', update)
+  update()
+}
 
 avoidOrphans()
 snapToBalken('.event-card--next, .session-card')

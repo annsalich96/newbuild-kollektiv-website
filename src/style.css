@@ -442,8 +442,18 @@ ul {
   grid-column: 8;
 }
 
+/* About seit 2026-11-16 in Spalte 10 statt 11, damit "Newsletter" daneben
+   Platz hat (Ann: Newsletter dauerhaft in der Navigation). */
 .site-nav nav a:nth-child(4) {
-  grid-column: 11;
+  grid-column: 10;
+}
+
+/* Newsletter: rechtsbuendig in der letzten Spalte, mit etwas Abstand zum
+   Rand der Pille (sonst beruehrte das R die Linie). */
+.site-nav nav a:nth-child(5) {
+  grid-column: 12;
+  justify-self: end;
+  margin-inline-end: var(--space-4);
 }
 
 .site-nav nav a {
@@ -838,18 +848,72 @@ ul {
    3 Kästen je 4 Spalten (A–D / E–H / I–L). Jeder Kasten hat sein eigenes
    4-spaltiges Innenraster; Nummer/Text/Button sitzen zentriert in dessen
    mittleren 2 Spalten — das entspricht exakt B–C / F–G / J–K im äußeren Grid. */
+/* Galerie statt zweiter Reihe (Ann 2026-11-16): die Kaesten laufen
+   waagrecht weiter, 3 sichtbar (je 4 Spalten wie bisher), neuestes links
+   (main.ts). Ein Unterraster ueber 4 Zeilen haelt Nummer/Titel/Meta/Button
+   in allen Kaesten auf gleicher Hoehe. */
+.session-slider {
+  grid-column: 1 / -1;
+  position: relative;
+  min-width: 0;
+}
+
 .session-row {
-  display: contents;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 2 * var(--grid-gutter)) / 3);
+  grid-template-rows: auto 1fr auto auto;
+  column-gap: var(--grid-gutter);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.session-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pfeile im Seitenrand links/rechts neben den Kaesten. */
+.session-slider__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--grid-margin);
+  height: calc(1.8 * var(--balken));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: calc(1.2 * var(--font-size-bold));
+  cursor: pointer;
+}
+
+.session-slider__arrow[hidden] {
+  display: none;
+}
+
+.session-slider__arrow--prev {
+  left: calc(-1 * var(--grid-margin));
+}
+
+.session-slider__arrow--next {
+  right: calc(-1 * var(--grid-margin));
 }
 
 .session-card {
-  grid-column: span 4;
+  grid-column: auto;
+  scroll-snap-align: start;
   /* Subgrid ueber 4 Zeilen (Nummer / Titel / Meta / Button): die Zeilen
      gehoeren dem aeusseren .grid, daher sind sie in allen Kaesten einer
      Reihe gleich hoch - Referent/Datum und Button beginnen ueberall auf
      derselben Hoehe, auch wenn ein Titel kuerzer ist. Nebeneffekt: alle
      Kaesten einer Reihe sind gleich hoch. */
-  grid-row: span 4;
+  grid-row: 1 / span 4;
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: subgrid;
@@ -865,9 +929,7 @@ ul {
 
 /* Zeile 2 (Titel) nimmt die beim Runden auf ganze Balken gewonnene Hoehe
    auf, damit Referent/Datum und Button unten in allen Kaesten fluchten. */
-.page-section--6 .grid:has(> .session-row) {
-  grid-template-rows: auto 1fr auto auto;
-}
+
 
 /* Volle Kastenbreite statt nur der mittleren 2 Spalten — weniger Zeilenumbrüche,
    dadurch werden die Kästen insgesamt niedriger (Verhältnis wichtiger als
@@ -933,8 +995,13 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .session-card {
-    grid-column: 1 / -1;
+  /* Mobil ein Kasten pro Wisch, der naechste schaut am Rand hervor. */
+  .session-row {
+    grid-auto-columns: 85%;
+  }
+
+  .session-slider__arrow {
+    display: none;
   }
 }
 

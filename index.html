@@ -40,6 +40,7 @@
           <a href="#events">Events</a>
           <a href="#sponsoring">Sponsoring</a>
           <a href="#about">About</a>
+          <a href="/newsletter/">Newsletter</a>
         </nav>
 
         <header class="site-nav">
@@ -52,6 +53,7 @@
               <a href="#events">Events</a>
               <a href="#sponsoring">Sponsoring</a>
               <a href="#about">About</a>
+              <a href="/newsletter/">Newsletter</a>
             </nav>
           </div>
         </header>
@@ -119,9 +121,14 @@
       <!-- Sektion 6 — Balken 36-42: Session-Kästen -->
       <section class="page-section page-section--6">
         <div class="grid">
-          <ul class="session-row" id="session-row" aria-label="Weitere Sessions">
-            <!-- Wird von src/main.ts aus content/events.json befuellt. -->
-          </ul>
+          <div class="session-slider">
+            <ul class="session-row" id="session-row" aria-label="Weitere Sessions">
+              <!-- Wird von src/main.ts aus content/events.json befuellt
+                   (neuestes Event links, Ann 2026-11-16). -->
+            </ul>
+            <button type="button" class="session-slider__arrow session-slider__arrow--prev" aria-label="Vorherige Sessions">‹</button>
+            <button type="button" class="session-slider__arrow session-slider__arrow--next" aria-label="Weitere Sessions">›</button>
+          </div>
         </div>
       </section>
 
