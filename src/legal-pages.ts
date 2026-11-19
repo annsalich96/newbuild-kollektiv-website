@@ -32,12 +32,15 @@ if (container) {
   container.innerHTML = sections
     .map(
       (s) => `
-        <section class="grid legal-block">
+        <section class="grid legal-block" id="${anker(s.heading)}">
           <h3 class="legal-block__heading">${escapeHtml(s.heading)}</h3>
           <div class="legal-block__body">${paragraphs(s.body)}</div>
         </section>`,
     )
     .join('')
+  // Abschnitte entstehen erst hier per JS: Sprung zum #Anker nachholen.
+  const ziel = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null
+  if (ziel) requestAnimationFrame(() => ziel.scrollIntoView())
 }
 
 function paragraphs(text: string) {
@@ -46,6 +49,19 @@ function paragraphs(text: string) {
     .split(/\n\s*\n/)
     .map((p) => `<p>${escapeHtml(p.trim()).replaceAll('\n', '<br />')}</p>`)
     .join('')
+}
+
+// Sprungmarke aus der Ueberschrift, z. B. "Weitergabe an Sponsoren und
+// Partner" -> #weitergabe-an-sponsoren-und-partner (Link in der Event-Anmeldung).
+function anker(heading: string) {
+  return String(heading || '')
+    .toLowerCase()
+    .replaceAll('ä', 'ae')
+    .replaceAll('ö', 'oe')
+    .replaceAll('ü', 'ue')
+    .replaceAll('ß', 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 function escapeHtml(value: string) {

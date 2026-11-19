@@ -92,6 +92,7 @@ if (form instanceof HTMLFormElement && status) {
       companyAddress: formData.get('companyAddress'),
       phone: formData.get('phone'),
       newsletter: formData.get('newsletter') === 'on',
+      sponsorKontakt: formData.get('sponsorKontakt') === 'on',
       checkin: fromCheckin,
       foto: params.get('foto') === '1',
     }

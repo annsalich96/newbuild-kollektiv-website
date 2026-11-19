@@ -2414,6 +2414,15 @@ function schreibeZusatzfelder_(sheet, data, row) {
   if (data.eventSlug) {
     sheet.getRange(row, ensureColumn_(sheet, 'Slug')).setValue(String(data.eventSlug))
   }
+  // Einwilligung zur Weitergabe an Sponsoren/Partner (seit 19.11.2026).
+  // Nur Zeilen mit "Ja (Datum)" duerfen an Sponsoren gehen.
+  sheet
+    .getRange(row, ensureColumn_(sheet, 'Weitergabe Sponsoren'))
+    .setValue(
+      data.sponsorKontakt
+        ? 'Ja (' + Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm') + ')'
+        : 'Nein',
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

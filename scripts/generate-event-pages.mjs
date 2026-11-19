@@ -287,6 +287,9 @@ export function generateEventPages() {
       // Eventfarbe aus Pages CMS (Feld "Farbe") -> Hintergrund-Verlauf der
       // Seite (.event-hero), dieselbe Farbe wie auf der Mail-Karte.
       .replaceAll('__EVENT_FARBE__', eventFarbe(event))
+      // Empfaenger der Sponsoren-Einwilligung im Formular (Ann 2026-11-19):
+      // Sponsoren + Partner dieses Events namentlich, sonst allgemein.
+      .replaceAll('__SPONSOR_EMPFAENGER__', escapeHtml(sponsorEmpfaenger(event)))
 
     const eventDir = join(outDir, event.slug)
     mkdirSync(eventDir, { recursive: true })
@@ -297,4 +300,19 @@ export function generateEventPages() {
   }
 
   return entries
+}
+
+// Namen der Sponsoren/Partner eines Events fuer den Einwilligungstext.
+// "Sponsored by X" -> "X". Ohne Eintraege: allgemeine Formulierung.
+function sponsorEmpfaenger(event) {
+  const namen = [...(event.sponsors || []), ...(event.partners || [])]
+    .map((x) => String((x && x.name) || '').replace(/^\s*sponsored by\s*/i, '').trim())
+    .filter(Boolean)
+  const eindeutig = [...new Set(namen)]
+  if (!eindeutig.length) return 'die Sponsoren und Partner dieser Veranstaltung'
+  const liste =
+    eindeutig.length === 1
+      ? eindeutig[0]
+      : eindeutig.slice(0, -1).join(', ') + ' und ' + eindeutig[eindeutig.length - 1]
+  return 'die Sponsoren und Partner dieser Veranstaltung (' + liste + ')'
 }
