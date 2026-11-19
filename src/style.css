@@ -2112,6 +2112,13 @@ ul {
     flex-direction: column;
   }
 
+  /* Endlos-Kopien ebenso - das display:block !important oben hebelte die
+     Regel aus, in den Kopien sass das Foto dann hoeher und sprang beim
+     Wischen ueber das Ende (Ann 2026-11-19). */
+  .speaker-marquee .speaker-slide.is-mobile-wrap-clone {
+    display: flex !important;
+  }
+
   .speaker-slide > .event-detail__speaker {
     flex: 1 0 auto;
     grid-template-rows: auto 1fr auto;
