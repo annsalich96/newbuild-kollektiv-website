@@ -111,7 +111,7 @@ export function generateEventPages() {
           ${s.role ? `<p class="event-detail__speaker-role">${escapeHtml(s.role)}</p>` : ''}
           ${s.bio ? `<p class="event-detail__speaker-bio">${escapeHtml(s.bio)}</p>` : ''}
         </div>
-        <figure class="event-detail__speaker-photo">${s.image ? photoLink(s.url, `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.name)}" loading="lazy" draggable="false" />`, s.name) : ''}</figure>`
+        <figure class="event-detail__speaker-photo">${s.image ? photoLink(s.url, `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.name)}" decoding="async" draggable="false" onload="this.classList.add('is-loaded')" />`, s.name) : ''}</figure>`
 
     // Datum/Uhrzeit/Ort/Eckdaten direkt unter der Beschreibung, oberhalb der
     // Linie zu den Speakern (Ann 2026-11-09) - gleiche dt/dd-Struktur wie die

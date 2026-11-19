@@ -293,4 +293,8 @@ if (sessionSlider && sessionRow) {
 }
 
 avoidOrphans()
-snapToBalken('.event-card--next, .session-card')
+// .session-row statt .session-card: die Kaesten sind Subgrid-Zeilen der
+// Reihe, min-height am einzelnen Kasten vergroesserte die Zeilen nicht
+// (Reihe blieb 5,33 Balken hoch, Ann 2026-11-19). Mehrhoehe geht in die
+// 1fr-Titelzeile.
+snapToBalken('.event-card--next, .session-row, #about')

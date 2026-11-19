@@ -92,6 +92,7 @@ Jeder HTML-Entry-Point (`index.html`, `scripts/event-page.template.html`, `impre
 - **Eventseiten ohne Sponsoren**: Laufband „Werde Sponsor für dieses Event. Melde dich bei uns.“ (`event-form.ts`).
 - **Startseiten-Kästen bei 2 Speakern**: beide Namen mit „und“, ab 3 „Multiple Speakers“.
 - **Next Event** auf der Startseite: angepinntes Event nur, solange es nicht vorbei ist, sonst nächstes kommendes; gibt es keins → „Stay tuned“ + Button zur Newsletter-Seite.
+- **Linien & Raster** (Ann 2026-11-19): Startseite ohne Trennlinien zwischen den Bereichen (vorher vor Team, Next Event, Fotogalerie 2, About; jede Lücke dabei um 1 Balken kleiner). Linie über dem Sponsoren-Laufband und auf Eventseiten über dem Speaker-Bereich randlos von Kante zu Kante (`.divider-row--full`). Speaker-Fotos Startseite 5 Balken hoch (Desktop), Fotogalerie 6 Balken. `balken-snap.ts` rundet Next Event, die ganze Session-Reihe (nicht die einzelnen Subgrid-Kästen) und `#about` auf ganze Balken. Speakerfoto auf Eventseiten lädt sofort und blendet erst nach vollständigem Laden ein (baute sich vorher zeilenweise auf). Gemessen bei 1920px: Team 22,42–27,42 · Next Event 28,42–32,42 · Sessions 33,42–39,42 · Galerie 40,42–46,42 · About 48,42–52,42 · Banner-Linie 54,42.
 - Noch offen: geschlechtsspezifische Anrede („Liebe/Lieber") — braucht ein Anrede-Feld im Anmeldeformular.
 
 ## Struktur

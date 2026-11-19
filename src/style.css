@@ -148,19 +148,20 @@ ul {
   margin-block-start: calc(2 * var(--balken));
 }
 
-/* Mission-Text -> Trennstrich vor Team-Galerie: 2,5 Balken (Absprache). */
-.divider-row--before-team .divider {
+/* Startseite ohne Trennlinien zwischen den Bereichen (Ann 2026-11-19):
+   die frueheren Linien vor Team, Next Event, Fotogalerie 2 und About sind
+   entfernt, jede Luecke ist dabei um genau 1 Balken kleiner geworden
+   (alles rutscht einen Rasterblock hoch). Nur die Linie ueber dem
+   Sponsoren-Laufband bleibt - randlos, siehe unten. */
+
+/* Mission-Text -> Team-Fotos: 2,5 Balken (vorher 2,5 + Linie + 1). */
+.page-section--4 > .team-marquee {
   margin-block-start: calc(2.5 * var(--balken));
-  /* Trennstrich -> Team-Fotos: kein Wert genannt, 1 Balken als Default. */
-  margin-block-end: var(--balken);
 }
 
-/* Team-Galerie <-> Trennstrich <-> Next-Event-Kasten: je 1 Balken
-   (Ann 2026-11-13: Linie unter die Speaker-Fotos statt zwischen Next Event
-   und Sessions). */
-.divider-row--before-next-event .divider {
+/* Team-Fotos -> Next-Event-Kasten: 1 Balken (vorher 1 + Linie + 1). */
+.page-section--5 > .next-event-row {
   margin-block-start: var(--balken);
-  margin-block-end: var(--balken);
 }
 
 /* Next-Event-Kasten -> Session-Kästen: 1 Balken, ohne Linie dazwischen -
@@ -169,18 +170,14 @@ ul {
   margin-block-start: var(--balken);
 }
 
-/* Session-Kästen <-> Trennstrich vor Fotogalerie 2: kein Wert genannt,
-   symmetrisch 1 Balken als Default (gleiches Prinzip wie oben). */
-.divider-row--before-gallery2 .divider {
+/* Session-Kästen -> Fotogalerie 2: 1 Balken (vorher 1 + Linie + 1). */
+.page-section--7 > .gallery-marquee {
   margin-block-start: var(--balken);
-  margin-block-end: var(--balken);
 }
 
-/* Fotogalerie 2 -> Trennstrich vor About: 1 Balken (Absprache). */
-.divider-row--before-about .divider {
-  margin-block-start: var(--balken);
-  /* Trennstrich -> About-Text: 2 Balken (Absprache). */
-  margin-block-end: calc(2 * var(--balken));
+/* Fotogalerie 2 -> About-Text: 2 Balken (vorher 1 + Linie + 2). */
+.page-section--8 > #about {
+  margin-block-start: calc(2 * var(--balken));
 }
 
 /* About-Text -> Trennstrich vor Sponsoring: 2 Balken (Absprache). */
@@ -192,6 +189,13 @@ ul {
      der Sponsoring-Spruch laeuft direkt IN der Leiste mit (siehe
      .marquee__track-statement), braucht also keinen eigenen Abstand hier. */
   margin-block-end: 0;
+}
+
+/* Randlose Linien von Kante zu Kante statt nur ueber die Grid-Breite
+   (Ann 2026-11-19): ueber dem Sponsoren-Laufband (alle Seiten) und auf
+   den Eventseiten ueber dem Speaker-Bereich. */
+.divider-row--full {
+  padding-inline: 0;
 }
 
 /* ---------- Mobile-Nav (nur <768px aktiv) ----------
@@ -627,9 +631,20 @@ ul {
   color: inherit;
   text-decoration: none;
   position: relative;
-  aspect-ratio: 3 / 4;
+  /* Genau 5 Balken hoch (610px @1920) statt 3:4 aus der Breite (531px =
+     4,35 Balken) - so sitzen Ober- und Unterkante im Hoehengrid (Ann
+     2026-11-19). Breite bleibt 3 Spalten, object-fit:cover schneidet
+     seitlich minimal zu. */
+  height: calc(5 * var(--balken));
   background: #1a1a1a;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .team-row__photo {
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
 }
 
 /* Nur vorhanden, sobald ueber Pages CMS ein Foto hochgeladen wurde - bis
@@ -1319,7 +1334,9 @@ ul {
    Event-Galerien. */
 .photo-gallery-2__slide {
   flex: 0 0 auto;
-  height: calc(744 * var(--px));
+  /* 6 Balken (732px @1920) statt 744px (6,1 Balken) - Ober-/Unterkante
+     im Hoehengrid (Ann 2026-11-19). */
+  height: calc(6 * var(--balken));
   aspect-ratio: 3 / 2;
   background: #1a1a1a;
   display: flex;
@@ -1770,6 +1787,15 @@ ul {
   height: 100%;
   object-fit: cover;
   display: block;
+  /* Erst zeigen, wenn komplett geladen - sonst baute sich das Foto
+     sichtbar zeilenweise auf (Ann 2026-11-19). Laedt sofort statt lazy,
+     is-loaded setzt der onload-Handler im Markup. */
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.event-detail__speaker-photo img.is-loaded {
+  opacity: 1;
 }
 
 @media (max-width: 768px) {
