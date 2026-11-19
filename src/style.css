@@ -2289,8 +2289,10 @@ ul {
   display: block;
   width: clamp(12px, calc(22 * var(--px)), 24px);
   height: clamp(12px, calc(22 * var(--px)), 24px);
-  border-top: var(--line-thickness) solid currentColor;
-  border-right: var(--line-thickness) solid currentColor;
+  /* Mittelding (Ann 2026-11-19): kraeftiger als die 1,5px-Linien, feiner
+     als das fruehere Schriftzeichen - 2,5px bei 1920px. */
+  border-top: clamp(1.5px, calc(2.5 * var(--px)), 3px) solid currentColor;
+  border-right: clamp(1.5px, calc(2.5 * var(--px)), 3px) solid currentColor;
 }
 
 .marquee__arrow--prev::before,
@@ -2319,40 +2321,26 @@ ul {
     z-index: 5;
   }
 
-  /* Volle Breite (Fotogalerie, Speaker-Band): Pfeil im Seitenrand. */
+  /* Volle Breite (Team-Fotos, Fotogalerie, Speaker-Band): Pfeil im
+     Seitenrand. */
+  .team-marquee .marquee__arrow--prev,
   .gallery-marquee .marquee__arrow--prev,
   .speaker-marquee .marquee__arrow--prev {
     left: 0;
   }
 
+  .team-marquee .marquee__arrow--next,
   .gallery-marquee .marquee__arrow--next,
   .speaker-marquee .marquee__arrow--next {
     right: 0;
   }
 
-  /* Im Grid (Team-Fotos, Sessions): Pfeil links/rechts daneben im Rand. */
-  .team-marquee .marquee__arrow--prev,
+  /* Im Grid (Sessions): Pfeil links/rechts daneben im Rand. */
   .session-slider__arrow--prev {
     left: calc(-1 * var(--grid-margin));
   }
 
-  .team-marquee .marquee__arrow--next,
   .session-slider__arrow--next {
     right: calc(-1 * var(--grid-margin));
-  }
-
-  /* Team-Fotos im Spaltenraster statt randlos (Ann 2026-11-19): genau 4
-     ganze Fotos a 3 Spalten sichtbar, keins angeschnitten. Breite aus der
-     Containerbreite (cqi) statt aus 100vw, damit es auch bei sichtbarer
-     Scrollleiste exakt aufgeht. */
-  .team-marquee {
-    width: auto;
-    margin-inline: var(--grid-margin);
-    overflow: visible;
-    container-type: inline-size;
-  }
-
-  .team-marquee .team-row__member {
-    flex: 0 0 calc((100cqi - 3 * var(--grid-gutter)) / 4);
   }
 }
