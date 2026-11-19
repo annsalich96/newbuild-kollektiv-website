@@ -1604,10 +1604,19 @@ ul {
   -webkit-backdrop-filter: blur(16px);
 }
 
-.speaker-band + .event-gallery-section .gallery-marquee,
+.event-gallery-section .gallery-marquee,
 .speaker-band + .divider-row--before-sponsoring .divider,
 .speaker-band + .event-gallery-section[hidden] + .divider-row--before-sponsoring .divider {
   margin-block-start: var(--balken);
+}
+
+/* Direkt nach dem Band folgt ein Zusatzbereich (Programm usw.): keine
+   Linie, nur 1 Balken Abstand - der Bereich steht einfach wieder auf dem
+   normalen Hintergrund (Ann 2026-11-19). Linien zwischen den weiteren
+   Bereichen bleiben. */
+.speaker-band + .divider-row:not(.divider-row--before-sponsoring) .divider {
+  border-top: 0;
+  margin-block: var(--balken) 0;
 }
 
 /* Newsletter-Seite: kein Laufband, daher auch keine Abschlusslinie - nur

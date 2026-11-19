@@ -174,6 +174,14 @@ export function generateEventPages() {
         <p class="section__eyebrow">${label}</p>
         <div class="event-detail__block-body">${body}</div>
       </section>`
+    // Wie block(), aber als Band mit Milchglas-Hintergrund statt Linie davor
+    // (Ann 2026-11-19: "Praesentiert von" wie der Speaker-Bereich).
+    const bandBlock = (label, body) => `<div class="speaker-band">
+      <section class="grid event-detail__block">
+        <p class="section__eyebrow">${label}</p>
+        <div class="event-detail__block-body">${body}</div>
+      </section>
+      </div>`
     const program = (event.program || []).filter((p) => p && p.title)
     const hosts = (event.hosts || []).filter((h) => h && h.name)
     const partners = (event.partners || []).filter((p) => p && p.name)
@@ -194,7 +202,7 @@ export function generateEventPages() {
           )
         : '',
       hosts.length
-        ? block(
+        ? bandBlock(
             'Präsentiert von',
             `<ul class="event-hosts">${hosts
               .map(
@@ -272,7 +280,10 @@ export function generateEventPages() {
       .replaceAll('__DESCRIPTION_PARAGRAPHS__', descriptionParagraphs + '\n' + eventMetaBlock)
       .replaceAll('__SLUG__', escapeHtml(event.slug))
       .replaceAll('__GALLERY_SECTION__', gallerySection)
-      .replaceAll('__SPEAKER_SECTION__', speakerSection + '\n' + extraSections)
+      .replaceAll('__SPEAKER_SECTION__', speakerSection)
+      // Programm, Praesentiert von, Partner: ausserhalb des Speaker-Bands
+      // (Ann 2026-11-19), auf dem normalen Hintergrund.
+      .replaceAll('__EXTRA_SECTIONS__', extraSections)
       // Eventfarbe aus Pages CMS (Feld "Farbe") -> Hintergrund-Verlauf der
       // Seite (.event-hero), dieselbe Farbe wie auf der Mail-Karte.
       .replaceAll('__EVENT_FARBE__', eventFarbe(event))
