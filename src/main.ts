@@ -270,8 +270,8 @@ initMobileNavToggle()
 
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach(initCarousel)
 
-// Session-Galerie: kein Endlos-Kreislauf (Events haben Anfang und Ende),
-// Pfeile blaettern um einen Kasten und verschwinden am jeweiligen Ende.
+// Session-Galerie: Pfeile immer sichtbar (Ann 2026-11-19), blaettern um
+// einen Kasten; am Ende geht es wieder zum Anfang und umgekehrt.
 const sessionSlider = document.querySelector<HTMLElement>('.session-slider')
 if (sessionSlider && sessionRow) {
   const prevBtn = sessionSlider.querySelector<HTMLButtonElement>('.session-slider__arrow--prev')
@@ -280,14 +280,21 @@ if (sessionSlider && sessionRow) {
     const cards = sessionRow.querySelectorAll<HTMLElement>('.session-card')
     return cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : sessionRow.clientWidth
   }
+  const max = () => sessionRow.scrollWidth - sessionRow.clientWidth
+  prevBtn?.addEventListener('click', () => {
+    if (sessionRow.scrollLeft <= 2) sessionRow.scrollTo({ left: max(), behavior: 'smooth' })
+    else sessionRow.scrollBy({ left: -step(), behavior: 'smooth' })
+  })
+  nextBtn?.addEventListener('click', () => {
+    if (sessionRow.scrollLeft >= max() - 2) sessionRow.scrollTo({ left: 0, behavior: 'smooth' })
+    else sessionRow.scrollBy({ left: step(), behavior: 'smooth' })
+  })
+  // Passen alle Kaesten nebeneinander, gibt es nichts zu blaettern.
   const update = () => {
-    const max = sessionRow.scrollWidth - sessionRow.clientWidth
-    prevBtn?.toggleAttribute('hidden', sessionRow.scrollLeft <= 2)
-    nextBtn?.toggleAttribute('hidden', sessionRow.scrollLeft >= max - 2)
+    const none = max() <= 2
+    prevBtn?.toggleAttribute('hidden', none)
+    nextBtn?.toggleAttribute('hidden', none)
   }
-  prevBtn?.addEventListener('click', () => sessionRow.scrollBy({ left: -step(), behavior: 'smooth' }))
-  nextBtn?.addEventListener('click', () => sessionRow.scrollBy({ left: step(), behavior: 'smooth' }))
-  sessionRow.addEventListener('scroll', update, { passive: true })
   window.addEventListener('resize', update)
   update()
 }

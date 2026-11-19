@@ -944,7 +944,10 @@ ul {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: subgrid;
-  gap: var(--grid-gutter);
+  /* Kein Zusatzabstand zwischen den Zeilen: die Leerzeilen kommen schon aus
+     den margins der Bloecke - mit gap wurden die Kaesten 5,33 statt 5
+     Balken hoch und auf 6 aufgerundet, zu lang (Ann 2026-11-19). */
+  gap: 0;
   border: var(--line-thickness) solid var(--color-border);
   border-radius: 24px;
   /* 0,5 Balken oben/unten (Hoehengrid, Ann 2026-11-09); Gesamthoehe wird
@@ -1588,6 +1591,36 @@ ul {
   margin-block-end: 0;
 }
 
+/* Speaker-Band auf Eventseiten (Ann 2026-11-19): Linie oben und unten von
+   Kante zu Kante, dazwischen derselbe Milchglas-Hintergrund wie die
+   eingerastete Menueleiste. 1 Balken Luft innen oben/unten, Gesamthoehe
+   rundet src/balken-snap.ts auf ganze Balken. */
+.speaker-band {
+  margin-block-start: var(--balken);
+  padding-block: var(--balken);
+  border-block: var(--line-thickness) solid var(--color-border);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Nach dem Event: die Fotogalerie schliesst direkt unten ans Band an -
+   ohne Linie und ohne Abstand (Ann 2026-11-19). */
+.speaker-band:has(+ .event-gallery-section:not([hidden])) {
+  border-block-end: 0;
+}
+
+.speaker-band + .event-gallery-section .gallery-marquee {
+  margin-block-start: 0;
+}
+
+/* Ohne sichtbare Galerie ist die untere Bandlinie zugleich die Linie ueber
+   dem Sponsoren-Laufband - die eigene Trennlinie entfaellt. */
+.speaker-band + .divider-row--before-sponsoring .divider,
+.speaker-band + .event-gallery-section[hidden] + .divider-row--before-sponsoring .divider {
+  display: none;
+}
+
 /* Newsletter-Seite: kein Laufband, daher auch keine Abschlusslinie - nur
    1 Balken Luft bis zum Formular (Ann 2026-11-09). */
 .event-hero__end {
@@ -1780,7 +1813,10 @@ ul {
      (Ann 2026-11-09). */
   grid-column: 10 / 13;
   grid-row: 1;
-  aspect-ratio: 3 / 4;
+  /* Genau 5 Balken hoch wie die Speaker-Fotos der Startseite (Ann
+     2026-11-19) - mit je 1 Balken Luft ergibt das Speaker-Band exakt 7
+     Balken. Mobil wieder 3:4 (siehe Media Query unten). */
+  height: calc(5 * var(--balken));
   background: #1a1a1a;
   overflow: hidden;
   margin: 0;
@@ -1796,21 +1832,19 @@ ul {
   height: 100%;
   object-fit: cover;
   display: block;
-  /* Erst zeigen, wenn komplett geladen - sonst baute sich das Foto
-     sichtbar zeilenweise auf (Ann 2026-11-19). Laedt sofort statt lazy,
-     is-loaded setzt der onload-Handler im Markup. */
-  opacity: 0;
-  transition: opacity 0.3s ease-out;
-}
-
-.event-detail__speaker-photo img.is-loaded {
-  opacity: 1;
+  /* Laedt sofort statt lazy (Markup), damit es sich nicht erst beim
+     Scrollen zeilenweise aufbaut (Ann 2026-11-19). */
 }
 
 @media (max-width: 768px) {
   .event-detail__speaker-info,
   .event-detail__speaker-photo {
     grid-column: 1 / -1;
+  }
+
+  .event-detail__speaker-photo {
+    height: auto;
+    aspect-ratio: 3 / 4;
   }
 
   /* Mobil untereinander: Label, Text, Foto. */
@@ -2215,12 +2249,110 @@ ul {
 /* ---------- Event-Galerie (nach dem Event statt Anmeldung) ----------
    Gleiches Bauteil wie die Fotogalerie der Startseite (.gallery-marquee),
    sitzt im dunklen Bereich zwischen Referent:in und Sponsoren-Leiste.
-   Danach wie auf der Startseite 1 Balken bis zum naechsten Trennstrich. */
+   Danach direkt die Linie zum Sponsoren-Laufband (Ann 2026-11-19). */
 .event-gallery-section[hidden],
 .event-form-section[hidden] {
   display: none;
 }
 
+/* Galerie -> Laufband ohne Luecke: Linie direkt an der Fotounterkante
+   (Ann 2026-11-19, vorher 1 Balken Abstand). */
 .event-gallery-section:not([hidden]) + .divider-row--before-sponsoring .divider {
-  margin-block-start: var(--balken);
+  margin-block-start: 0;
+}
+
+/* ---------- Karussell-Pfeile einheitlich (Ann 2026-11-19) ----------
+   Team-Fotos, Fotogalerie, Speaker und Sessions: gleiche Form (duenner
+   Winkel in Linienstaerke statt Schriftzeichen), immer beide sichtbar,
+   immer an derselben Stelle - waagrecht mittig im Seitenrand, senkrecht
+   mittig zum Karussell. Dunkler Schein, damit sie auch auf hellen Fotos
+   sichtbar bleiben. */
+.team-marquee .marquee__arrow,
+.gallery-marquee .marquee__arrow,
+.speaker-marquee .marquee__arrow,
+.session-slider__arrow {
+  font-size: 0;
+  line-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.55));
+}
+
+.team-marquee .marquee__arrow::before,
+.gallery-marquee .marquee__arrow::before,
+.speaker-marquee .marquee__arrow::before,
+.session-slider__arrow::before {
+  content: '';
+  display: block;
+  width: clamp(12px, calc(22 * var(--px)), 24px);
+  height: clamp(12px, calc(22 * var(--px)), 24px);
+  border-top: var(--line-thickness) solid currentColor;
+  border-right: var(--line-thickness) solid currentColor;
+}
+
+.marquee__arrow--prev::before,
+.session-slider__arrow--prev::before {
+  transform: translateX(25%) rotate(-135deg);
+}
+
+.marquee__arrow--next::before,
+.session-slider__arrow--next::before {
+  transform: translateX(-25%) rotate(45deg);
+}
+
+@media (min-width: 769px) {
+  .team-marquee .marquee__arrow,
+  .gallery-marquee .marquee__arrow,
+  .speaker-marquee .marquee__arrow,
+  .session-slider__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--grid-margin);
+    height: calc(1.2 * var(--balken));
+    z-index: 5;
+  }
+
+  /* Volle Breite (Fotogalerie, Speaker-Band): Pfeil im Seitenrand. */
+  .gallery-marquee .marquee__arrow--prev,
+  .speaker-marquee .marquee__arrow--prev {
+    left: 0;
+  }
+
+  .gallery-marquee .marquee__arrow--next,
+  .speaker-marquee .marquee__arrow--next {
+    right: 0;
+  }
+
+  /* Im Grid (Team-Fotos, Sessions): Pfeil links/rechts daneben im Rand. */
+  .team-marquee .marquee__arrow--prev,
+  .session-slider__arrow--prev {
+    left: calc(-1 * var(--grid-margin));
+  }
+
+  .team-marquee .marquee__arrow--next,
+  .session-slider__arrow--next {
+    right: calc(-1 * var(--grid-margin));
+  }
+
+  /* Team-Fotos im Spaltenraster statt randlos (Ann 2026-11-19): genau 4
+     ganze Fotos a 3 Spalten sichtbar, keins angeschnitten. Breite aus der
+     Containerbreite (cqi) statt aus 100vw, damit es auch bei sichtbarer
+     Scrollleiste exakt aufgeht. */
+  .team-marquee {
+    width: auto;
+    margin-inline: var(--grid-margin);
+    overflow: visible;
+    container-type: inline-size;
+  }
+
+  .team-marquee .team-row__member {
+    flex: 0 0 calc((100cqi - 3 * var(--grid-gutter)) / 4);
+  }
 }
