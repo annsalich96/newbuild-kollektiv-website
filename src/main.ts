@@ -123,14 +123,14 @@ if (nextEvent) {
 const titleHtml = (title: string) => title.trim().replace(/^(.+?)\s+[-–—]\s+/, '$1: ')
 
 const sessionRow = document.getElementById('session-row')
+// Das Event im Kasten "Next Event" steht nicht noch einmal in der Galerie
+// (Ann 2026-11-19: sonst doppelt gemoppelt).
+const sessions = [...events].filter((e) => e !== nextEvent).reverse()
 if (sessionRow) {
   // Galerie statt Umbruch in eine zweite Reihe: neuestes Event ganz links
   // (Ann 2026-11-16) - events.json ist chronologisch, daher umgedreht.
-  sessionRow.innerHTML = [...events]
-    .reverse()
-    .map(
-      (s) => `
-        <li class="session-card">
+  const card = (s: (typeof events)[number], clone: boolean) => `
+        <li class="session-card${clone ? ' is-mobile-wrap-clone' : ''}"${clone ? ' aria-hidden="true"' : ''}>
           ${s.number ? `<p class="session-card__number">${s.number}</p>` : ''}
           <div class="session-card__text">
             <p>${titleHtml(s.title)}</p>
@@ -140,10 +140,13 @@ if (sessionRow) {
             <p>${s.date}</p>
             <p>${timeRange(s.time)}</p>
           </div>
-          <a class="button session-card__button" href="${eventHref(s.slug)}">${isPastEvent(s.date) ? 'View Past' : 'Anmeldung'}</a>
+          <a class="button session-card__button" href="${eventHref(s.slug)}"${clone ? ' tabindex="-1"' : ''}>${isPastEvent(s.date) ? 'View Past' : 'Anmeldung'}</a>
         </li>`
-    )
-    .join('')
+  // Mobil endlos (Ann 2026-11-19, wie die Bildergalerien): je eine volle
+  // Kopie vor und nach den echten Kaesten, nur mobil sichtbar (style.css).
+  const real = sessions.map((s) => card(s, false)).join('')
+  const clones = sessions.length > 1 ? sessions.map((s) => card(s, true)).join('') : ''
+  sessionRow.innerHTML = clones + real + clones
 }
 
 // Team-Marquee: gleiche Klon-Logik wie zuvor fest im HTML (1x Klon des
@@ -270,32 +273,80 @@ initMobileNavToggle()
 
 document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach(initCarousel)
 
-// Session-Galerie: Pfeile immer sichtbar (Ann 2026-11-19), blaettern um
-// einen Kasten; am Ende geht es wieder zum Anfang und umgekehrt.
+// Session-Galerie: Pfeile blaettern um einen Kasten (Ann 2026-11-19).
+// Desktop: am Ende geht es wieder zum Anfang und umgekehrt.
+// Mobil: Kasten mittig, endlos ueber die Klon-Kopien vor/nach den echten
+// Kaesten - landet man in einer Kopie, springt es unsichtbar zurueck.
 const sessionSlider = document.querySelector<HTMLElement>('.session-slider')
 if (sessionSlider && sessionRow) {
   const prevBtn = sessionSlider.querySelector<HTMLButtonElement>('.session-slider__arrow--prev')
   const nextBtn = sessionSlider.querySelector<HTMLButtonElement>('.session-slider__arrow--next')
+  const all = Array.from(sessionRow.querySelectorAll<HTMLElement>('.session-card'))
+  const realCount = sessions.length
+  const hasClones = all.length === 3 * realCount && realCount > 1
+  const isLoop = () =>
+    hasClones && getComputedStyle(all[0]).display !== 'none'
+  // Scrollposition, bei der Kasten i mittig steht.
+  const centerOf = (i: number) => {
+    const c = all[i]
+    const left = c.getBoundingClientRect().left - sessionRow.getBoundingClientRect().left + sessionRow.scrollLeft
+    return left + c.offsetWidth / 2 - sessionRow.clientWidth / 2
+  }
+  const currentIndex = () => {
+    let best = 0
+    all.forEach((c, i) => {
+      if (c.style.display === 'none') return
+      if (Math.abs(centerOf(i) - sessionRow.scrollLeft) < Math.abs(centerOf(best) - sessionRow.scrollLeft)) best = i
+    })
+    return best
+  }
+  let pending: number | null = null
+  const loopStep = (delta: number) => {
+    const from = pending ?? currentIndex()
+    pending = Math.min(all.length - 1, Math.max(0, from + delta))
+    sessionRow.scrollTo({ left: centerOf(pending), behavior: 'smooth' })
+  }
   const step = () => {
-    const cards = sessionRow.querySelectorAll<HTMLElement>('.session-card')
-    return cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : sessionRow.clientWidth
+    const visible = all.filter((c) => getComputedStyle(c).display !== 'none')
+    return visible.length > 1 ? visible[1].offsetLeft - visible[0].offsetLeft : sessionRow.clientWidth
   }
   const max = () => sessionRow.scrollWidth - sessionRow.clientWidth
   prevBtn?.addEventListener('click', () => {
+    if (isLoop()) return loopStep(-1)
     if (sessionRow.scrollLeft <= 2) sessionRow.scrollTo({ left: max(), behavior: 'smooth' })
     else sessionRow.scrollBy({ left: -step(), behavior: 'smooth' })
   })
   nextBtn?.addEventListener('click', () => {
+    if (isLoop()) return loopStep(1)
     if (sessionRow.scrollLeft >= max() - 2) sessionRow.scrollTo({ left: 0, behavior: 'smooth' })
     else sessionRow.scrollBy({ left: step(), behavior: 'smooth' })
   })
+  let settle: ReturnType<typeof setTimeout>
+  sessionRow.addEventListener(
+    'scroll',
+    () => {
+      if (!isLoop()) return
+      clearTimeout(settle)
+      settle = setTimeout(() => {
+        pending = null
+        const i = currentIndex()
+        const width = centerOf(realCount) - centerOf(0)
+        if (i < realCount) sessionRow.scrollTo({ left: sessionRow.scrollLeft + width, behavior: 'instant' })
+        else if (i >= 2 * realCount) sessionRow.scrollTo({ left: sessionRow.scrollLeft - width, behavior: 'instant' })
+      }, 120)
+    },
+    { passive: true },
+  )
   // Passen alle Kaesten nebeneinander, gibt es nichts zu blaettern.
   const update = () => {
-    const none = max() <= 2
+    if (isLoop()) sessionRow.scrollTo({ left: centerOf(realCount + Math.max(0, currentIndex() % realCount)), behavior: 'instant' })
+    const none = !isLoop() && max() <= 2
     prevBtn?.toggleAttribute('hidden', none)
     nextBtn?.toggleAttribute('hidden', none)
   }
   window.addEventListener('resize', update)
+  // Start mobil beim ersten echten Kasten (mittig).
+  if (isLoop()) sessionRow.scrollTo({ left: centerOf(realCount), behavior: 'instant' })
   update()
 }
 

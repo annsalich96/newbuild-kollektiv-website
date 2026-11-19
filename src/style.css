@@ -1043,8 +1043,23 @@ ul {
     scroll-snap-align: center;
   }
 
+  /* Endlos-Kopien nur mobil (main.ts). */
+  .session-row .is-mobile-wrap-clone {
+    display: grid !important;
+  }
+
+  /* Pfeile ueber den hervorschauenden Nachbarn links/rechts
+     (Ann 2026-11-19), Breite = sichtbarer Streifen des Nachbarn. */
   .session-slider__arrow {
-    display: none;
+    width: calc(2 * var(--space-5) - var(--space-3));
+  }
+
+  .session-slider__arrow--prev {
+    left: calc(-1 * var(--space-5));
+  }
+
+  .session-slider__arrow--next {
+    right: calc(-1 * var(--space-5));
   }
 }
 
