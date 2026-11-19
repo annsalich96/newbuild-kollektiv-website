@@ -2023,6 +2023,16 @@ ul {
   opacity: 1;
 }
 
+/* Der Slider ist ein Scroll-Container und schneidet alles ab, was uebersteht:
+   das Label "Speaker" sitzt bewusst 6px hoeher (optischer Ausgleich, siehe
+   .section__eyebrow), die Bio ragt minimal unter das Foto - beides wurde
+   angeschnitten (Ann 2026-11-19). Innen Luft, aussen gleich viel zurueck,
+   damit sich am Layout nichts verschiebt. */
+.speaker-marquee .marquee__inner {
+  padding-block: calc(16 * var(--px));
+  margin-block: calc(-16 * var(--px));
+}
+
 .speaker-marquee .marquee__inner::-webkit-scrollbar {
   display: none;
 }
