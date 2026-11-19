@@ -1592,26 +1592,19 @@ ul {
 }
 
 /* Speaker-Band auf Eventseiten (Ann 2026-11-19): Linie oben und unten von
-   Kante zu Kante, dazwischen derselbe Milchglas-Hintergrund wie die
-   eingerastete Menueleiste. 1 Balken Luft innen oben/unten, Gesamthoehe
-   rundet src/balken-snap.ts auf ganze Balken. */
+   Kante zu Kante, ohne eigenen Hintergrund (Milchglas wieder verworfen).
+   1 Balken Luft innen oben/unten, Gesamthoehe rundet src/balken-snap.ts
+   auf ganze Balken. */
 .speaker-band {
   margin-block-start: var(--balken);
   padding-block: var(--balken);
   border-block: var(--line-thickness) solid var(--color-border);
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Nach dem Event: die Fotogalerie schliesst direkt unten ans Band an -
-   ohne Linie und ohne Abstand (Ann 2026-11-19). */
-.speaker-band:has(+ .event-gallery-section:not([hidden])) {
-  border-block-end: 0;
-}
-
+/* Nach dem Event: Bandlinie, 1 Balken, Fotos, 1 Balken, Linie zum
+   Laufband (Ann 2026-11-19). */
 .speaker-band + .event-gallery-section .gallery-marquee {
-  margin-block-start: 0;
+  margin-block-start: var(--balken);
 }
 
 /* Ohne sichtbare Galerie ist die untere Bandlinie zugleich die Linie ueber
@@ -2259,16 +2252,15 @@ ul {
 /* ---------- Event-Galerie (nach dem Event statt Anmeldung) ----------
    Gleiches Bauteil wie die Fotogalerie der Startseite (.gallery-marquee),
    sitzt im dunklen Bereich zwischen Referent:in und Sponsoren-Leiste.
-   Danach direkt die Linie zum Sponsoren-Laufband (Ann 2026-11-19). */
+   Danach 1 Balken bis zur randlosen Linie zum Laufband (Ann 2026-11-19). */
 .event-gallery-section[hidden],
 .event-form-section[hidden] {
   display: none;
 }
 
-/* Galerie -> Laufband ohne Luecke: Linie direkt an der Fotounterkante
-   (Ann 2026-11-19, vorher 1 Balken Abstand). */
+/* Galerie -> 1 Balken -> randlose Linie -> Laufband (Ann 2026-11-19). */
 .event-gallery-section:not([hidden]) + .divider-row--before-sponsoring .divider {
-  margin-block-start: 0;
+  margin-block-start: var(--balken);
 }
 
 /* ---------- Karussell-Pfeile einheitlich (Ann 2026-11-19) ----------
