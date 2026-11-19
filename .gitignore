@@ -27,3 +27,6 @@ dist-ssr
 *.sln
 *.sw?
 nbk-nachfass-vorschau.html
+
+# Persoenliche Claude-Code-Einstellungen (nicht einchecken)
+.claude/settings.local.json
