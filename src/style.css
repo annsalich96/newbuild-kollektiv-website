@@ -1025,9 +1025,22 @@ ul {
 }
 
 @media (max-width: 768px) {
-  /* Mobil ein Kasten pro Wisch, der naechste schaut am Rand hervor. */
+  /* Mobil ein Kasten pro Wisch, mittig (Ann 2026-11-19): die Reihe laeuft
+     randlos bis an den Bildschirmrand statt am Seitenrand abgeschnitten zu
+     werden, jeder Kasten rastet in der Mitte ein und links/rechts schauen
+     die Nachbarn gleich weit hervor - auch beim ersten und letzten Kasten
+     (Innenabstand = Platz bis zur Mitte). */
   .session-row {
-    grid-auto-columns: 85%;
+    /* Mobil-Seitenrand = var(--space-5) (24px, .grid in tokens.css). */
+    grid-auto-columns: calc(100vw - 4 * var(--space-5));
+    column-gap: var(--space-3);
+    margin-inline: calc(-1 * var(--space-5));
+    padding-inline: calc(2 * var(--space-5));
+    scroll-padding-inline: calc(2 * var(--space-5));
+  }
+
+  .session-card {
+    scroll-snap-align: center;
   }
 
   .session-slider__arrow {
@@ -2074,6 +2087,25 @@ ul {
 }
 
 @media (max-width: 768px) {
+  /* Mobil alle Speaker-Slides gleich hoch (Flex-Track streckt sie auf die
+     hoechste), Foto immer unten, Name immer direkt unter dem Label: so
+     stehen Fotos und Namen beim Wischen auf derselben Hoehe, egal wie
+     lang die Bio ist (vorher sprang das Foto je nach Textlaenge, Ann
+     2026-11-19). Der Hoehenausgleich liegt zwischen Bio und Foto. */
+  .speaker-slide {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .speaker-slide > .event-detail__speaker {
+    flex: 1 0 auto;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .speaker-slide .event-detail__speaker-info {
+    justify-content: flex-start;
+  }
+
   /* Mobil: Pfeile auf Hoehe des Fotos statt mitten im Text. */
   .speaker-marquee .marquee__arrow {
     top: auto;
