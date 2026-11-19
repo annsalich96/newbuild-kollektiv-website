@@ -154,9 +154,11 @@ ul {
    (alles rutscht einen Rasterblock hoch). Nur die Linie ueber dem
    Sponsoren-Laufband bleibt - randlos, siehe unten. */
 
-/* Mission-Text -> Team-Fotos: 2,5 Balken (vorher 2,5 + Linie + 1). */
+/* Mission-Block (auf ganze Balken gerundet, balken-snap.ts) -> Team-Fotos:
+   2 Balken. Vorher 2,5 Balken ab Textende - dadurch lagen die Fotos und
+   alles darunter 0,42 Balken neben dem Raster (Ann 2026-11-19). */
 .page-section--4 > .team-marquee {
-  margin-block-start: calc(2.5 * var(--balken));
+  margin-block-start: calc(2 * var(--balken));
 }
 
 /* Team-Fotos -> Next-Event-Kasten: 1 Balken (vorher 1 + Linie + 1). */
@@ -1231,6 +1233,13 @@ ul {
   font-size: calc(1.2 * var(--font-size-bold));
   cursor: pointer;
   z-index: 5;
+}
+
+/* Weisser Pfeil verschwand auf hellen Fotos (Ann 2026-11-19) - weicher
+   dunkler Schein nur um das Pfeilzeichen. */
+.team-marquee .marquee__arrow,
+.gallery-marquee .marquee__arrow {
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.55));
 }
 
 .team-marquee .marquee__arrow--prev,
