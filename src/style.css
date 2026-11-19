@@ -1591,27 +1591,23 @@ ul {
   margin-block-end: 0;
 }
 
-/* Speaker-Band auf Eventseiten (Ann 2026-11-19): Linie oben und unten von
-   Kante zu Kante, ohne eigenen Hintergrund (Milchglas wieder verworfen).
-   1 Balken Luft innen oben/unten, Gesamthoehe rundet src/balken-snap.ts
-   auf ganze Balken. */
+/* Speaker-Band auf Eventseiten (Ann 2026-11-19, finale Variante): keine
+   Linien oben/unten, stattdessen der Milchglas-Hintergrund der
+   eingerasteten Menueleiste. 1 Balken Luft innen oben/unten, Gesamthoehe
+   rundet src/balken-snap.ts auf ganze Balken. Danach immer 1 Balken
+   Abstand - zu den Fotos bzw. (ohne Fotos) zur Linie ueber dem Laufband. */
 .speaker-band {
   margin-block-start: var(--balken);
   padding-block: var(--balken);
-  border-block: var(--line-thickness) solid var(--color-border);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Nach dem Event: Bandlinie, 1 Balken, Fotos, 1 Balken, Linie zum
-   Laufband (Ann 2026-11-19). */
-.speaker-band + .event-gallery-section .gallery-marquee {
-  margin-block-start: var(--balken);
-}
-
-/* Ohne sichtbare Galerie ist die untere Bandlinie zugleich die Linie ueber
-   dem Sponsoren-Laufband - die eigene Trennlinie entfaellt. */
+.speaker-band + .event-gallery-section .gallery-marquee,
 .speaker-band + .divider-row--before-sponsoring .divider,
 .speaker-band + .event-gallery-section[hidden] + .divider-row--before-sponsoring .divider {
-  display: none;
+  margin-block-start: var(--balken);
 }
 
 /* Newsletter-Seite: kein Laufband, daher auch keine Abschlusslinie - nur
