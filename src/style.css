@@ -1252,8 +1252,7 @@ ul {
 
 /* Einrasten auf einer Spaltenlinie statt an der Bildschirmkante (Ann
    2026-11-20): Speaker-Fotos ab Spalte 3 (davor ragt eins ab Spalte -1
-   ueber den Rand), Galerie ab der gedachten Spalte 0 (Rand 140 - 138 =
-   2px). Da alle Breiten ganze Spalten + Gutter sind, liegen dann alle
+   ueber den Rand), Galerie ab Spalte 1. Da alle Breiten ganze Spalten + Gutter sind, liegen dann alle
    Kanten auf dem Raster. carousel.ts liest den Wert fuer die Pfeile. */
 /* Spaltenmasse wie .grid: 1fr von (Breite OHNE Scrollleiste - Raender).
    --px rechnet mit 100vw inkl. Scrollleiste - damit lagen die Fotos in
@@ -1276,8 +1275,11 @@ ul {
     scroll-padding-left: calc(var(--grid-margin) + 2 * var(--foto-schritt));
   }
 
+  /* Galerie rastet an Spalte 1 ein (Ann 2026-11-20): Breiten 8 bzw. 4
+     Spalten -> Fotokanten fallen immer auf die Kanten der 4-Spalten-
+     Session-Kaesten darueber (vorher Spalte 0, Luecke lag in Spalte 8). */
   .gallery-marquee .marquee__inner {
-    scroll-padding-left: calc(var(--grid-margin) - var(--foto-schritt));
+    scroll-padding-left: var(--grid-margin);
   }
 
   .team-marquee .team-row__member {
