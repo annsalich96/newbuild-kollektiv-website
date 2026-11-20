@@ -1255,13 +1255,33 @@ ul {
    ueber den Rand), Galerie ab der gedachten Spalte 0 (Rand 140 - 138 =
    2px). Da alle Breiten ganze Spalten + Gutter sind, liegen dann alle
    Kanten auf dem Raster. carousel.ts liest den Wert fuer die Pfeile. */
+/* Spaltenmasse wie .grid: 1fr von (Breite OHNE Scrollleiste - Raender).
+   --px rechnet mit 100vw inkl. Scrollleiste - damit lagen die Fotos in
+   Safari mit sichtbarer Scrollleiste ~9px neben den Spalten der Navigation
+   (Ann 2026-11-20). Deshalb Containerbreite (cqw) statt --px fuer Spalte/
+   Schritt; Gutter und Rand bleiben --px wie im .grid. */
 @media (min-width: 769px) {
+  .team-marquee,
+  .gallery-marquee {
+    container-type: inline-size;
+  }
+
+  .team-marquee .marquee__inner,
+  .gallery-marquee .marquee__inner {
+    --foto-spalte: calc((100cqw - 2 * var(--grid-margin) - 11 * var(--grid-gutter)) / 12);
+    --foto-schritt: calc(var(--foto-spalte) + var(--grid-gutter));
+  }
+
   .team-marquee .marquee__inner {
-    scroll-padding-left: calc((140 + 2 * 138) * var(--px));
+    scroll-padding-left: calc(var(--grid-margin) + 2 * var(--foto-schritt));
   }
 
   .gallery-marquee .marquee__inner {
-    scroll-padding-left: calc(2 * var(--px));
+    scroll-padding-left: calc(var(--grid-margin) - var(--foto-schritt));
+  }
+
+  .team-marquee .team-row__member {
+    flex-basis: calc(4 * var(--foto-schritt) - var(--grid-gutter));
   }
 }
 
@@ -1423,11 +1443,11 @@ ul {
 @media (min-width: 769px) {
   .photo-gallery-2__slide {
     aspect-ratio: auto !important;
-    width: calc((8 * 122 + 7 * 16) * var(--px));
+    width: calc(8 * var(--foto-schritt) - var(--grid-gutter));
   }
 
   .photo-gallery-2__slide.is-portrait {
-    width: calc((4 * 122 + 3 * 16) * var(--px));
+    width: calc(4 * var(--foto-schritt) - var(--grid-gutter));
   }
 }
 

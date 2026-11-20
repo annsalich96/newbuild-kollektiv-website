@@ -100,6 +100,31 @@
   --scrim-blur: blur(12px);
 }
 
+/* --px aus der Seitenbreite OHNE Scrollleiste (Ann 2026-11-20): 100vw
+   enthaelt die Scrollleiste, die .grid-Spalten (1fr) aber nicht - in Safari
+   mit sichtbarer Scrollleiste lagen Navigation/Fotos dadurch bis ~9px neben
+   den Spalten von Texten. body ist Container, 100cqw = Breite ohne
+   Scrollleiste; var(--px) wird erst am Element ausgewertet, also ueberall
+   dieselbe Breite. Browser ohne Container-Einheiten behalten 100vw. */
+@supports (width: 1cqw) {
+  :root {
+    --px: calc(100cqw / 1920);
+  }
+
+  /* Als Container gibt body seinen Hintergrund nicht mehr an die Seite
+     weiter - schwarz deckte dann den Verlauf (body::before, z-index -1) zu.
+     Daher Grundfarbe auf html, body durchsichtig. */
+  html {
+    background: var(--color-bg);
+  }
+
+  /* "html body", damit es die spaetere body-Regel in style.css schlaegt. */
+  html body {
+    container-type: inline-size;
+    background: transparent;
+  }
+}
+
 /* Grid-Container — 12 Spalten, Trennlinie statt Gutter */
 .grid {
   display: grid;

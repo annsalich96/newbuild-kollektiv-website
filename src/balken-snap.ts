@@ -11,7 +11,10 @@ export function snapToBalken(selector: string) {
     const els = document.querySelectorAll<HTMLElement>(selector)
     els.forEach((el) => (el.style.minHeight = ''))
     if (MOBILE.matches) return
-    const balken = (window.innerWidth * BALKEN_REF) / 1920
+    // Gleiche Breite wie --px in tokens.css (ohne Scrollleiste, wenn der
+    // Browser Container-Einheiten kann).
+    const width = CSS.supports('width: 1cqw') ? document.body.clientWidth : window.innerWidth
+    const balken = (width * BALKEN_REF) / 1920
     els.forEach((el) => {
       const height = el.getBoundingClientRect().height
       // Kleine Toleranz, damit 3,001 Balken nicht auf 4 springen.
