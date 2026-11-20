@@ -1416,13 +1416,14 @@ ul {
 }
 
 /* Desktop: feste Breiten im Spaltenraster statt Originalformat (Ann
-   2026-11-20) - Querformat 6 Spalten (812px @1920), Hochformat 4 Spalten
-   (536px), Hoehe 6 Balken, Bild per object-fit:cover zugeschnitten.
+   2026-11-20) - Querformat 8 Spalten (1088px @1920 = ca. 3:2, 6 Spalten
+   waren Ann zu quadratisch), Hochformat 4 Spalten (536px = ca. 3:4), Hoehe
+   6 Balken, Bild per object-fit:cover minimal zugeschnitten.
    !important schlaegt das inline gesetzte aspect-ratio (bleibt mobil). */
 @media (min-width: 769px) {
   .photo-gallery-2__slide {
     aspect-ratio: auto !important;
-    width: calc((6 * 122 + 5 * 16) * var(--px));
+    width: calc((8 * 122 + 7 * 16) * var(--px));
   }
 
   .photo-gallery-2__slide.is-portrait {
