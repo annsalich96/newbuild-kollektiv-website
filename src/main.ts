@@ -254,7 +254,12 @@ if (galleryRow && galleryData.photos.length > 0) {
     const li = document.createElement('li')
     li.className = extraClass ? `photo-gallery-2__slide ${extraClass}` : 'photo-gallery-2__slide'
     // Originalformat des Fotos (beim Build gelesen), siehe style.css.
-    if (photo.photo && __GALERIE_FORMATE__[photo.photo]) li.style.aspectRatio = __GALERIE_FORMATE__[photo.photo]
+    if (photo.photo && __GALERIE_FORMATE__[photo.photo]) {
+      li.style.aspectRatio = __GALERIE_FORMATE__[photo.photo]
+      // Desktop: Hochformat 4 Spalten, Querformat 6 Spalten breit (style.css).
+      const [w, h] = __GALERIE_FORMATE__[photo.photo].split('/').map(Number)
+      if (w < h) li.classList.add('is-portrait')
+    }
     li.setAttribute('aria-hidden', 'true')
     li.innerHTML = photo.photo ? `<img src="${photo.photo}" alt="${photo.alt ?? ''}" />` : 'Foto folgt'
     return li

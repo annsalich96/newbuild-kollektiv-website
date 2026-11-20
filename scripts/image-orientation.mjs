@@ -58,3 +58,10 @@ export function imageRatio(src) {
   }
   return '3 / 2'
 }
+
+// Hochformat? Fotogalerien zeigen auf Desktop Hochformate 4 Spalten breit,
+// Querformate 6 Spalten (Ann 2026-11-20), siehe style.css.
+export function isPortrait(ratio) {
+  const [w, h] = String(ratio).split('/').map(Number)
+  return w > 0 && h > 0 && w < h
+}

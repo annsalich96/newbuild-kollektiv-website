@@ -621,7 +621,9 @@ ul {
   /* 3 statt 4 Spalten (398px @1920) — bei 4 Spalten + 3:4-Verhältnis war das
      Foto allein schon 715px hoch und sprengte die 6-Balken-Sektion (732px)
      zusammen mit Trennlinien-Abstand und Namenszeile. */
-  flex: 0 0 calc((3 * 122 + 2 * 16) * var(--px)); /* 3 Spalten inkl. 2 interner Gutter = 398px @1920 */
+  /* 4 Spalten (536px @1920), Kanten auf den Spaltenlinien, Reihe laeuft
+     links und rechts ueber den Rand (Ann 2026-11-20, Entwurf im Raster). */
+  flex: 0 0 calc((4 * 122 + 3 * 16) * var(--px));
   display: flex;
   flex-direction: column;
 }
@@ -636,8 +638,9 @@ ul {
   /* Genau 5 Balken hoch (610px @1920) statt 3:4 aus der Breite (531px =
      4,35 Balken) - so sitzen Ober- und Unterkante im Hoehengrid (Ann
      2026-11-19). Breite bleibt 3 Spalten, object-fit:cover schneidet
-     seitlich minimal zu. */
-  height: calc(5 * var(--balken));
+     seitlich minimal zu.
+     2026-11-20: 6 Balken bei 4 Spalten = ca. 3:4 (Ann, Entwurf im Raster). */
+  height: calc(6 * var(--balken));
   background: #1a1a1a;
   overflow: hidden;
 }
@@ -1247,6 +1250,21 @@ ul {
   scroll-snap-align: start;
 }
 
+/* Einrasten auf einer Spaltenlinie statt an der Bildschirmkante (Ann
+   2026-11-20): Speaker-Fotos ab Spalte 3 (davor ragt eins ab Spalte -1
+   ueber den Rand), Galerie ab der gedachten Spalte 0 (Rand 140 - 138 =
+   2px). Da alle Breiten ganze Spalten + Gutter sind, liegen dann alle
+   Kanten auf dem Raster. carousel.ts liest den Wert fuer die Pfeile. */
+@media (min-width: 769px) {
+  .team-marquee .marquee__inner {
+    scroll-padding-left: calc((140 + 2 * 138) * var(--px));
+  }
+
+  .gallery-marquee .marquee__inner {
+    scroll-padding-left: calc(2 * var(--px));
+  }
+}
+
 .team-marquee .marquee__arrow,
 .gallery-marquee .marquee__arrow {
   display: flex;
@@ -1395,6 +1413,21 @@ ul {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Desktop: feste Breiten im Spaltenraster statt Originalformat (Ann
+   2026-11-20) - Querformat 6 Spalten (812px @1920), Hochformat 4 Spalten
+   (536px), Hoehe 6 Balken, Bild per object-fit:cover zugeschnitten.
+   !important schlaegt das inline gesetzte aspect-ratio (bleibt mobil). */
+@media (min-width: 769px) {
+  .photo-gallery-2__slide {
+    aspect-ratio: auto !important;
+    width: calc((6 * 122 + 5 * 16) * var(--px));
+  }
+
+  .photo-gallery-2__slide.is-portrait {
+    width: calc((4 * 122 + 3 * 16) * var(--px));
+  }
 }
 
 /* ---------- Trennlinien (grid-tabelle.md Nr. 6/13/18/20/23) ---------- */

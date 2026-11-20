@@ -34,13 +34,18 @@ export function initCarousel(marquee: HTMLElement) {
   const currentIndex = () => {
     let best = 0
     slides.forEach((_, i) => {
-      if (Math.abs(posOf(i) - inner.scrollLeft) < Math.abs(posOf(best) - inner.scrollLeft)) best = i
+      const left = inner.scrollLeft + snapOffset()
+      if (Math.abs(posOf(i) - left) < Math.abs(posOf(best) - left)) best = i
     })
     return best
   }
 
+  // scroll-padding-left = Rasterversatz (Team/Galerie rasten auf einer
+  // Spaltenlinie ein statt an der Bildschirmkante, siehe style.css).
+  const snapOffset = () => parseFloat(getComputedStyle(inner).scrollPaddingLeft) || 0
+
   const jumpTo = (index: number, smooth: boolean) => {
-    inner.scrollTo({ left: posOf(index), behavior: smooth ? 'smooth' : 'instant' })
+    inner.scrollTo({ left: posOf(index) - snapOffset(), behavior: smooth ? 'smooth' : 'instant' })
   }
 
   // Startet am Anfang der echten (mittleren) Kopie - davor liegt die volle
