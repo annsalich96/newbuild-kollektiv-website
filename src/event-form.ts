@@ -8,6 +8,9 @@ import { initCarousel } from './carousel'
 import { avoidOrphans } from './no-orphans'
 import { snapToBalken } from './balken-snap'
 import { APPS_SCRIPT_URL, ladePlatzStatus, letzterPlatzStatus } from './platz-status'
+import { initVerlauf } from './verlauf'
+
+initVerlauf(document.querySelector<HTMLElement>('.event-hero'))
 
 // sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der

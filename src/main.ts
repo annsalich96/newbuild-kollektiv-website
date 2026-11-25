@@ -1,5 +1,8 @@
 import './style.css'
 import { ladePlatzStatus, letzterPlatzStatus } from './platz-status'
+import { initVerlauf } from './verlauf'
+
+initVerlauf(document.body)
 import eventsData from './content/events.json'
 import { isPastEvent } from './event-date'
 import teamData from './content/team.json'

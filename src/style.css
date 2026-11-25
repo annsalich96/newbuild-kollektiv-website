@@ -2538,3 +2538,76 @@ ul {
     right: calc(-1 * var(--grid-margin));
   }
 }
+
+/* ---------- Lebendiger Verlauf (Ann 2026-11-25, src/verlauf.ts) ----------
+   Ebene ueber dem Verlauf, unter allen Inhalten. Weiches Ueberblenden
+   (soft-light) auf der ganzen Ebene, damit die Lichter mit dem Hintergrund
+   verschmelzen statt als Flecken darueber zu liegen. */
+.verlauf-licht {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
+
+.verlauf-licht__buehne {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: clip;
+}
+
+.verlauf-licht__a,
+.verlauf-licht__b {
+  position: absolute;
+  width: 75vmax;
+  height: 75vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.verlauf-licht__a {
+  left: -15vmax;
+  top: -20vmax;
+  background: radial-gradient(closest-side, var(--licht-a, #ea5820) 0%, transparent 100%);
+  animation: licht-a 38s ease-in-out infinite alternate;
+}
+
+.verlauf-licht__b {
+  right: -20vmax;
+  bottom: -25vmax;
+  background: radial-gradient(closest-side, var(--licht-b, #9263c4) 0%, transparent 100%);
+  animation: licht-b 46s ease-in-out infinite alternate;
+}
+
+@keyframes licht-a {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(28vw, 18vh, 0) scale(1.15); }
+  100% { transform: translate3d(12vw, 40vh, 0) scale(0.95); }
+}
+
+@keyframes licht-b {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-30vw, -22vh, 0) scale(0.9); }
+  100% { transform: translate3d(-14vw, -42vh, 0) scale(1.1); }
+}
+
+/* Eventseiten: Licht in der Eventfarbe + helles Licht; eigener
+   Stapelkontext, damit die Ebene ueber dem Verlauf von .event-hero liegt. */
+.event-hero {
+  isolation: isolate;
+}
+
+.event-hero .verlauf-licht {
+  --licht-a: var(--event-farbe, var(--color-accent-orange));
+  --licht-b: #f2efec;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verlauf-licht {
+    display: none;
+  }
+}
