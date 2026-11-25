@@ -29,6 +29,19 @@
 // - stufenlos: ganze Pixel per scrollLeft, Rest per transform (Safari kennt
 //   nur ganze Pixel beim Scrollen -> ruckelte bei langsamem Tempo)
 // - nur sichtbar, nicht bei "Bewegung reduzieren"
+// Mausposition seitenweit (auch beim Scrollen mit stehender Maus: das
+// wheel-Ereignis liefert die Position mit). Safari aktualisiert :hover beim
+// Scrollen nicht - deshalb faerbt der Auto-Lauf das Foto unter dieser
+// Position selbst ein (Klasse is-farbig).
+let mausPos: { x: number; y: number } | null = null
+const merkeMaus = (e: MouseEvent) => {
+  if ((e as PointerEvent).pointerType && (e as PointerEvent).pointerType !== 'mouse') return
+  mausPos = { x: e.clientX, y: e.clientY }
+}
+window.addEventListener('pointermove', merkeMaus, { passive: true })
+window.addEventListener('wheel', merkeMaus, { passive: true })
+document.documentElement.addEventListener('mouseleave', () => { mausPos = null })
+
 const AUTOPLAY_PX_PRO_S_1920 = 40
 const AUTOPLAY_NACH_PFEIL_MS = 900
 const AUTOPLAY_NACH_GESTE_MS = 400
@@ -186,7 +199,6 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
     let gesteAktiv = false
     let pos = inner.scrollLeft
     let last = 0
-    let maus: { x: number; y: number } | null = null
     let farbig: Element | null = null
 
     inner.classList.add('is-autoplay')
@@ -209,15 +221,14 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) pause(AUTOPLAY_NACH_GESTE_MS)
     }, { passive: true })
 
-    marquee.addEventListener('pointermove', (e) => {
-      if (e.pointerType === 'mouse') maus = { x: e.clientX, y: e.clientY }
+    marquee.addEventListener('pointermove', () => {
       if (inner.classList.contains('is-dragging')) pause(AUTOPLAY_NACH_GESTE_MS)
     })
-    marquee.addEventListener('pointerleave', () => { maus = null })
     new IntersectionObserver((e) => { sichtbar = e[0]?.isIntersecting ?? true }).observe(marquee)
 
     const farbeUnterMaus = () => {
-      const el = maus ? document.elementFromPoint(maus.x, maus.y)?.closest('a.team-row__photo') ?? null : null
+      const unter = mausPos ? document.elementFromPoint(mausPos.x, mausPos.y) : null
+      const el = unter && marquee.contains(unter) ? unter.closest('a.team-row__photo') : null
       if (el === farbig) return
       farbig?.classList.remove('is-farbig')
       el?.classList.add('is-farbig')
@@ -241,7 +252,7 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
       } else {
         pos = inner.scrollLeft
       }
-      if (maus || farbig) farbeUnterMaus()
+      if (mausPos || farbig) farbeUnterMaus()
       requestAnimationFrame(frame)
     }
     requestAnimationFrame(frame)
