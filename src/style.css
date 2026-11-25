@@ -2628,6 +2628,37 @@ ul {
   --licht-b: #4a4340;
 }
 
+/* Korn ueber den Farbflecken: dieselbe Kachel und Mischung wie bisher im
+   Grund-Hintergrund (overlay, 256px), dort dann weggelassen - Ergebnis ohne
+   Bewegung identisch mit vorher. */
+.verlauf-korn {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("./assets/noise.png") 0 0 / 256px 256px repeat;
+  mix-blend-mode: overlay;
+}
+
+body.has-verlauf::before {
+  background: url("/background-smooth.jpg") 0 0 / 100% 100% no-repeat;
+}
+
+.event-hero.has-verlauf {
+  background:
+    radial-gradient(
+      ellipse 70% 45% at 0% 100%,
+      var(--event-farbe, var(--color-accent-orange)) 0%,
+      transparent 100%
+    ),
+    linear-gradient(
+      135deg,
+      var(--event-farbe, var(--color-accent-orange)) 0%,
+      #4a4340 45%,
+      #d8d5d2 100%
+    );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .verlauf-licht {
     display: none;
