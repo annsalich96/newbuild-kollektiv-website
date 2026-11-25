@@ -1468,6 +1468,20 @@ ul {
   object-fit: cover;
 }
 
+/* Fotogalerie Startseite wie die Speaker: schwarz-weiss, mit der Maus
+   darueber farbig (Ann 2026-11-25). Galerien auf Eventseiten bleiben farbig. */
+.page-section--7 .photo-gallery-2__slide img {
+  filter: grayscale(1);
+  transition: filter 0.4s ease;
+}
+
+@media (hover: hover) {
+  .page-section--7 .photo-gallery-2__slide:hover img,
+  .page-section--7 .photo-gallery-2__slide.is-farbig img {
+    filter: grayscale(0);
+  }
+}
+
 /* Desktop: feste Breiten im Spaltenraster statt Originalformat (Ann
    2026-11-20) - Querformat 8 Spalten (1088px @1920 = ca. 3:2, 6 Spalten
    waren Ann zu quadratisch), Hochformat 4 Spalten (536px = ca. 3:4), Hoehe

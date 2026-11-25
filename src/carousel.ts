@@ -228,7 +228,8 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
 
     const farbeUnterMaus = () => {
       const unter = mausPos ? document.elementFromPoint(mausPos.x, mausPos.y) : null
-      const el = unter && marquee.contains(unter) ? unter.closest('a.team-row__photo') : null
+      // Speaker-Fotos (verlinkt) und Fotogalerie der Startseite.
+      const el = unter && marquee.contains(unter) ? unter.closest('a.team-row__photo, .photo-gallery-2__slide') : null
       if (el === farbig) return
       farbig?.classList.remove('is-farbig')
       el?.classList.add('is-farbig')
