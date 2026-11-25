@@ -2268,7 +2268,10 @@ ul {
   /* Spalte 2-3: eine Spalte Luft zum Formular (Ann: "zu eng"); Schrift 20
      statt 28 (Groesse fuer Namen/Navigation, Ann 2026-11-25). */
   grid-column: 2 / 4;
-  grid-row: 2;
+  /* Zeile 1-2 neben dem ganzen Formular; Abstand oben setzt event-form.ts
+     (alignNoteToFirstLine), damit die erste Textzeile buendig mit der
+     ersten Formularlinie (unter "Anrede") steht (Ann 2026-11-25). */
+  grid-row: 1 / span 2;
   align-self: stretch;
   display: flex;
   flex-direction: column;

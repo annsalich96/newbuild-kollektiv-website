@@ -87,6 +87,27 @@ if (form instanceof HTMLFormElement && status) {
     }
     row.hidden = false
   }
+  // Erste Textzeile des Hinweises buendig mit der ersten Formularlinie
+  // (Unterkante des Anrede-Felds). Nur Desktop - mobil steht der Hinweis
+  // ueber dem Formular.
+  const alignNoteToFirstLine = () => {
+    const select = form.querySelector('select')
+    if (!note || note.hidden || !select) return
+    if (!window.matchMedia('(min-width: 769px)').matches) {
+      note.style.marginTop = ''
+      return
+    }
+    const cs = getComputedStyle(note)
+    // Oberkante der Schrift statt Oberkante der Zeile (halber Zeilenabstand).
+    const halbLeading = (parseFloat(cs.lineHeight) - parseFloat(cs.fontSize)) / 2
+    note.style.marginTop = '0px'
+    const linie = select.getBoundingClientRect().bottom
+    const oben = note.getBoundingClientRect().top
+    note.style.marginTop = `${Math.max(0, linie - oben - halbLeading)}px`
+  }
+  window.addEventListener('resize', alignNoteToFirstLine)
+  void document.fonts?.ready.then(alignNoteToFirstLine)
+
   const wartelisteModus = () => {
     if (warteliste) return
     warteliste = true
@@ -100,6 +121,7 @@ if (form instanceof HTMLFormElement && status) {
         'bevorstehende Events rechtzeitig informiert wirst.</span>' +
         '<a class="button event-form__note-button" href="/newsletter/">Newsletter</a>'
       note.hidden = false
+      alignNoteToFirstLine()
     }
   }
   if (currentEvent?.maxTeilnehmer && !fromCheckin) {
