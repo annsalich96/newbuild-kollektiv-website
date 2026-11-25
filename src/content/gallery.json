@@ -1,34 +1,37 @@
 {
   "photos": [
     {
-      "photo": "/A.jpg"
+      "photo": "/A-farbe.jpg"
     },
     {
-      "photo": "/galerie-1.jpg"
+      "photo": "/galerie-1-farbe.jpg"
     },
     {
       "photo": "/galerie-3.jpg"
     },
     {
-      "photo": "/galerie-4.jpg"
+      "photo": "/galerie-4-farbe.jpg"
     },
     {
       "photo": "/galerie-5.jpg"
     },
     {
-      "photo": "/galerie-6.jpg"
+      "photo": "/galerie-6-farbe.jpg"
     },
     {
       "photo": "/galerie-7.jpg"
     },
     {
-      "photo": "/galerie-8.jpg"
+      "photo": "/galerie-8-farbe.jpg"
     },
     {
-      "photo": "/galerie-9.jpg"
+      "photo": "/galerie-11-farbe.jpg"
     },
     {
-      "photo": "/galerie-10.jpg"
+      "photo": "/galerie-10-farbe.jpg"
+    },
+    {
+      "photo": "/galerie-12-farbe.jpg"
     }
   ]
 }
