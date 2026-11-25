@@ -14,7 +14,7 @@
       "speakerRole": "Geschäftsführer",
       "speakerCompany": "Bräunlin Kolb Architekten",
       "speakerBio": "Mitgründer & Geschäftsführer von Bräunlin Kolb Architekten.\nInteressiert sich begeistern für KI, probiert alle neuen Möglichkeiten aus, weil er den Mehrwert für die Architekturbranche sieht. ",
-      "speakerImage": "/team-markus-kolb.jpg",
+      "speakerImage": "/team-markus-kolb-farbe.jpg",
       "description": "Ein Architekturbüro produziert in 25 Jahren hunderttausende Dokumente. Das Wissen ist da, aber nur solange sich jemand erinnert, wo es liegt. Markus Kolb, Bauingenieur und Geschäftsführer von Bräunlin Kolb Architekten, hat im eigenen Büro ein Firmengedächtnis aufgebaut: eine durchsuchbare Wissensbasis über den gesamten Dokumentenbestand, verbunden mit KI-Agenten, die Briefe entwerfen, Dokumente ablegen und Projektwissen fortschreiben. \n\nDer Vortrag zeigt an echten Messwerten aus diesem Projekt, was funktioniert und was nicht: warum die Ablagestruktur und die Benennung von Dateien mehr über die Suchqualität entscheiden als das teuerste KI-Modell, wie die Rollenteilung aussieht, wenn der Agent schreibt und der Mensch prüft, und welche Voraussetzungen ein Planungsbüro schaffen muss, bevor sich der Einsatz lohnt. Kein Zukunftsszenario, sondern ein Werkstattbericht aus dem laufenden Betrieb.",
       "sponsors": [
         {
@@ -107,7 +107,7 @@
           "role": "Co-Founder & CTO",
           "company": "Gendo",
           "bio": "Software-Engineer mit über zehn Jahren Erfahrung in Softwareentwicklung und Produktaufbau. Gendo ist eine kollaborative KI-Rendering-Plattform für Architektur und Design (London).",
-          "image": "/speaker-will-jones.jpg",
+          "image": "/speaker-will-jones-farbe.jpg",
           "url": "https://gendo.ai"
         },
         {
@@ -115,7 +115,7 @@
           "role": "Co-Founder",
           "company": "GRAFT",
           "bio": "Architekt und Mitgründer von GRAFT (Berlin, Los Angeles, Seoul u. a.). Er denkt Architektur über Megatrends, Neugier und Innovation – mit Fokus auf Natur und Schönheit.",
-          "image": "/speaker-wolfram-putz.jpg",
+          "image": "/speaker-wolfram-putz-farbe.jpg",
           "url": "https://graftlab.com"
         },
         {
@@ -123,7 +123,7 @@
           "role": "Co-Founder & CEO",
           "company": "Visoid",
           "bio": "Architekt und Gründer von Visoid, einer KI-gestützten Visualisierungsplattform für Architekt:innen (Oslo). Zuvor bei LINK und früh bei Spacemaker, heute Autodesk Forma.",
-          "image": "/speaker-mark-szoke.jpg",
+          "image": "/speaker-mark-szoke-farbe.jpg",
           "url": "https://www.visoid.com"
         },
         {
@@ -131,7 +131,7 @@
           "role": "Partner & CTO",
           "company": "Nordic Office of Architecture",
           "bio": "Architekt mit über 30 Jahren Erfahrung im Einsatz von Designtechnologie bei großen Bau- und Stadtentwicklungsprojekten. Professor an der NTNU in Trondheim, Schwerpunkt KI im Entwurf.",
-          "image": "/speaker-knut-ramstad.jpg",
+          "image": "/speaker-knut-ramstad-farbe.jpg",
           "url": "https://nordicarch.com"
         },
         {
@@ -147,7 +147,7 @@
           "role": "BIM-Strategin",
           "company": "Kinzo Architekten",
           "bio": "Architektin und BIM-Beraterin in Berlin mit zehn Jahren Erfahrung, Schwerpunkt auf der Umnutzung bestehender Gebäude.",
-          "image": "/speaker-jolene-lee.jpg",
+          "image": "/speaker-jolene-lee-farbe.jpg",
           "url": "https://kinzo-berlin.de"
         },
         {
@@ -204,13 +204,13 @@
           "name": "Maria Stasevich",
           "role": "Architectural Designer, Gründerin von OBLIK",
           "url": "https://oblik.media",
-          "image": "/team-maria-stasevich.jpg"
+          "image": "/team-maria-stasevich-farbe.jpg"
         },
         {
           "name": "Ann-Kathrin Salich",
           "role": "Architektin, Gründerin von NewBuild Kollektiv und An(n) Architecture Solution",
           "url": "https://annarchitecturesolution.com",
-          "image": "/team-ann-kathrin-salich.jpg"
+          "image": "/team-ann-kathrin-salich-farbe.jpg"
         }
       ],
       "partners": [
@@ -320,7 +320,7 @@
       "speakerRole": "Architektin, Inhaberin",
       "speakerCompany": "An(n) Architecture Solution",
       "speakerBio": "Ann-Kathrin Salich ist Architektin und Inhaberin des Architekturbüros An(n) Architecture Solution. Das Büro geht neue Wege, in seinen Projekten ebenso wie in der eigenen Arbeitsweise. Mit KI entwickelt sie eigene Werkzeuge für den Büroalltag ihres Teams.",
-      "speakerImage": "/team-ann-kathrin-salich.jpg",
+      "speakerImage": "/team-ann-kathrin-salich-farbe.jpg",
       "speakerUrl": "https://annarchitecturesolution.com",
       "speakers": [
         {
@@ -328,7 +328,7 @@
           "role": "Architektin, Inhaberin",
           "company": "An(n) Architecture Solution",
           "bio": "Ann-Kathrin Salich ist Architektin und Inhaberin des Architekturbüros An(n) Architecture Solution. Das Büro geht neue Wege, in seinen Projekten ebenso wie in der eigenen Arbeitsweise. Mit KI entwickelt sie eigene Werkzeuge für den Büroalltag ihres Teams.",
-          "image": "/team-ann-kathrin-salich.jpg",
+          "image": "/team-ann-kathrin-salich-farbe.jpg",
           "url": "https://annarchitecturesolution.com"
         },
         {
