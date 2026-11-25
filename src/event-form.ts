@@ -96,11 +96,10 @@ if (form instanceof HTMLFormElement && status) {
     if (submitLabel) submitLabel.textContent = 'Auf die Warteliste'
     if (note) {
       note.innerHTML =
-        '<strong>Ausgebucht:</strong> Alle Plätze für diesen Abend sind vergeben. Trag dich hier auf die ' +
-        'Warteliste ein: Sagt jemand ab, rückst du der Reihe nach automatisch nach. Nach dem Eintragen siehst du, ' +
-        'wie viele Personen schon auf der Warteliste stehen.<br><br>' +
-        'Du möchtest über die nächsten Events informiert werden? ' +
-        '<a href="/newsletter/">Melde dich für unseren Newsletter an.</a>'
+        '<span class="event-form__note-text">Dieser Abend ist ausgebucht. Trag dich auf die Warteliste ein: ' +
+        'Sagt jemand ab, rückst du automatisch nach.</span>' +
+        '<span class="event-form__note-text">Über die nächsten Events informieren wir im Newsletter.</span>' +
+        '<a class="button event-form__note-button" href="/newsletter/">Newsletter</a>'
       note.hidden = false
     }
   }

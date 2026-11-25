@@ -669,6 +669,7 @@ ul {
 
 @media (hover: hover) {
   a.team-row__photo:hover img,
+  a.team-row__photo.is-farbig img,
   a:hover > .event-hosts__photo,
   a:focus-visible > .event-hosts__photo,
   a.team-row__photo:focus-visible img {
@@ -1872,7 +1873,7 @@ ul {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin: var(--line-height-regular-text) 0 0;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
@@ -2249,25 +2250,41 @@ ul {
 }
 
 /* Hinweis, wenn jemand vom Check-in-Aufsteller hierher weitergeleitet wird. */
+/* Hinweis links unter dem Label "Anmeldung"/"Warteliste" (Spalte 2-4),
+   Formular rechts daneben ueber beide Zeilen (Ann 2026-11-25). Gleiche
+   Schrift wie die Eventbeschreibung (Fliesstext 28 Light), kein Kasten -
+   eckige Rahmen gibt es sonst nirgends. */
+.event-form-section__label {
+  grid-row: 1;
+}
+
+.event-form-section .event-form {
+  grid-row: 1 / span 2;
+}
+
 .event-form__note {
-  grid-column: 5 / 13;
-  margin: 0 0 var(--space-5);
-  padding: var(--space-4);
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  font-size: var(--font-size-small, 0.9rem);
-  line-height: 1.5;
+  grid-column: 2 / 5;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  font-weight: var(--font-weight-light);
 }
 
-/* Warteliste (Event ausgebucht): Typo-System hat nur Light/Regular, daher
-   kein Fett; Links wie im Fliesstext unterstrichen. */
-.event-form__note strong {
-  font-weight: inherit;
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-label);
+.event-form__note-text {
+  display: block;
 }
 
-.event-form__note a,
+.event-form__note-text + .event-form__note-text {
+  margin-block-start: var(--line-height-regular-text);
+}
+
+.event-form__note-button {
+  margin-block-start: var(--line-height-regular-text);
+  color: var(--color-text);
+}
+
 .event-detail__meta dd a {
   color: inherit;
   text-decoration: underline;
@@ -2280,8 +2297,15 @@ ul {
     margin-block-end: var(--space-5);
   }
 
+  .event-form-section__label,
+  .event-form-section .event-form,
+  .event-form__note {
+    grid-row: auto;
+  }
+
   .event-form__note {
     grid-column: 1 / -1;
+    margin: 0 0 var(--balken);
   }
 
   .event-form {
@@ -2377,9 +2401,13 @@ ul {
   cursor: not-allowed;
 }
 
+/* Rueckmeldung nach dem Absenden (z. B. Platz auf der Warteliste) in
+   Fliesstextgroesse wie der Hinweis darueber (Ann 2026-11-25). */
 .event-form__status {
   color: var(--color-text);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-regular-text);
+  line-height: var(--line-height-regular-text);
+  font-weight: var(--font-weight-light);
   min-height: 1.2em;
 }
 

@@ -15,16 +15,23 @@
 // genutzt - erwartet je eine volle Klon-Kopie vor und nach den echten Slides.
 //
 // Auto-Lauf (Option autoplay, Ann 2026-11-25: Speaker und Fotogalerie der
-// Startseite drehen sich langsam wie das Sponsoren-Laufband): gleitet
-// stufenlos weiter (scroll-snap solange aus, Klasse is-autoplay). Laeuft
-// auch unter der Maus weiter (Ann 2026-11-25: nicht anhalten, Foto wird
-// farbig, Klick fuehrt zur Website). Ein einfacher Mausklick stoppt NICHT -
-// sonst rastet die Galerie zwischen Druecken und Loslassen ein und der Klick
-// landet neben dem Link. Pause nur bei Pfeil-Klick/Ziehen/Wischen/Mausrad fuer
-// AUTOPLAY_PAUSE_MS und ausserhalb des Bildschirms. Kein Auto-Lauf bei
-// "Bewegung reduzieren".
+// Startseite laufen langsam und IMMER weiter, wie das Sponsoren-Laufband):
+// - laeuft auch unter der Maus weiter; das Foto unter der Maus wird farbig
+//   (Klasse is-farbig per elementFromPoint - Safari aktualisiert :hover
+//   nicht, wenn das Bild unter der stehenden Maus durchlaeuft), Klick
+//   oeffnet die Website
+// - Pfeil-Klick: kurzer Sprung, danach sofort weiter (AUTOPLAY_NACH_PFEIL_MS)
+// - selbst ziehen/wischen/seitlich scrollen: Pause nur waehrend der Geste,
+//   danach sofort weiter (AUTOPLAY_NACH_GESTE_MS)
+// - senkrechtes Scrollen der Seite ueber der Galerie stoert nicht
+// - Einrasten (scroll-snap) bleibt im Auto-Lauf aus (Klasse is-autoplay),
+//   sonst springt die Galerie bei jeder Pause
+// - stufenlos: ganze Pixel per scrollLeft, Rest per transform (Safari kennt
+//   nur ganze Pixel beim Scrollen -> ruckelte bei langsamem Tempo)
+// - nur sichtbar, nicht bei "Bewegung reduzieren"
 const AUTOPLAY_PX_PRO_S_1920 = 40
-const AUTOPLAY_PAUSE_MS = 5000
+const AUTOPLAY_NACH_PFEIL_MS = 900
+const AUTOPLAY_NACH_GESTE_MS = 400
 
 export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean } = {}) {
   const inner = marquee.querySelector<HTMLElement>('.marquee__inner')
@@ -172,44 +179,69 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
   if (options.autoplay && realCount > 0) startAutoplay()
 
   function startAutoplay() {
-    if (!inner || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!inner || !list || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const track = list as HTMLElement
     let sichtbar = true
     let pauseBis = 0
+    let gesteAktiv = false
     let pos = inner.scrollLeft
     let last = 0
+    let maus: { x: number; y: number } | null = null
+    let farbig: Element | null = null
 
-    const aktiv = () => sichtbar && Date.now() >= pauseBis && !document.hidden && isScrollable()
-    // Nutzer greift ein: Einrasten wieder an, kurz Pause, danach weiter.
-    const eingriff = () => {
-      pauseBis = Date.now() + AUTOPLAY_PAUSE_MS
-      inner.classList.remove('is-autoplay')
+    inner.classList.add('is-autoplay')
+    track.style.willChange = 'transform'
+
+    const pause = (ms: number) => {
+      pauseBis = Math.max(pauseBis, Date.now() + ms)
+      track.style.transform = ''
     }
 
-    // Maus-Ziehen erst, wenn wirklich gezogen wird (is-dragging, s. oben).
-    inner.addEventListener('pointermove', () => {
-      if (inner.classList.contains('is-dragging')) eingriff()
+    prev?.addEventListener('click', () => pause(AUTOPLAY_NACH_PFEIL_MS))
+    next?.addEventListener('click', () => pause(AUTOPLAY_NACH_PFEIL_MS))
+    inner.addEventListener('touchstart', () => { gesteAktiv = true; pause(AUTOPLAY_NACH_GESTE_MS) }, { passive: true })
+    const gesteEnde = () => { gesteAktiv = false; pause(AUTOPLAY_NACH_GESTE_MS) }
+    inner.addEventListener('touchend', gesteEnde, { passive: true })
+    inner.addEventListener('touchcancel', gesteEnde, { passive: true })
+    // Nur seitliches Scrollen (Trackpad) ist ein Eingriff, nicht das normale
+    // Hoch-/Runterscrollen der Seite mit der Maus ueber der Galerie.
+    inner.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) pause(AUTOPLAY_NACH_GESTE_MS)
+    }, { passive: true })
+
+    marquee.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'mouse') maus = { x: e.clientX, y: e.clientY }
+      if (inner.classList.contains('is-dragging')) pause(AUTOPLAY_NACH_GESTE_MS)
     })
-    inner.addEventListener('wheel', eingriff, { passive: true })
-    inner.addEventListener('touchstart', eingriff, { passive: true })
-    prev?.addEventListener('click', eingriff)
-    next?.addEventListener('click', eingriff)
+    marquee.addEventListener('pointerleave', () => { maus = null })
     new IntersectionObserver((e) => { sichtbar = e[0]?.isIntersecting ?? true }).observe(marquee)
+
+    const farbeUnterMaus = () => {
+      const el = maus ? document.elementFromPoint(maus.x, maus.y)?.closest('a.team-row__photo') ?? null : null
+      if (el === farbig) return
+      farbig?.classList.remove('is-farbig')
+      el?.classList.add('is-farbig')
+      farbig = el
+    }
 
     const frame = (t: number) => {
       const dt = last ? Math.min(64, t - last) : 0
       last = t
-      if (aktiv()) {
-        if (!inner.classList.contains('is-autoplay')) {
-          inner.classList.add('is-autoplay')
-          pos = inner.scrollLeft
-        }
-        // Wurde zwischendurch anders gescrollt (Klon-Sprung, Pfeil), dort weiter.
-        if (Math.abs(inner.scrollLeft - pos) > 2) pos = inner.scrollLeft
+      const laeuft = sichtbar && !document.hidden && !gesteAktiv && Date.now() >= pauseBis && isScrollable()
+      if (laeuft) {
+        // Zwischendurch anders gescrollt (Pfeil, Wischen, Klon-Sprung)? Dort weiter.
+        if (Math.abs(inner.scrollLeft - Math.floor(pos)) > 1) pos = inner.scrollLeft
         pos += (AUTOPLAY_PX_PRO_S_1920 * (inner.clientWidth / 1920) * dt) / 1000
         const width = setWidth()
         if (pos >= 2 * width) pos -= width
-        inner.scrollLeft = pos
+        if (pos < width) pos += width
+        const ganz = Math.floor(pos)
+        if (inner.scrollLeft !== ganz) inner.scrollLeft = ganz
+        track.style.transform = `translateX(${-(pos - ganz)}px)`
+      } else {
+        pos = inner.scrollLeft
       }
+      if (maus || farbig) farbeUnterMaus()
       requestAnimationFrame(frame)
     }
     requestAnimationFrame(frame)
