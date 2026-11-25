@@ -77,19 +77,6 @@ if (form instanceof HTMLFormElement && status) {
       'Schön, dass du da bist! Trag hier kurz deine Daten ein – damit bist du automatisch eingecheckt.'
     note.hidden = false
   }
-  const zeigePlaetze = (text: string, mitLink: boolean) => {
-    const row = document.getElementById('event-plaetze')
-    const dd = row?.querySelector('dd')
-    if (!row || !dd) return
-    dd.textContent = text
-    if (mitLink) {
-      const a = document.createElement('a')
-      a.href = '#event-form-section'
-      a.textContent = 'Trag dich auf die Warteliste ein'
-      dd.append(' ', a)
-    }
-    row.hidden = false
-  }
   // Erste Textzeile des Hinweises buendig mit der ersten Formularlinie
   // (Unterkante des Anrede-Felds). Nur Desktop - mobil steht der Hinweis
   // ueber dem Formular.
@@ -114,7 +101,6 @@ if (form instanceof HTMLFormElement && status) {
   const wartelisteModus = () => {
     if (warteliste) return
     warteliste = true
-    zeigePlaetze('Ausgebucht:', true)
     if (submitLabel) submitLabel.textContent = 'Auf die Warteliste'
     if (note) {
       note.innerHTML =

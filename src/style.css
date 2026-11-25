@@ -1895,12 +1895,13 @@ ul {
 }
 
 .event-detail__meta {
-  /* Unter der Beschreibung, Spalten 5-12, eine Leerzeile Abstand. */
+  /* Unter der Beschreibung, Spalten 5-12. Zusaetzlich eine volle Leerzeile
+     Abstand zum Textende (Ann 2026-11-25: "mehr Platz"). */
   grid-column: 5 / 13;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin: 0;
+  margin: var(--line-height-regular-text) 0 0;
 }
 
 @media (max-width: 768px) {

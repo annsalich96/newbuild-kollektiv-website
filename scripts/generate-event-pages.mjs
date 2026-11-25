@@ -125,10 +125,6 @@ export function generateEventPages() {
           <dt>Ort</dt>
           <dd>${escapeHtml(event.location)}</dd>
         </div>
-        ${event.maxTeilnehmer ? `<div id="event-plaetze" hidden>
-          <dt>Plätze</dt>
-          <dd></dd>
-        </div>` : ''}
         ${(event.facts || [])
           .filter((f) => f && f.label && f.value)
           .map((f) => `<div>
