@@ -2553,82 +2553,70 @@ ul {
 }
 
 /* ---------- Lebendiger Verlauf (Ann 2026-11-25, src/verlauf.ts) ----------
-   Nur der Farbschwerpunkt bewegt sich leicht wellenartig - die Farbigkeit
-   bleibt wie sie war (Ann: erste Version war "viel zu leuchtend"). Deshalb
-   normale Deckung (kein soft-light = keine Aufhellung), Farben exakt aus dem
-   bestehenden Verlauf, geringe Deckkraft, kleine Wege. */
-.verlauf-licht {
+   Kopie des eigenen Verlaufs, halbtransparent, minimal gegen das Original
+   verschoben -> nur der Farbschwerpunkt wandert leicht. Gehoert zum
+   Hintergrund (absolut, scrollt mit), Bewegung nur ueber die Zeit. */
+.verlauf-welle {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: clip;
   pointer-events: none;
-  opacity: 0.55;
 }
 
-.verlauf-licht__buehne {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  overflow: clip;
-}
-
-.verlauf-licht__a,
-.verlauf-licht__b {
+.verlauf-welle__kopie {
   position: absolute;
-  width: 70vmax;
-  height: 70vmax;
-  border-radius: 50%;
+  /* Rand in festen Pixeln: die Startseite ist sehr lang, Prozent der Hoehe
+     waeren mehrere hundert Pixel Versatz (gemessen viel zu stark). */
+  inset: -60px;
+  opacity: 0.5;
   will-change: transform;
+  animation: verlauf-welle 30s ease-in-out infinite alternate;
 }
 
-/* Startseite: Orange oben links, Violett unten rechts (Toene aus
-   background-smooth.jpg). */
-.verlauf-licht__a {
-  left: -25vmax;
-  top: -30vmax;
-  background: radial-gradient(closest-side, var(--licht-a, #c74716) 0%, transparent 100%);
-  animation: licht-a 26s ease-in-out infinite alternate;
+/* Startseite: dasselbe Bild wie body::before. */
+body .verlauf-welle__kopie {
+  background: url("/background-smooth.jpg") 0 0 / 100% 100% no-repeat;
 }
 
-.verlauf-licht__b {
-  right: -25vmax;
-  bottom: -35vmax;
-  background: radial-gradient(closest-side, var(--licht-b, #8b69af) 0%, transparent 100%);
-  animation: licht-b 32s ease-in-out infinite alternate;
+/* Eventseiten: derselbe Verlauf wie .event-hero. */
+.event-hero .verlauf-welle__kopie {
+  inset: -6%;
+  animation-name: verlauf-welle-event;
+  background:
+    radial-gradient(
+      ellipse 70% 45% at 0% 100%,
+      var(--event-farbe, var(--color-accent-orange)) 0%,
+      transparent 100%
+    ),
+    linear-gradient(
+      135deg,
+      var(--event-farbe, var(--color-accent-orange)) 0%,
+      #4a4340 45%,
+      #d8d5d2 100%
+    );
 }
 
-/* Wellenartig: kleine Wege hin und her, keine Reise ueber die Seite. */
-@keyframes licht-a {
-  0% { transform: translate3d(0, 0, 0); }
-  25% { transform: translate3d(6vw, 4vh, 0); }
-  50% { transform: translate3d(10vw, -2vh, 0); }
-  75% { transform: translate3d(4vw, 7vh, 0); }
-  100% { transform: translate3d(-3vw, 3vh, 0); }
+@keyframes verlauf-welle {
+  0% { transform: translate3d(-40px, -25px, 0); }
+  33% { transform: translate3d(35px, 15px, 0); }
+  66% { transform: translate3d(-15px, 40px, 0); }
+  100% { transform: translate3d(40px, -20px, 0); }
 }
 
-@keyframes licht-b {
-  0% { transform: translate3d(0, 0, 0); }
-  25% { transform: translate3d(-5vw, -6vh, 0); }
-  50% { transform: translate3d(-10vw, 2vh, 0); }
-  75% { transform: translate3d(-3vw, -8vh, 0); }
-  100% { transform: translate3d(3vw, -3vh, 0); }
+/* Eventseiten: Verlauf ist sehr weich, braucht groessere Wege. */
+@keyframes verlauf-welle-event {
+  0% { transform: translate3d(-5%, -3%, 0); }
+  33% { transform: translate3d(4%, 2%, 0); }
+  66% { transform: translate3d(-2%, 4%, 0); }
+  100% { transform: translate3d(5%, -2%, 0); }
 }
 
-/* Eventseiten: Eventfarbe (wie der Verlauf oben links und unten links) und
-   das Dunkelgrau aus der Mitte des Verlaufs; eigener Stapelkontext, damit
-   die Ebene ueber dem Verlauf von .event-hero liegt. */
 .event-hero {
   isolation: isolate;
 }
 
-.event-hero .verlauf-licht {
-  --licht-a: var(--event-farbe, var(--color-accent-orange));
-  --licht-b: #4a4340;
-}
-
-/* Korn ueber den Farbflecken: dieselbe Kachel und Mischung wie bisher im
+/* Korn ueber allem Hintergrund: dieselbe Kachel und Mischung wie bisher im
    Grund-Hintergrund (overlay, 256px), dort dann weggelassen - Ergebnis ohne
    Bewegung identisch mit vorher. */
 .verlauf-korn {
@@ -2657,10 +2645,4 @@ body.has-verlauf::before {
       #4a4340 45%,
       #d8d5d2 100%
     );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .verlauf-licht {
-    display: none;
-  }
 }
