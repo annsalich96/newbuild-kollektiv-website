@@ -202,6 +202,10 @@ content:
               - name: name
                 label: Name
                 type: string
+              - name: url
+                label: "Website (optional) — Klick auf den Eintrag im Laufband öffnet sie"
+                type: string
+                required: false
           - name: gallery
             label: "Galerie nach dem Event (optional, 20-25 Fotos) - sobald das Event vorbei ist, ersetzt sie auf der Eventseite das Anmeldeformular"
             type: image
@@ -302,6 +306,10 @@ content:
           - name: name
             label: Name
             type: string
+          - name: url
+            label: "Website (optional) — Klick auf den Eintrag im Laufband öffnet sie"
+            type: string
+            required: false
 
   - name: mission-about
     label: Mission & About (Texte)

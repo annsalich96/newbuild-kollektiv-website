@@ -1409,6 +1409,19 @@ ul {
   height: var(--balken);
 }
 
+/* Sponsor mit Website (CMS-Feld url): ganzer Eintrag klickbar, sieht aus
+   wie der uebrige Laufband-Text. */
+.marquee__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.marquee__link:hover,
+.marquee__link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 /* ---------- Fotogalerie 2 (grid-tabelle.md Nr. 19) ----------
    Läuft wie die Sponsoren-Leiste als Laufband, kein manuelles Scrollen mehr. */
 .gallery-marquee {

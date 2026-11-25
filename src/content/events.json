@@ -312,6 +312,12 @@
       "title": "Vom Problem zum Tool: Wie Architekturbüros mit KI ihre eigene Software entwickeln",
       "isNext": true,
       "maxTeilnehmer": 60,
+      "sponsors": [
+        {
+          "name": "Sponsored by DEKOMA",
+          "url": "https://dekoma.eu/en/"
+        }
+      ],
       "color": "#2f5fd0",
       "date": "Mi., 02.12.2026",
       "time": "18:30–22:00",

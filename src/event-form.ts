@@ -19,7 +19,7 @@ initVerlauf(document.querySelector<HTMLElement>('.event-hero'))
 type EventWithSponsors = {
   slug: string
   maxTeilnehmer?: number
-  sponsors?: { name: string }[]
+  sponsors?: { name: string; url?: string }[]
   partners?: { name: string }[]
 }
 const eventSlug = document.getElementById('event-form')?.getAttribute('data-event-slug')
@@ -27,7 +27,7 @@ const currentEvent = (eventsData.events as EventWithSponsors[]).find((e) => e.sl
 // Ohne eigene Sponsoren laufen die Partner des Events (CMS-Feld "partners")
 // im Laufband, erst danach die allgemeine Sponsoren-Leiste.
 const eventSponsorNames = currentEvent?.sponsors?.length
-  ? currentEvent.sponsors.map((s) => s.name)
+  ? currentEvent.sponsors
   : currentEvent?.partners?.length
     ? currentEvent.partners.map((p) => p.name)
     : // Noch keine Sponsoren: Aufruf statt des allgemeinen Startseiten-Satzes

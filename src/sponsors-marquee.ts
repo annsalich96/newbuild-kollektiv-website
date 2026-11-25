@@ -1,6 +1,7 @@
 import sponsorsDataRaw from './content/sponsors.json'
 
-type SponsorsData = { statement?: string; sponsors?: { name: string }[] }
+export type SponsorEintrag = { name: string; url?: string }
+type SponsorsData = { statement?: string; sponsors?: SponsorEintrag[] }
 const sponsorsData = sponsorsDataRaw as SponsorsData
 
 // Sponsoren-Leiste: Laufband, Schrift wandert gleichmaessig von rechts nach
@@ -22,10 +23,14 @@ const sponsorsData = sponsorsDataRaw as SponsorsData
 // Tempo.
 const SPEED_PX_PER_S = 60
 
-export function renderSponsorMarquee(overrideNames?: string[], leadingStatement?: string) {
+// Sponsor mit url (CMS, optional): ganzer Eintrag ist ein Link zur Website
+// des Sponsors, neuer Tab (Ann 2026-11-25).
+export function renderSponsorMarquee(overrideNames?: (string | SponsorEintrag)[], leadingStatement?: string) {
   const sponsorTrack = document.getElementById('sponsor-track')
   const inner = sponsorTrack?.parentElement
-  const names = overrideNames ?? (sponsorsData.sponsors ?? []).map((s) => s.name)
+  const names: SponsorEintrag[] = (overrideNames ?? sponsorsData.sponsors ?? []).map((s) =>
+    typeof s === 'string' ? { name: s } : s,
+  )
   if (!sponsorTrack || !inner || (names.length === 0 && !leadingStatement)) return
 
   const appendSet = (hidden: boolean) => {
@@ -36,9 +41,20 @@ export function renderSponsorMarquee(overrideNames?: string[], leadingStatement?
       if (hidden) statementLi.setAttribute('aria-hidden', 'true')
       sponsorTrack.appendChild(statementLi)
     }
-    names.forEach((name) => {
+    names.forEach((s) => {
       const li = document.createElement('li')
-      li.textContent = name
+      if (s.url) {
+        const a = document.createElement('a')
+        a.href = s.url
+        a.target = '_blank'
+        a.rel = 'noopener'
+        a.textContent = s.name
+        a.className = 'marquee__link'
+        if (hidden) a.tabIndex = -1
+        li.appendChild(a)
+      } else {
+        li.textContent = s.name
+      }
       if (hidden) li.setAttribute('aria-hidden', 'true')
       sponsorTrack.appendChild(li)
     })
