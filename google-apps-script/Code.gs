@@ -197,6 +197,10 @@ function doPost(e) {
       data.eventSpeaker ||
       ''
 
+    // Event ausgebucht (CMS-Haken "ausgebucht"): Eintrag auf die Warteliste
+    // statt Anmeldung. Walk-ins vom Check-in werden weiter normal angemeldet.
+    if (data.warteliste && !data.checkin) return jsonResponse(wartelisteEintragen_(data))
+
     const sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
     const row = appendRegistration(sheet, data)
     schreibeZusatzfelder_(sheet, data, row)
@@ -674,9 +678,10 @@ function bestaetigungMailStandard_(e) {
 // Braucht GmailApp.search(), also einen groesseren Autorisierungs-Scope als
 // nur "E-Mails senden" - beim naechsten Deploy erscheint dafuer ggf. erneut
 // die Berechtigungs-Abfrage, das ist normal.
-function sendAdminNotificationEmail(data) {
-  const subject = 'Neue Anmeldung: ' + data.eventTitle
+function sendAdminNotificationEmail(data, betreffPrefix, zusatz) {
+  const subject = (betreffPrefix || 'Neue Anmeldung: ') + data.eventTitle
   const body =
+    (zusatz ? zusatz + '\n\n' : '') +
     data.firstName +
     ' ' +
     data.lastName +
@@ -704,6 +709,165 @@ function sendAdminNotificationEmail(data) {
       name: SENDER_NAME,
       from: SENDER_EMAIL,
     })
+  }
+}
+
+// ── Warteliste (seit 25.11.2026: Session 04 mit 65 Anmeldungen ausgebucht) ──
+// Steht ein Event im CMS auf "ausgebucht", schickt die Eventseite Eintraege mit
+// warteliste:true. Sie landen in einem eigenen Tab "Warteliste" der
+// Anmeldetabelle – NICHT im ersten Tab, damit Erinnerungen, Check-in-Liste,
+// Fotos usw. die Wartenden nicht mitzaehlen. Reihenfolge = Zeilenreihenfolge.
+// Nachruecken (von Hand): Person im ersten Tab eintragen (oder sie meldet sich
+// selbst an, sobald der Haken im CMS raus ist) und hier Status auf
+// "nachgerückt" setzen. Nur Zeilen mit Status "wartet" zaehlen als wartend.
+const WARTELISTE_TAB = 'Warteliste'
+const WARTELISTE_HEADERS = [
+  'Anrede',
+  'Vorname',
+  'Nachname',
+  'E-Mail',
+  'Unternehmen',
+  'Unternehmensadresse',
+  'Telefonnummer',
+  'Newsletter',
+  'Eingetragen am',
+  'Status',
+  'Bestätigung',
+]
+const NEWSLETTER_SEITE_URL = 'https://newbuild-kollektiv.com/newsletter/'
+
+function wartelisteTab_(ss) {
+  const vorhanden = ss.getSheetByName(WARTELISTE_TAB)
+  if (vorhanden) return vorhanden
+  const sh = ss.insertSheet(WARTELISTE_TAB)
+  sh.appendRow(WARTELISTE_HEADERS)
+  sh.setFrozenRows(1)
+  return sh
+}
+
+function wartelisteEintragen_(data) {
+  const email = String(data.email || '').trim().toLowerCase()
+  const lock = LockService.getScriptLock()
+  lock.waitLock(20000)
+  let sheet, zeile, platz, anzahl
+  let neu = true
+  try {
+    const anmeldung = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
+
+    // Schon regulaer angemeldet? Dann nichts auf die Warteliste schreiben.
+    const aw = anmeldung.getDataRange().getValues()
+    const aE = aw[0].indexOf('E-Mail')
+    const aS = aw[0].indexOf('Status')
+    for (let r = 1; r < aw.length; r++) {
+      if (String(aw[r][aE] || '').trim().toLowerCase() !== email) continue
+      if (aS >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(aw[r][aS] || ''))) continue
+      return { ok: true, angemeldet: true }
+    }
+
+    sheet = wartelisteTab_(anmeldung.getParent())
+    const werte = sheet.getDataRange().getValues()
+    const iE = werte[0].indexOf('E-Mail')
+    const iS = werte[0].indexOf('Status')
+    const wartend = []
+    for (let r = 1; r < werte.length; r++) {
+      const st = String(werte[r][iS] || '').trim()
+      if (st && !/wartet/i.test(st)) continue
+      wartend.push(r + 1)
+      if (String(werte[r][iE] || '').trim().toLowerCase() === email) {
+        zeile = r + 1
+        neu = false
+      }
+    }
+    if (neu) {
+      const jetzt = new Date()
+      sheet.appendRow([
+        data.anrede || '',
+        data.firstName,
+        data.lastName,
+        data.email,
+        data.company || '',
+        data.companyAddress || '',
+        data.phone || '',
+        data.newsletter ? 'Ja' : 'Nein',
+        Utilities.formatDate(jetzt, 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
+        'wartet',
+        '',
+      ])
+      zeile = sheet.getLastRow()
+      wartend.push(zeile)
+    }
+    platz = wartend.indexOf(zeile) + 1
+    anzahl = wartend.length
+  } finally {
+    lock.releaseLock()
+  }
+
+  if (neu) {
+    const spBest = WARTELISTE_HEADERS.indexOf('Bestätigung') + 1
+    try {
+      const m = wartelisteMail_({
+        anrede: anrede_(data.anrede, data.firstName),
+        slug: data.eventSlug,
+        email: data.email,
+        titel: data.eventTitle,
+        referent: data.eventSpeaker,
+        datum: data.eventDate,
+        zeit: data.eventTime,
+        ort: data.eventLocation,
+        start: data.eventDate ? parseEventDatum_(data.eventDate, data.eventTime) : null,
+        platz: platz,
+        anzahl: anzahl,
+      })
+      sendeTeilnehmerMail_(data.email, m.subject, m.htmlBody)
+      sheet.getRange(zeile, spBest).setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+    } catch (err) {
+      sheet.getRange(zeile, spBest).setValue('offen')
+      Logger.log('Warteliste — Bestaetigung fehlgeschlagen (' + data.email + '): ' + err)
+    }
+    try {
+      sendAdminNotificationEmail(data, 'Warteliste: ', 'Platz ' + platz + ' von ' + anzahl + ' auf der Warteliste')
+    } catch (err) {
+      Logger.log('Warteliste — Admin-Benachrichtigung fehlgeschlagen: ' + err)
+    }
+  }
+  return { ok: true, warteliste: true, platz: platz, anzahl: anzahl, schon: !neu }
+}
+
+function personenText_(n) {
+  n = Number(n) || 0
+  return n === 1 ? '1 Person' : n + ' Personen'
+}
+
+// Bestaetigung des Wartelisten-Eintrags. Text aus dem Mail-Texte-Doc
+// (Abschnitt "Warteliste"), sonst dieser Standard. Platzhalter: {Platz},
+// {Anzahl}, {Personen} ("1 Person" / "12 Personen"), {Newsletter-Link: Text}.
+function wartelisteMail_(e) {
+  return ausDoc_('warteliste', e, wartelisteMailStandard_)
+}
+
+// Fuer Mail-Vorschau/Testmail: Beispielwerte fuer Platz/Anzahl.
+function wartelisteVorschau_(e) {
+  return wartelisteMail_(Object.assign({}, e, { platz: e.platz || 3, anzahl: e.anzahl || 3 }))
+}
+
+function wartelisteMailStandard_(e) {
+  const platz = Number(e.platz) || 1
+  const anzahl = Number(e.anzahl) || platz
+  return {
+    subject: 'Warteliste: ' + kurzTitel_(e.titel),
+    htmlBody: wrapMail_(
+      '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+        '<p>vielen Dank für dein Interesse! Der Abend ist leider schon ausgebucht, ' +
+        'deshalb haben wir dich auf die Warteliste gesetzt:</p>' +
+        eckdatenBlock_(e) +
+        '<p>Du stehst auf <strong>Platz ' + platz + '</strong> der Warteliste, insgesamt ' +
+        (anzahl === 1 ? 'steht' : 'stehen') + ' gerade ' + personenText_(anzahl) + ' darauf.</p>' +
+        '<p>Sobald jemand absagt, melde ich mich der Reihe nach bei dir. Dein Platz ist erst sicher, ' +
+        'wenn du von mir eine Zusage bekommst.</p>' +
+        '<p>Falls du über unsere nächsten Events informiert werden möchtest, ' +
+        '<a href="' + NEWSLETTER_SEITE_URL + '" style="color:#3d5a80">melde dich für unseren Newsletter an</a>.</p>' +
+        '<p>Bis bald,</p>',
+    ),
   }
 }
 
@@ -4806,6 +4970,7 @@ const MAILDOC_VORLAUF_TAGE = 2
 function mailArten_() {
   return [
     ['bestaetigung', 'Bestätigung', 'sofort bei der Anmeldung', bestaetigungMail_],
+    ['warteliste', 'Warteliste', 'sofort beim Eintrag auf die Warteliste (nur wenn das Event im CMS auf „Ausgebucht“ steht)', wartelisteVorschau_],
     ['woche', '1 Woche vorher', '7 Tage vor dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', mailEineWoche_],
     ['tag', '1 Tag vorher', 'am Tag vor dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', mailEinTag_],
     ['drei', '3 Stunden vorher', 'ca. 3 Stunden vor Beginn', mailDreiStunden_],
@@ -4819,6 +4984,7 @@ function mailArten_() {
 
 function abschnittKey_(ueberschrift) {
   const t = String(ueberschrift || '').toLowerCase()
+  if (t.indexOf('warteliste') >= 0) return 'warteliste'
   if (t.indexOf('foto') >= 0) return 'fotos'
   if (t.indexOf('bestätigung') >= 0 || t.indexOf('bestaetigung') >= 0) return 'bestaetigung'
   if (t.indexOf('woche') >= 0) return 'woche'
@@ -4919,6 +5085,9 @@ function platzhalterWerte_(e) {
     eventtag: eventTagWort_(e.start),
     minuten: AUFBRUCH_VORLAUF_MIN,
     credit: e.credit || '',
+    platz: e.platz || '',
+    anzahl: e.anzahl || '',
+    personen: e.anzahl ? personenText_(e.anzahl) : '',
   }
 }
 
@@ -4931,6 +5100,7 @@ function platzhalterLinks_(e) {
     eventseite: eventSeiteUrl_(e.slug),
     'ich-war-da': wardaLink_(e.sid, e.slug, e.email),
     fotos: e.fotolink || '',
+    newsletter: NEWSLETTER_SEITE_URL,
   }
 }
 
@@ -5010,6 +5180,16 @@ function mailDocVorlage_(slug) {
     ['p', 'Bei Rückfragen schreibe mir einfach eine E-Mail.'],
     ['p', 'Bis bald,'],
     ['k', 'Du kannst doch nicht? {Abmelde-Link: Hier abmelden.}'],
+
+    ['h', 'Warteliste'],
+    ['p', 'Betreff: Warteliste: {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'vielen Dank für dein Interesse! Der Abend ist leider schon ausgebucht, deshalb haben wir dich auf die Warteliste gesetzt:'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Du stehst auf **Platz {Platz}** der Warteliste, insgesamt sind gerade {Personen} darauf.'],
+    ['p', 'Sobald jemand absagt, melde ich mich der Reihe nach bei dir. Dein Platz ist erst sicher, wenn du von mir eine Zusage bekommst.'],
+    ['p', 'Falls du über unsere nächsten Events informiert werden möchtest, {Newsletter-Link: melde dich für unseren Newsletter an}.'],
+    ['p', 'Bis bald,'],
 
     ['h', '1 Woche vorher'],
     ['p', 'Betreff: In einer Woche: NBK Treffen – {Kurztitel}'],

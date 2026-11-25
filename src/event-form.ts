@@ -12,7 +12,12 @@ import { snapToBalken } from './balken-snap'
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
 // JSON weg. Ohne eigene Sponsoren traegt renderSponsorMarquee() automatisch
 // die allgemeine Sponsoren-Leiste aus content/sponsors.json nach (Fallback).
-type EventWithSponsors = { slug: string; sponsors?: { name: string }[]; partners?: { name: string }[] }
+type EventWithSponsors = {
+  slug: string
+  ausgebucht?: boolean
+  sponsors?: { name: string }[]
+  partners?: { name: string }[]
+}
 const eventSlug = document.getElementById('event-form')?.getAttribute('data-event-slug')
 const currentEvent = (eventsData.events as EventWithSponsors[]).find((e) => e.slug === eventSlug)
 // Ohne eigene Sponsoren laufen die Partner des Events (CMS-Feld "partners")
@@ -57,11 +62,27 @@ if (form instanceof HTMLFormElement && status) {
   prefill('firstName', params.get('vorname'))
   prefill('lastName', params.get('nachname'))
 
-  if (fromCheckin) {
-    const note = document.getElementById('event-form-note')
+  // Ausgebucht (CMS-Haken "ausgebucht"): Formular wird zur Warteliste. Wer
+  // vom Check-in-Aufsteller kommt, ist schon vor Ort und meldet sich normal an.
+  const warteliste = !!currentEvent?.ausgebucht && !fromCheckin
+  const note = document.getElementById('event-form-note')
+  const submitLabel = form.querySelector<HTMLButtonElement>('.event-form__submit')
+  if (fromCheckin && note) {
+    note.textContent =
+      'Schön, dass du da bist! Trag hier kurz deine Daten ein – damit bist du automatisch eingecheckt.'
+    note.hidden = false
+  }
+  if (warteliste) {
+    const label = document.querySelector('.event-form-section__label')
+    if (label) label.textContent = 'Warteliste'
+    if (submitLabel) submitLabel.textContent = 'Auf die Warteliste'
     if (note) {
-      note.textContent =
-        'Schön, dass du da bist! Trag hier kurz deine Daten ein – damit bist du automatisch eingecheckt.'
+      note.innerHTML =
+        '<strong>Ausgebucht:</strong> Alle Plätze für diesen Abend sind vergeben. Trag dich hier auf die ' +
+        'Warteliste ein: Sagt jemand ab, melden wir uns der Reihe nach bei dir. Nach dem Eintragen siehst du, ' +
+        'wie viele Personen schon auf der Warteliste stehen.<br><br>' +
+        'Du möchtest über die nächsten Events informiert werden? ' +
+        '<a href="/newsletter/">Melde dich für unseren Newsletter an.</a>'
       note.hidden = false
     }
   }
@@ -94,6 +115,7 @@ if (form instanceof HTMLFormElement && status) {
       newsletter: formData.get('newsletter') === 'on',
       checkin: fromCheckin,
       foto: params.get('foto') === '1',
+      warteliste,
     }
 
     try {
@@ -111,16 +133,30 @@ if (form instanceof HTMLFormElement && status) {
       if (!response.ok) throw new Error(`Server antwortete mit Status ${response.status}`)
       const result = await response.json()
       if (!result.ok) throw new Error(result.error ?? 'Unbekannter Fehler')
-      status.textContent = 'Danke für deine Anmeldung! Du bekommst gleich eine Bestätigung per E-Mail.'
+      status.textContent = warteliste ? wartelisteText(result) : 'Danke für deine Anmeldung! Du bekommst gleich eine Bestätigung per E-Mail.'
       form.reset()
     } catch (error) {
-      status.textContent =
-        'Die Anmeldung konnte nicht gesendet werden. Bitte versuch es später nochmal oder schreib uns direkt.'
+      status.textContent = warteliste
+        ? 'Der Eintrag auf die Warteliste konnte nicht gesendet werden. Bitte versuch es später nochmal oder schreib uns direkt.'
+        : 'Die Anmeldung konnte nicht gesendet werden. Bitte versuch es später nochmal oder schreib uns direkt.'
       console.error('Event-Anmeldung fehlgeschlagen', error)
     } finally {
       submitButton?.removeAttribute('disabled')
     }
   })
+}
+
+// Rueckmeldung nach dem Eintrag auf die Warteliste (Code.gs wartelisteEintragen_).
+function wartelisteText(r: { platz?: number; anzahl?: number; schon?: boolean; angemeldet?: boolean }) {
+  if (r.angemeldet) return 'Du bist für diesen Abend schon angemeldet, dein Platz ist sicher.'
+  const anzahl = Number(r.anzahl) || 0
+  const personen = anzahl === 1 ? '1 Person' : `${anzahl} Personen`
+  const platz = Number(r.platz) || anzahl
+  return (
+    (r.schon ? 'Du stehst schon auf der Warteliste: ' : 'Danke, du stehst jetzt auf der Warteliste: ') +
+    `Platz ${platz}, insgesamt ${anzahl === 1 ? 'steht' : 'stehen'} gerade ${personen} darauf. ` +
+    'Sagt jemand ab, melden wir uns per E-Mail bei dir.'
+  )
 }
 
 avoidOrphans()

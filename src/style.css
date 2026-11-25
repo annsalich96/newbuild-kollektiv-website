@@ -2241,6 +2241,21 @@ ul {
   line-height: 1.5;
 }
 
+/* Warteliste (Event ausgebucht): Typo-System hat nur Light/Regular, daher
+   kein Fett; Links wie im Fliesstext unterstrichen. */
+.event-form__note strong {
+  font-weight: inherit;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+}
+
+.event-form__note a,
+.event-detail__meta dd a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 @media (max-width: 768px) {
   .event-form-section__label {
     grid-column: 1 / -1;

@@ -125,6 +125,10 @@ export function generateEventPages() {
           <dt>Ort</dt>
           <dd>${escapeHtml(event.location)}</dd>
         </div>
+        ${event.ausgebucht ? `<div>
+          <dt>Plätze</dt>
+          <dd>Ausgebucht: <a href="#event-form-section">Trag dich auf die Warteliste ein</a></dd>
+        </div>` : ''}
         ${(event.facts || [])
           .filter((f) => f && f.label && f.value)
           .map((f) => `<div>

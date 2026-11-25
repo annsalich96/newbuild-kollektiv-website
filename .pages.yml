@@ -33,6 +33,10 @@ content:
           - name: isNext
             label: Als "Next Event" auf der Startseite zeigen?
             type: boolean
+          - name: ausgebucht
+            label: "Ausgebucht? Haken = Anmeldeformular wird zur Warteliste (mit Hinweis auf den Newsletter), Button auf der Startseite heißt „Ausgebucht: Warteliste“"
+            type: boolean
+            required: false
           - name: color
             label: "Farbe (optional) — Farbcode wie #2f6f8f. Färbt den Hintergrund der Eventseite UND die Karte in den Mails. Leer lassen = NewBuild-Orange"
             type: string

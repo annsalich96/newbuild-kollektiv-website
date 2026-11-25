@@ -58,6 +58,7 @@ type EventItem = {
   introLabel: string
   title: string
   isNext: boolean
+  ausgebucht?: boolean
   date: string
   time: string
   location: string
@@ -102,7 +103,14 @@ if (nextEvent) {
   setText('next-event-speaker', speaker)
   setText('next-event-time', `${nextEvent.date}, ${timeRange(nextEvent.time)}`)
   setText('next-event-location', nextEvent.location)
-  if (nextEventCta instanceof HTMLAnchorElement) nextEventCta.href = eventHref(nextEvent.slug)
+  if (nextEventCta instanceof HTMLAnchorElement) {
+    nextEventCta.href = eventHref(nextEvent.slug)
+    // Ausgebucht (CMS-Haken): Button fuehrt zur Warteliste auf der Eventseite.
+    if (nextEvent.ausgebucht) {
+      nextEventCta.href += '#event-form-section'
+      nextEventCta.textContent = 'Ausgebucht: Warteliste'
+    }
+  }
 } else {
   setText('next-event-title', 'Stay tuned: Das nächste Event wird bald bekanntgegeben.')
   setText(
