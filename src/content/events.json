@@ -18,7 +18,8 @@
       "description": "Ein Architekturbüro produziert in 25 Jahren hunderttausende Dokumente. Das Wissen ist da, aber nur solange sich jemand erinnert, wo es liegt. Markus Kolb, Bauingenieur und Geschäftsführer von Bräunlin Kolb Architekten, hat im eigenen Büro ein Firmengedächtnis aufgebaut: eine durchsuchbare Wissensbasis über den gesamten Dokumentenbestand, verbunden mit KI-Agenten, die Briefe entwerfen, Dokumente ablegen und Projektwissen fortschreiben. \n\nDer Vortrag zeigt an echten Messwerten aus diesem Projekt, was funktioniert und was nicht: warum die Ablagestruktur und die Benennung von Dateien mehr über die Suchqualität entscheiden als das teuerste KI-Modell, wie die Rollenteilung aussieht, wenn der Agent schreibt und der Mensch prüft, und welche Voraussetzungen ein Planungsbüro schaffen muss, bevor sich der Einsatz lohnt. Kein Zukunftsszenario, sondern ein Werkstattbericht aus dem laufenden Betrieb.",
       "sponsors": [
         {
-          "name": "Sponsored by Projo Berlin"
+          "name": "Sponsored by Projo Berlin",
+          "url": "https://www.projo.berlin"
         }
       ],
       "gallery": [
@@ -274,7 +275,8 @@
       "description": "In jedem Architekturbüro steckt über Jahre gewachsenes Wissen: Standards und Qualitätsansprüche, Vorlagen und Handbücher, Projekterfahrungen und die Haltung des Büros. Das Problem: Dieses Wissen liegt an vielen verschiedenen Orten – und ein großer Teil davon in den Köpfen erfahrener Kolleginnen und Kollegen. Genau dann, wenn es im Projekt gebraucht wird, beginnt die Suche.\n\nNiklas Wohlgemuth zeigt, wie er in Zusammenarbeit mit David Chipperfield Architects Berlin auf Basis von amenda ein Tool entwickelt, das dieses verstreute Wissen durchsucht, erfasst und kuratiert zusammenführt. Aus vielen einzelnen Quellen entsteht so Schritt für Schritt eine verlässliche Single Source of Truth für das gesamte Büro.\n\nIm Vortrag wird deutlich, wie sich Bürowissen so strukturieren lässt, dass es nicht nur schneller gefunden, sondern auch weitergenutzt werden kann: als gemeinsamer Wissensstand für Mitarbeitende, als Kontext für eigene KI-Anwendungen und als Grundlage für weitere digitale Prozesse und Tools im Büro.",
       "sponsors": [
         {
-          "name": "Sponsored by KALDEWEI"
+          "name": "Sponsored by KALDEWEI",
+          "url": "https://www.kaldewei.de"
         }
       ],
       "gallery": [

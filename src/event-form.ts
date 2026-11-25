@@ -20,7 +20,7 @@ type EventWithSponsors = {
   slug: string
   maxTeilnehmer?: number
   sponsors?: { name: string; url?: string }[]
-  partners?: { name: string }[]
+  partners?: { name: string; url?: string }[]
 }
 const eventSlug = document.getElementById('event-form')?.getAttribute('data-event-slug')
 const currentEvent = (eventsData.events as EventWithSponsors[]).find((e) => e.slug === eventSlug)
@@ -29,7 +29,7 @@ const currentEvent = (eventsData.events as EventWithSponsors[]).find((e) => e.sl
 const eventSponsorNames = currentEvent?.sponsors?.length
   ? currentEvent.sponsors
   : currentEvent?.partners?.length
-    ? currentEvent.partners.map((p) => p.name)
+    ? currentEvent.partners.map((p) => ({ name: p.name, url: p.url }))
     : // Noch keine Sponsoren: Aufruf statt des allgemeinen Startseiten-Satzes
       // (Ann 2026-11-16).
       ['Werde Sponsor für dieses Event. Melde dich bei uns.']
