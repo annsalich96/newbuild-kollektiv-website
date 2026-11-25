@@ -7,19 +7,19 @@
       "photo": "/galerie-1-farbe.jpg"
     },
     {
-      "photo": "/galerie-3.jpg"
+      "photo": "/galerie-3-farbe.jpg"
     },
     {
       "photo": "/galerie-4-farbe.jpg"
     },
     {
-      "photo": "/galerie-5.jpg"
+      "photo": "/galerie-5-farbe.jpg"
     },
     {
       "photo": "/galerie-6-farbe.jpg"
     },
     {
-      "photo": "/galerie-7.jpg"
+      "photo": "/galerie-7-farbe.jpg"
     },
     {
       "photo": "/galerie-8-farbe.jpg"
@@ -32,6 +32,9 @@
     },
     {
       "photo": "/galerie-12-farbe.jpg"
+    },
+    {
+      "photo": "/galerie-13-farbe.jpg"
     }
   ]
 }
