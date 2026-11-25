@@ -14,7 +14,7 @@
       "speakerRole": "Geschäftsführer",
       "speakerCompany": "Bräunlin Kolb Architekten",
       "speakerBio": "Mitgründer & Geschäftsführer von Bräunlin Kolb Architekten.\nInteressiert sich begeistern für KI, probiert alle neuen Möglichkeiten aus, weil er den Mehrwert für die Architekturbranche sieht. ",
-      "speakerImage": "/team-markus-kolb-re.jpg",
+      "speakerImage": "/team-markus-kolb-h.jpg",
       "description": "Ein Architekturbüro produziert in 25 Jahren hunderttausende Dokumente. Das Wissen ist da, aber nur solange sich jemand erinnert, wo es liegt. Markus Kolb, Bauingenieur und Geschäftsführer von Bräunlin Kolb Architekten, hat im eigenen Büro ein Firmengedächtnis aufgebaut: eine durchsuchbare Wissensbasis über den gesamten Dokumentenbestand, verbunden mit KI-Agenten, die Briefe entwerfen, Dokumente ablegen und Projektwissen fortschreiben. \n\nDer Vortrag zeigt an echten Messwerten aus diesem Projekt, was funktioniert und was nicht: warum die Ablagestruktur und die Benennung von Dateien mehr über die Suchqualität entscheiden als das teuerste KI-Modell, wie die Rollenteilung aussieht, wenn der Agent schreibt und der Mensch prüft, und welche Voraussetzungen ein Planungsbüro schaffen muss, bevor sich der Einsatz lohnt. Kein Zukunftsszenario, sondern ein Werkstattbericht aus dem laufenden Betrieb.",
       "sponsors": [
         {
@@ -100,7 +100,7 @@
           "role": "Gründer",
           "company": "Eike Becker_Architekten",
           "bio": "Architekt, studierte in Aachen, Paris und Stuttgart und arbeitete bei Norman Foster Associates und Richard Rogers Partnership in London. 1999 gründete er Eike Becker_Architekten in Berlin.",
-          "image": "/speaker-eike-becker-farbe.jpg",
+          "image": "/speaker-eike-becker-h.jpg",
           "url": "http://www.eb-a.de"
         },
         {
@@ -108,7 +108,7 @@
           "role": "Co-Founder & CTO",
           "company": "Gendo",
           "bio": "Software-Engineer mit über zehn Jahren Erfahrung in Softwareentwicklung und Produktaufbau. Gendo ist eine kollaborative KI-Rendering-Plattform für Architektur und Design (London).",
-          "image": "/speaker-will-jones-farbe.jpg",
+          "image": "/speaker-will-jones-h.jpg",
           "url": "https://gendo.ai"
         },
         {
@@ -116,7 +116,7 @@
           "role": "Co-Founder",
           "company": "GRAFT",
           "bio": "Architekt und Mitgründer von GRAFT (Berlin, Los Angeles, Seoul u. a.). Er denkt Architektur über Megatrends, Neugier und Innovation – mit Fokus auf Natur und Schönheit.",
-          "image": "/speaker-wolfram-putz-farbe.jpg",
+          "image": "/speaker-wolfram-putz-h.jpg",
           "url": "https://graftlab.com"
         },
         {
@@ -124,7 +124,7 @@
           "role": "Co-Founder & CEO",
           "company": "Visoid",
           "bio": "Architekt und Gründer von Visoid, einer KI-gestützten Visualisierungsplattform für Architekt:innen (Oslo). Zuvor bei LINK und früh bei Spacemaker, heute Autodesk Forma.",
-          "image": "/speaker-mark-szoke-farbe.jpg",
+          "image": "/speaker-mark-szoke-h.jpg",
           "url": "https://www.visoid.com"
         },
         {
@@ -132,7 +132,7 @@
           "role": "Partner & CTO",
           "company": "Nordic Office of Architecture",
           "bio": "Architekt mit über 30 Jahren Erfahrung im Einsatz von Designtechnologie bei großen Bau- und Stadtentwicklungsprojekten. Professor an der NTNU in Trondheim, Schwerpunkt KI im Entwurf.",
-          "image": "/speaker-knut-ramstad-farbe.jpg",
+          "image": "/speaker-knut-ramstad-h.jpg",
           "url": "https://nordicarch.com"
         },
         {
@@ -140,7 +140,7 @@
           "role": "Gründer",
           "company": "Jasper Architects",
           "bio": "Architekt mit Büros in Buenos Aires, Berlin, New York u. a. Die Philosophie „Beyond Context“ seines Büros beginnt mit der Erforschung der physischen und sozialen Bedingungen jedes Ortes.",
-          "image": "/speaker-martin-jasper-re.jpg",
+          "image": "/speaker-martin-jasper-h.jpg",
           "url": "https://www.jasperarchitects.com"
         },
         {
@@ -148,7 +148,7 @@
           "role": "BIM-Strategin",
           "company": "Kinzo Architekten",
           "bio": "Architektin und BIM-Beraterin in Berlin mit zehn Jahren Erfahrung, Schwerpunkt auf der Umnutzung bestehender Gebäude.",
-          "image": "/speaker-jolene-lee-farbe.jpg",
+          "image": "/speaker-jolene-lee-h.jpg",
           "url": "https://kinzo-berlin.de"
         },
         {
@@ -156,7 +156,7 @@
           "role": "ClimateTech & Innovation Lead",
           "company": "Henning Larsen",
           "bio": "Architekt in Berlin. Entwickelt computergestützte und KI-basierte Werkzeuge, die Klimawissen direkt in den Entwurfsprozess bringen.",
-          "image": "/speaker-gheyath-harb.jpg",
+          "image": "/speaker-gheyath-harb-h.jpg",
           "url": "https://henninglarsen.com"
         },
         {
@@ -164,7 +164,7 @@
           "role": "Partner & Managing Director",
           "company": "Revalu",
           "bio": "Revalu ist eine digitale Plattform und Materialdatenbank für nachhaltige Baustoffe (Berlin). Sein Fokus: KI für Materialauswahl, Ökobilanzierung und Dokumentation.",
-          "image": "/speaker-bjorn-maack-re.jpg",
+          "image": "/speaker-bjorn-maack-h.jpg",
           "url": "https://revalu.io"
         },
         {
@@ -172,7 +172,7 @@
           "role": "Manager",
           "company": "Material Bank Germany",
           "bio": "Verantwortet das Deutschland-Geschäft von Material Bank, einer Plattform für Materialmuster mit über 60.000 Produkten (Stuttgart).",
-          "image": "/speaker-alexander-tetz.jpg",
+          "image": "/speaker-alexander-tetz-h.jpg",
           "url": "https://materialbank.eu"
         }
       ],
@@ -205,13 +205,13 @@
           "name": "Maria Stasevich",
           "role": "Architectural Designer, Gründerin von OBLIK",
           "url": "https://oblik.media",
-          "image": "/team-maria-stasevich-farbe.jpg"
+          "image": "/team-maria-stasevich-h.jpg"
         },
         {
           "name": "Ann-Kathrin Salich",
           "role": "Architektin, Gründerin von NewBuild Kollektiv und An(n) Architecture Solution",
           "url": "https://annarchitecturesolution.com",
-          "image": "/team-ann-kathrin-salich-farbe.jpg"
+          "image": "/team-ann-kathrin-salich-h.jpg"
         }
       ],
       "partners": [
@@ -271,7 +271,7 @@
       "speakerRole": "Associate, Head of Digital Management ",
       "speakerCompany": " David Chipperfield Architects",
       "speakerBio": "Niklas Wohlgemuth ist Head of Digital Management bei David Chipperfield Architects in Berlin und Gründer von amenda, einer Plattform, die Architektur- und Planungsbüros ein zentrales Zuhause für ihre Daten und damit Kontext für KI bietet.",
-      "speakerImage": "/dca-berlin-Niklas-Wohlgemuth-016b20118d27be1b.webp",
+      "speakerImage": "/dca-berlin-Niklas-Wohlgemuth-016b20118d27be1b-h.jpg",
       "description": "In jedem Architekturbüro steckt über Jahre gewachsenes Wissen: Standards und Qualitätsansprüche, Vorlagen und Handbücher, Projekterfahrungen und die Haltung des Büros. Das Problem: Dieses Wissen liegt an vielen verschiedenen Orten – und ein großer Teil davon in den Köpfen erfahrener Kolleginnen und Kollegen. Genau dann, wenn es im Projekt gebraucht wird, beginnt die Suche.\n\nNiklas Wohlgemuth zeigt, wie er in Zusammenarbeit mit David Chipperfield Architects Berlin auf Basis von amenda ein Tool entwickelt, das dieses verstreute Wissen durchsucht, erfasst und kuratiert zusammenführt. Aus vielen einzelnen Quellen entsteht so Schritt für Schritt eine verlässliche Single Source of Truth für das gesamte Büro.\n\nIm Vortrag wird deutlich, wie sich Bürowissen so strukturieren lässt, dass es nicht nur schneller gefunden, sondern auch weitergenutzt werden kann: als gemeinsamer Wissensstand für Mitarbeitende, als Kontext für eigene KI-Anwendungen und als Grundlage für weitere digitale Prozesse und Tools im Büro.",
       "sponsors": [
         {
@@ -328,7 +328,7 @@
       "speakerRole": "Architektin, Inhaberin",
       "speakerCompany": "An(n) Architecture Solution",
       "speakerBio": "Ann-Kathrin Salich ist Architektin und Inhaberin des Architekturbüros An(n) Architecture Solution. Das Büro geht neue Wege, in seinen Projekten ebenso wie in der eigenen Arbeitsweise. Mit KI entwickelt sie eigene Werkzeuge für den Büroalltag ihres Teams.",
-      "speakerImage": "/team-ann-kathrin-salich-farbe.jpg",
+      "speakerImage": "/team-ann-kathrin-salich-h.jpg",
       "speakerUrl": "https://annarchitecturesolution.com",
       "speakers": [
         {
@@ -336,7 +336,7 @@
           "role": "Architektin, Inhaberin",
           "company": "An(n) Architecture Solution",
           "bio": "Ann-Kathrin Salich ist Architektin und Inhaberin des Architekturbüros An(n) Architecture Solution. Das Büro geht neue Wege, in seinen Projekten ebenso wie in der eigenen Arbeitsweise. Mit KI entwickelt sie eigene Werkzeuge für den Büroalltag ihres Teams.",
-          "image": "/team-ann-kathrin-salich-farbe.jpg",
+          "image": "/team-ann-kathrin-salich-h.jpg",
           "url": "https://annarchitecturesolution.com"
         },
         {
@@ -344,7 +344,7 @@
           "role": "Moderation",
           "company": "Hochschule Bochum",
           "bio": "Prof. Jan R. Krause leitet an der Hochschule Bochum den Master Architektur Media Management, den Studiengang für Architekturkommunikation und -vermittlung. In Lehre, Forschung und Weiterbildung beschäftigt er sich mit KI und Architekturvermittlung, unter anderem als Leiter des KI-Gipfels der Hochschule Bochum.",
-          "image": "/speaker-jan-krause.jpg",
+          "image": "/speaker-jan-krause-h.jpg",
           "url": "https://www.ofat.berlin"
         }
       ],
