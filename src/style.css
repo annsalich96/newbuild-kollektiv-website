@@ -2262,10 +2262,15 @@ ul {
   grid-row: 1 / span 2;
 }
 
+/* Hinweis fuellt die Hoehe neben dem Formular: Text oben, Button unten
+   auf derselben Hoehe wie der Absende-Button (Ann 2026-11-25). */
 .event-form__note {
   grid-column: 2 / 5;
   grid-row: 2;
-  align-self: start;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   margin: 0;
   font-size: var(--font-size-regular-text);
   line-height: var(--line-height-regular-text);
@@ -2281,7 +2286,9 @@ ul {
 }
 
 .event-form__note-button {
-  margin-block-start: var(--line-height-regular-text);
+  margin-block-start: auto;
+  /* Gleiche Hoehe wie der Absende-Button (nicht die Fliesstext-Zeilenhoehe). */
+  line-height: 1.5;
   color: var(--color-text);
 }
 
@@ -2306,6 +2313,10 @@ ul {
   .event-form__note {
     grid-column: 1 / -1;
     margin: 0 0 var(--balken);
+  }
+
+  .event-form__note-button {
+    margin-block-start: var(--line-height-regular-text);
   }
 
   .event-form {

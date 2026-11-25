@@ -91,14 +91,13 @@ if (form instanceof HTMLFormElement && status) {
     if (warteliste) return
     warteliste = true
     zeigePlaetze('Ausgebucht:', true)
-    const label = document.querySelector('.event-form-section__label')
-    if (label) label.textContent = 'Warteliste'
     if (submitLabel) submitLabel.textContent = 'Auf die Warteliste'
     if (note) {
       note.innerHTML =
-        '<span class="event-form__note-text">Dieser Abend ist ausgebucht. Trag dich auf die Warteliste ein: ' +
-        'Sagt jemand ab, rückst du automatisch nach.</span>' +
-        '<span class="event-form__note-text">Über die nächsten Events informieren wir im Newsletter.</span>' +
+        '<span class="event-form__note-text">Dieser Abend ist leider schon ausgebucht. Trag dich gern auf ' +
+        'die Warteliste ein: Wird ein Platz frei, rückst du automatisch nach.</span>' +
+        '<span class="event-form__note-text">Trag dich zusätzlich in unseren Newsletter ein, damit du über ' +
+        'bevorstehende Events rechtzeitig informiert wirst.</span>' +
         '<a class="button event-form__note-button" href="/newsletter/">Newsletter</a>'
       note.hidden = false
     }
