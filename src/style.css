@@ -2553,16 +2553,17 @@ ul {
 }
 
 /* ---------- Lebendiger Verlauf (Ann 2026-11-25, src/verlauf.ts) ----------
-   Ebene ueber dem Verlauf, unter allen Inhalten. Weiches Ueberblenden
-   (soft-light) auf der ganzen Ebene, damit die Lichter mit dem Hintergrund
-   verschmelzen statt als Flecken darueber zu liegen. */
+   Nur der Farbschwerpunkt bewegt sich leicht wellenartig - die Farbigkeit
+   bleibt wie sie war (Ann: erste Version war "viel zu leuchtend"). Deshalb
+   normale Deckung (kein soft-light = keine Aufhellung), Farben exakt aus dem
+   bestehenden Verlauf, geringe Deckkraft, kleine Wege. */
 .verlauf-licht {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: clip;
   pointer-events: none;
-  mix-blend-mode: soft-light;
+  opacity: 0.55;
 }
 
 .verlauf-licht__buehne {
@@ -2576,47 +2577,55 @@ ul {
 .verlauf-licht__a,
 .verlauf-licht__b {
   position: absolute;
-  width: 75vmax;
-  height: 75vmax;
+  width: 70vmax;
+  height: 70vmax;
   border-radius: 50%;
   will-change: transform;
 }
 
+/* Startseite: Orange oben links, Violett unten rechts (Toene aus
+   background-smooth.jpg). */
 .verlauf-licht__a {
-  left: -15vmax;
-  top: -20vmax;
-  background: radial-gradient(closest-side, var(--licht-a, #ea5820) 0%, transparent 100%);
-  animation: licht-a 38s ease-in-out infinite alternate;
+  left: -25vmax;
+  top: -30vmax;
+  background: radial-gradient(closest-side, var(--licht-a, #c74716) 0%, transparent 100%);
+  animation: licht-a 26s ease-in-out infinite alternate;
 }
 
 .verlauf-licht__b {
-  right: -20vmax;
-  bottom: -25vmax;
-  background: radial-gradient(closest-side, var(--licht-b, #9263c4) 0%, transparent 100%);
-  animation: licht-b 46s ease-in-out infinite alternate;
+  right: -25vmax;
+  bottom: -35vmax;
+  background: radial-gradient(closest-side, var(--licht-b, #8b69af) 0%, transparent 100%);
+  animation: licht-b 32s ease-in-out infinite alternate;
 }
 
+/* Wellenartig: kleine Wege hin und her, keine Reise ueber die Seite. */
 @keyframes licht-a {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(28vw, 18vh, 0) scale(1.15); }
-  100% { transform: translate3d(12vw, 40vh, 0) scale(0.95); }
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(6vw, 4vh, 0); }
+  50% { transform: translate3d(10vw, -2vh, 0); }
+  75% { transform: translate3d(4vw, 7vh, 0); }
+  100% { transform: translate3d(-3vw, 3vh, 0); }
 }
 
 @keyframes licht-b {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-30vw, -22vh, 0) scale(0.9); }
-  100% { transform: translate3d(-14vw, -42vh, 0) scale(1.1); }
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-5vw, -6vh, 0); }
+  50% { transform: translate3d(-10vw, 2vh, 0); }
+  75% { transform: translate3d(-3vw, -8vh, 0); }
+  100% { transform: translate3d(3vw, -3vh, 0); }
 }
 
-/* Eventseiten: Licht in der Eventfarbe + helles Licht; eigener
-   Stapelkontext, damit die Ebene ueber dem Verlauf von .event-hero liegt. */
+/* Eventseiten: Eventfarbe (wie der Verlauf oben links und unten links) und
+   das Dunkelgrau aus der Mitte des Verlaufs; eigener Stapelkontext, damit
+   die Ebene ueber dem Verlauf von .event-hero liegt. */
 .event-hero {
   isolation: isolate;
 }
 
 .event-hero .verlauf-licht {
   --licht-a: var(--event-farbe, var(--color-accent-orange));
-  --licht-b: #f2efec;
+  --licht-b: #4a4340;
 }
 
 @media (prefers-reduced-motion: reduce) {
