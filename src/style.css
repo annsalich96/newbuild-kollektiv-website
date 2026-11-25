@@ -2265,15 +2265,17 @@ ul {
 /* Hinweis fuellt die Hoehe neben dem Formular: Text oben, Button unten
    auf derselben Hoehe wie der Absende-Button (Ann 2026-11-25). */
 .event-form__note {
-  grid-column: 2 / 5;
+  /* Spalte 2-3: eine Spalte Luft zum Formular (Ann: "zu eng"); Schrift 20
+     statt 28 (Groesse fuer Namen/Navigation, Ann 2026-11-25). */
+  grid-column: 2 / 4;
   grid-row: 2;
   align-self: stretch;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   margin: 0;
-  font-size: var(--font-size-regular-text);
-  line-height: var(--line-height-regular-text);
+  font-size: var(--font-size-ui);
+  line-height: 1.45;
   font-weight: var(--font-weight-light);
 }
 
@@ -2282,7 +2284,7 @@ ul {
 }
 
 .event-form__note-text + .event-form__note-text {
-  margin-block-start: var(--line-height-regular-text);
+  margin-block-start: 1.45em;
 }
 
 .event-form__note-button {

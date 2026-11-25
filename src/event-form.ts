@@ -7,7 +7,7 @@ import { initEventGallery } from './event-gallery'
 import { initCarousel } from './carousel'
 import { avoidOrphans } from './no-orphans'
 import { snapToBalken } from './balken-snap'
-import { APPS_SCRIPT_URL, ladePlatzStatus } from './platz-status'
+import { APPS_SCRIPT_URL, ladePlatzStatus, letzterPlatzStatus } from './platz-status'
 
 // sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
@@ -103,6 +103,8 @@ if (form instanceof HTMLFormElement && status) {
     }
   }
   if (currentEvent?.maxTeilnehmer && !fromCheckin) {
+    // Letzten bekannten Stand sofort zeigen, dann aktualisieren.
+    if (letzterPlatzStatus(currentEvent.slug)?.ausgebucht) wartelisteModus()
     void ladePlatzStatus(currentEvent.slug).then((s) => {
       if (!s) return
       // Keine Anzeige freier Plaetze (Ann 2026-11-25) - nur "Ausgebucht".

@@ -1,5 +1,5 @@
 import './style.css'
-import { ladePlatzStatus } from './platz-status'
+import { ladePlatzStatus, letzterPlatzStatus } from './platz-status'
 import eventsData from './content/events.json'
 import { isPastEvent } from './event-date'
 import teamData from './content/team.json'
@@ -109,11 +109,13 @@ if (nextEvent) {
     // Teilnehmerlimit erreicht: Button fuehrt zur Warteliste auf der Eventseite.
     if (nextEvent.maxTeilnehmer) {
       const cta = nextEventCta
-      void ladePlatzStatus(nextEvent.slug).then((s) => {
-        if (!s?.ausgebucht) return
+      const zeige = (ausgebucht: boolean | undefined) => {
+        if (!ausgebucht) return
         cta.href = `${eventHref(nextEvent.slug)}#event-form-section`
         cta.textContent = 'Ausgebucht: Warteliste'
-      })
+      }
+      zeige(letzterPlatzStatus(nextEvent.slug)?.ausgebucht)
+      void ladePlatzStatus(nextEvent.slug).then((s) => zeige(s?.ausgebucht))
     }
   }
 } else {
