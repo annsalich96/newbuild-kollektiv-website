@@ -1962,6 +1962,19 @@ ul {
   display: block;
   /* Laedt sofort statt lazy (Markup), damit es sich nicht erst beim
      Scrollen zeilenweise aufbaut (Ann 2026-11-19). */
+  /* Schwarz-weiss, mit der Maus darueber farbig (Ann 2026-11-25, wie
+     Startseite; farbe-unter-maus.ts). */
+  filter: grayscale(1);
+  transition: filter 0.4s ease;
+}
+
+@media (hover: hover) {
+  .event-detail__speaker-photo:hover img,
+  .event-detail__speaker-photo.is-farbig img,
+  .event-hosts__photo:hover,
+  .event-hosts__photo.is-farbig {
+    filter: grayscale(0);
+  }
 }
 
 @media (max-width: 768px) {
@@ -2583,7 +2596,7 @@ ul {
   position: absolute;
   /* Rand in festen Pixeln: die Startseite ist sehr lang, Prozent der Hoehe
      waeren mehrere hundert Pixel Versatz (gemessen viel zu stark). */
-  inset: -60px;
+  inset: -100px;
   opacity: 0.5;
   will-change: transform;
   animation: verlauf-welle 30s ease-in-out infinite alternate;
@@ -2596,7 +2609,7 @@ body .verlauf-welle__kopie {
 
 /* Eventseiten: derselbe Verlauf wie .event-hero. */
 .event-hero .verlauf-welle__kopie {
-  inset: -6%;
+  inset: -12%;
   animation-name: verlauf-welle-event;
   background:
     radial-gradient(
@@ -2613,18 +2626,18 @@ body .verlauf-welle__kopie {
 }
 
 @keyframes verlauf-welle {
-  0% { transform: translate3d(-40px, -25px, 0); }
-  33% { transform: translate3d(35px, 15px, 0); }
-  66% { transform: translate3d(-15px, 40px, 0); }
-  100% { transform: translate3d(40px, -20px, 0); }
+  0% { transform: translate3d(-80px, -50px, 0); }
+  33% { transform: translate3d(70px, 30px, 0); }
+  66% { transform: translate3d(-30px, 80px, 0); }
+  100% { transform: translate3d(80px, -40px, 0); }
 }
 
 /* Eventseiten: Verlauf ist sehr weich, braucht groessere Wege. */
 @keyframes verlauf-welle-event {
-  0% { transform: translate3d(-5%, -3%, 0); }
-  33% { transform: translate3d(4%, 2%, 0); }
-  66% { transform: translate3d(-2%, 4%, 0); }
-  100% { transform: translate3d(5%, -2%, 0); }
+  0% { transform: translate3d(-10%, -6%, 0); }
+  33% { transform: translate3d(8%, 4%, 0); }
+  66% { transform: translate3d(-4%, 8%, 0); }
+  100% { transform: translate3d(10%, -4%, 0); }
 }
 
 .event-hero {

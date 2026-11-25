@@ -9,6 +9,9 @@ import { avoidOrphans } from './no-orphans'
 import { snapToBalken } from './balken-snap'
 import { APPS_SCRIPT_URL, ladePlatzStatus, letzterPlatzStatus } from './platz-status'
 import { initVerlauf } from './verlauf'
+import { initFarbeUnterMaus } from './farbe-unter-maus'
+
+initFarbeUnterMaus()
 
 initVerlauf(document.querySelector<HTMLElement>('.event-hero'))
 

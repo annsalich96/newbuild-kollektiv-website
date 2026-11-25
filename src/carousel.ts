@@ -16,10 +16,8 @@
 //
 // Auto-Lauf (Option autoplay, Ann 2026-11-25: Speaker und Fotogalerie der
 // Startseite laufen langsam und IMMER weiter, wie das Sponsoren-Laufband):
-// - laeuft auch unter der Maus weiter; das Foto unter der Maus wird farbig
-//   (Klasse is-farbig per elementFromPoint - Safari aktualisiert :hover
-//   nicht, wenn das Bild unter der stehenden Maus durchlaeuft), Klick
-//   oeffnet die Website
+// - laeuft auch unter der Maus weiter; Farbe unter der Maus macht
+//   farbe-unter-maus.ts, Klick oeffnet die Website
 // - Pfeil-Klick: kurzer Sprung, danach sofort weiter (AUTOPLAY_NACH_PFEIL_MS)
 // - selbst ziehen/wischen/seitlich scrollen: Pause nur waehrend der Geste,
 //   danach sofort weiter (AUTOPLAY_NACH_GESTE_MS)
@@ -29,19 +27,6 @@
 // - stufenlos: ganze Pixel per scrollLeft, Rest per transform (Safari kennt
 //   nur ganze Pixel beim Scrollen -> ruckelte bei langsamem Tempo)
 // - nur sichtbar, nicht bei "Bewegung reduzieren"
-// Mausposition seitenweit (auch beim Scrollen mit stehender Maus: das
-// wheel-Ereignis liefert die Position mit). Safari aktualisiert :hover beim
-// Scrollen nicht - deshalb faerbt der Auto-Lauf das Foto unter dieser
-// Position selbst ein (Klasse is-farbig).
-let mausPos: { x: number; y: number } | null = null
-const merkeMaus = (e: MouseEvent) => {
-  if ((e as PointerEvent).pointerType && (e as PointerEvent).pointerType !== 'mouse') return
-  mausPos = { x: e.clientX, y: e.clientY }
-}
-window.addEventListener('pointermove', merkeMaus, { passive: true })
-window.addEventListener('wheel', merkeMaus, { passive: true })
-document.documentElement.addEventListener('mouseleave', () => { mausPos = null })
-
 const AUTOPLAY_PX_PRO_S_1920 = 40
 const AUTOPLAY_NACH_PFEIL_MS = 900
 const AUTOPLAY_NACH_GESTE_MS = 400
@@ -199,7 +184,6 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
     let gesteAktiv = false
     let pos = inner.scrollLeft
     let last = 0
-    let farbig: Element | null = null
 
     inner.classList.add('is-autoplay')
     track.style.willChange = 'transform'
@@ -226,16 +210,6 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
     })
     new IntersectionObserver((e) => { sichtbar = e[0]?.isIntersecting ?? true }).observe(marquee)
 
-    const farbeUnterMaus = () => {
-      const unter = mausPos ? document.elementFromPoint(mausPos.x, mausPos.y) : null
-      // Speaker-Fotos (verlinkt) und Fotogalerie der Startseite.
-      const el = unter && marquee.contains(unter) ? unter.closest('a.team-row__photo, .photo-gallery-2__slide') : null
-      if (el === farbig) return
-      farbig?.classList.remove('is-farbig')
-      el?.classList.add('is-farbig')
-      farbig = el
-    }
-
     const frame = (t: number) => {
       const dt = last ? Math.min(64, t - last) : 0
       last = t
@@ -253,7 +227,6 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
       } else {
         pos = inner.scrollLeft
       }
-      if (mausPos || farbig) farbeUnterMaus()
       requestAnimationFrame(frame)
     }
     requestAnimationFrame(frame)

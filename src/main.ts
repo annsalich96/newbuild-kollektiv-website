@@ -1,6 +1,9 @@
 import './style.css'
 import { ladePlatzStatus, letzterPlatzStatus } from './platz-status'
 import { initVerlauf } from './verlauf'
+import { initFarbeUnterMaus } from './farbe-unter-maus'
+
+initFarbeUnterMaus()
 
 initVerlauf(document.body)
 import eventsData from './content/events.json'
