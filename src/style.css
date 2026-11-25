@@ -2331,13 +2331,8 @@ ul {
   margin-block-start: 1.45em;
 }
 
-.event-form__note-button {
-  margin-block-start: auto;
-  /* Gleiche Hoehe wie der Absende-Button (nicht die Fliesstext-Zeilenhoehe). */
-  line-height: 1.5;
-  color: var(--color-text);
-}
-
+/* Link zum Newsletter im Fliesstext statt Button (Ann 2026-11-25). */
+.event-form__note a,
 .event-detail__meta dd a {
   color: inherit;
   text-decoration: underline;
@@ -2361,9 +2356,6 @@ ul {
     margin: 0 0 var(--balken);
   }
 
-  .event-form__note-button {
-    margin-block-start: var(--line-height-regular-text);
-  }
 
   .event-form {
     grid-column: 1 / -1;

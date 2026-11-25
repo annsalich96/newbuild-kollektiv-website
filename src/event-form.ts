@@ -109,9 +109,9 @@ if (form instanceof HTMLFormElement && status) {
       note.innerHTML =
         '<span class="event-form__note-text">Dieser Abend ist leider schon ausgebucht. Trag dich gern auf ' +
         'die Warteliste ein: Wird ein Platz frei, rückst du automatisch nach.</span>' +
-        '<span class="event-form__note-text">Trag dich zusätzlich in unseren Newsletter ein, damit du über ' +
-        'bevorstehende Events rechtzeitig informiert wirst.</span>' +
-        '<a class="button event-form__note-button" href="/newsletter/">Newsletter</a>'
+        '<span class="event-form__note-text">Trag dich zusätzlich in unseren ' +
+        '<a href="/newsletter/">Newsletter</a> ein, damit du über bevorstehende Events rechtzeitig ' +
+        'informiert wirst.</span>'
       note.hidden = false
       alignNoteToFirstLine()
     }
