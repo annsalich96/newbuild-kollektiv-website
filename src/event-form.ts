@@ -107,10 +107,8 @@ if (form instanceof HTMLFormElement && status) {
   if (currentEvent?.maxTeilnehmer && !fromCheckin) {
     void ladePlatzStatus(currentEvent.slug).then((s) => {
       if (!s) return
+      // Keine Anzeige freier Plaetze (Ann 2026-11-25) - nur "Ausgebucht".
       if (s.ausgebucht) wartelisteModus()
-      else if (s.frei !== null && s.frei <= 10) {
-        zeigePlaetze(s.frei === 1 ? 'Nur noch 1 Platz frei' : `Nur noch ${s.frei} Plätze frei`, false)
-      }
     })
   }
 
