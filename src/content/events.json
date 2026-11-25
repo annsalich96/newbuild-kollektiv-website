@@ -14,7 +14,7 @@
       "speakerRole": "Geschäftsführer",
       "speakerCompany": "Bräunlin Kolb Architekten",
       "speakerBio": "Mitgründer & Geschäftsführer von Bräunlin Kolb Architekten.\nInteressiert sich begeistern für KI, probiert alle neuen Möglichkeiten aus, weil er den Mehrwert für die Architekturbranche sieht. ",
-      "speakerImage": "/team-markus-kolb-2.jpg",
+      "speakerImage": "/team-markus-kolb-hd.jpg",
       "description": "Ein Architekturbüro produziert in 25 Jahren hunderttausende Dokumente. Das Wissen ist da, aber nur solange sich jemand erinnert, wo es liegt. Markus Kolb, Bauingenieur und Geschäftsführer von Bräunlin Kolb Architekten, hat im eigenen Büro ein Firmengedächtnis aufgebaut: eine durchsuchbare Wissensbasis über den gesamten Dokumentenbestand, verbunden mit KI-Agenten, die Briefe entwerfen, Dokumente ablegen und Projektwissen fortschreiben. \n\nDer Vortrag zeigt an echten Messwerten aus diesem Projekt, was funktioniert und was nicht: warum die Ablagestruktur und die Benennung von Dateien mehr über die Suchqualität entscheiden als das teuerste KI-Modell, wie die Rollenteilung aussieht, wenn der Agent schreibt und der Mensch prüft, und welche Voraussetzungen ein Planungsbüro schaffen muss, bevor sich der Einsatz lohnt. Kein Zukunftsszenario, sondern ein Werkstattbericht aus dem laufenden Betrieb.",
       "sponsors": [
         {
@@ -140,7 +140,7 @@
           "role": "Gründer",
           "company": "Jasper Architects",
           "bio": "Architekt mit Büros in Buenos Aires, Berlin, New York u. a. Die Philosophie „Beyond Context“ seines Büros beginnt mit der Erforschung der physischen und sozialen Bedingungen jedes Ortes.",
-          "image": "/speaker-martin-jasper-farbe.jpg",
+          "image": "/speaker-martin-jasper-hd.jpg",
           "url": "https://www.jasperarchitects.com"
         },
         {
@@ -164,7 +164,7 @@
           "role": "Partner & Managing Director",
           "company": "Revalu",
           "bio": "Revalu ist eine digitale Plattform und Materialdatenbank für nachhaltige Baustoffe (Berlin). Sein Fokus: KI für Materialauswahl, Ökobilanzierung und Dokumentation.",
-          "image": "/speaker-bjorn-maack-farbe.jpg",
+          "image": "/speaker-bjorn-maack-hd.jpg",
           "url": "https://revalu.io"
         },
         {
