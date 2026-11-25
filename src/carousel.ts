@@ -13,7 +13,17 @@
 // auftaucht.
 // Wird von der Startseite (main.ts) und der Event-Galerie (event-gallery.ts)
 // genutzt - erwartet je eine volle Klon-Kopie vor und nach den echten Slides.
-export function initCarousel(marquee: HTMLElement) {
+//
+// Auto-Lauf (Option autoplay, Ann 2026-11-25: Speaker und Fotogalerie der
+// Startseite drehen sich langsam wie das Sponsoren-Laufband): gleitet
+// stufenlos weiter (scroll-snap solange aus, Klasse is-autoplay), pausiert
+// bei Maus ueber der Galerie (Klick auf Speaker/Foto bleibt moeglich), bei
+// Pfeil-Klick/Ziehen/Wischen fuer AUTOPLAY_PAUSE_MS und ausserhalb des
+// Bildschirms. Kein Auto-Lauf bei "Bewegung reduzieren".
+const AUTOPLAY_PX_PRO_S_1920 = 40
+const AUTOPLAY_PAUSE_MS = 5000
+
+export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean } = {}) {
   const inner = marquee.querySelector<HTMLElement>('.marquee__inner')
   const list = inner?.querySelector('ul')
   const prev = marquee.querySelector<HTMLButtonElement>('.marquee__arrow--prev')
@@ -151,4 +161,50 @@ export function initCarousel(marquee: HTMLElement) {
   window.addEventListener('resize', () => {
     if (realCount > 0 && isScrollable()) jumpTo(realCount, false)
   })
+
+  if (options.autoplay && realCount > 0) startAutoplay()
+
+  function startAutoplay() {
+    if (!inner || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let hover = false
+    let sichtbar = true
+    let pauseBis = 0
+    let pos = inner.scrollLeft
+    let last = 0
+
+    const aktiv = () => !hover && sichtbar && Date.now() >= pauseBis && !document.hidden && isScrollable()
+    // Nutzer greift ein: Einrasten wieder an, kurz Pause, danach weiter.
+    const eingriff = () => {
+      pauseBis = Date.now() + AUTOPLAY_PAUSE_MS
+      inner.classList.remove('is-autoplay')
+    }
+
+    marquee.addEventListener('mouseenter', () => { hover = true })
+    marquee.addEventListener('mouseleave', () => { hover = false })
+    inner.addEventListener('pointerdown', eingriff)
+    inner.addEventListener('wheel', eingriff, { passive: true })
+    inner.addEventListener('touchstart', eingriff, { passive: true })
+    prev?.addEventListener('click', eingriff)
+    next?.addEventListener('click', eingriff)
+    new IntersectionObserver((e) => { sichtbar = e[0]?.isIntersecting ?? true }).observe(marquee)
+
+    const frame = (t: number) => {
+      const dt = last ? Math.min(64, t - last) : 0
+      last = t
+      if (aktiv()) {
+        if (!inner.classList.contains('is-autoplay')) {
+          inner.classList.add('is-autoplay')
+          pos = inner.scrollLeft
+        }
+        // Wurde zwischendurch anders gescrollt (Klon-Sprung, Pfeil), dort weiter.
+        if (Math.abs(inner.scrollLeft - pos) > 2) pos = inner.scrollLeft
+        pos += (AUTOPLAY_PX_PRO_S_1920 * (inner.clientWidth / 1920) * dt) / 1000
+        const width = setWidth()
+        if (pos >= 2 * width) pos -= width
+        inner.scrollLeft = pos
+      }
+      requestAnimationFrame(frame)
+    }
+    requestAnimationFrame(frame)
+  }
 }

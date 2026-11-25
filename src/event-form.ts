@@ -7,6 +7,7 @@ import { initEventGallery } from './event-gallery'
 import { initCarousel } from './carousel'
 import { avoidOrphans } from './no-orphans'
 import { snapToBalken } from './balken-snap'
+import { APPS_SCRIPT_URL, ladePlatzStatus } from './platz-status'
 
 // sponsors ist optional (`?`), aus demselben Grund wie Team -> image (s.
 // CLAUDE.md): Pages CMS laesst eine leer gelassene Liste komplett aus der
@@ -14,7 +15,7 @@ import { snapToBalken } from './balken-snap'
 // die allgemeine Sponsoren-Leiste aus content/sponsors.json nach (Fallback).
 type EventWithSponsors = {
   slug: string
-  ausgebucht?: boolean
+  maxTeilnehmer?: number
   sponsors?: { name: string }[]
   partners?: { name: string }[]
 }
@@ -36,12 +37,11 @@ initMobileNavToggle()
 renderFooter()
 
 // Mehrere Speaker: Slider (Markup aus generate-event-pages.mjs).
-document.querySelectorAll<HTMLElement>('.speaker-marquee').forEach(initCarousel)
+document.querySelectorAll<HTMLElement>('.speaker-marquee').forEach((m) => initCarousel(m))
 
 // Web-App-URL des Google Apps Script (google-apps-script/Code.gs),
 // deployed von Xavi am 2026-07-30.
-const REGISTRATION_ENDPOINT =
-  'https://script.google.com/macros/s/AKfycbwEgvSlfjMQSsWu04p6r2lz8Pw4i-F3GOQPjqQGjoAPSDbXjuIGU5ei2I5voMJMBHNzUw/exec'
+const REGISTRATION_ENDPOINT = APPS_SCRIPT_URL
 
 const form = document.getElementById('event-form')
 const status = form?.querySelector<HTMLParagraphElement>('.event-form__status')
@@ -62,9 +62,11 @@ if (form instanceof HTMLFormElement && status) {
   prefill('firstName', params.get('vorname'))
   prefill('lastName', params.get('nachname'))
 
-  // Ausgebucht (CMS-Haken "ausgebucht"): Formular wird zur Warteliste. Wer
-  // vom Check-in-Aufsteller kommt, ist schon vor Ort und meldet sich normal an.
-  const warteliste = !!currentEvent?.ausgebucht && !fromCheckin
+  // Teilnehmerlimit (CMS "maxTeilnehmer"): ist es erreicht, wird das Formular
+  // zur Warteliste. Wer vom Check-in-Aufsteller kommt, ist schon vor Ort und
+  // meldet sich normal an. Ob jemand auf die Warteliste kommt, entscheidet
+  // beim Absenden immer das Skript (Antwort "warteliste: true").
+  let warteliste = false
   const note = document.getElementById('event-form-note')
   const submitLabel = form.querySelector<HTMLButtonElement>('.event-form__submit')
   if (fromCheckin && note) {
@@ -72,19 +74,44 @@ if (form instanceof HTMLFormElement && status) {
       'Schön, dass du da bist! Trag hier kurz deine Daten ein – damit bist du automatisch eingecheckt.'
     note.hidden = false
   }
-  if (warteliste) {
+  const zeigePlaetze = (text: string, mitLink: boolean) => {
+    const row = document.getElementById('event-plaetze')
+    const dd = row?.querySelector('dd')
+    if (!row || !dd) return
+    dd.textContent = text
+    if (mitLink) {
+      const a = document.createElement('a')
+      a.href = '#event-form-section'
+      a.textContent = 'Trag dich auf die Warteliste ein'
+      dd.append(' ', a)
+    }
+    row.hidden = false
+  }
+  const wartelisteModus = () => {
+    if (warteliste) return
+    warteliste = true
+    zeigePlaetze('Ausgebucht:', true)
     const label = document.querySelector('.event-form-section__label')
     if (label) label.textContent = 'Warteliste'
     if (submitLabel) submitLabel.textContent = 'Auf die Warteliste'
     if (note) {
       note.innerHTML =
         '<strong>Ausgebucht:</strong> Alle Plätze für diesen Abend sind vergeben. Trag dich hier auf die ' +
-        'Warteliste ein: Sagt jemand ab, melden wir uns der Reihe nach bei dir. Nach dem Eintragen siehst du, ' +
+        'Warteliste ein: Sagt jemand ab, rückst du der Reihe nach automatisch nach. Nach dem Eintragen siehst du, ' +
         'wie viele Personen schon auf der Warteliste stehen.<br><br>' +
         'Du möchtest über die nächsten Events informiert werden? ' +
         '<a href="/newsletter/">Melde dich für unseren Newsletter an.</a>'
       note.hidden = false
     }
+  }
+  if (currentEvent?.maxTeilnehmer && !fromCheckin) {
+    void ladePlatzStatus(currentEvent.slug).then((s) => {
+      if (!s) return
+      if (s.ausgebucht) wartelisteModus()
+      else if (s.frei !== null && s.frei <= 10) {
+        zeigePlaetze(s.frei === 1 ? 'Nur noch 1 Platz frei' : `Nur noch ${s.frei} Plätze frei`, false)
+      }
+    })
   }
 
   form.addEventListener('submit', async (event) => {
@@ -115,7 +142,6 @@ if (form instanceof HTMLFormElement && status) {
       newsletter: formData.get('newsletter') === 'on',
       checkin: fromCheckin,
       foto: params.get('foto') === '1',
-      warteliste,
     }
 
     try {
@@ -133,7 +159,13 @@ if (form instanceof HTMLFormElement && status) {
       if (!response.ok) throw new Error(`Server antwortete mit Status ${response.status}`)
       const result = await response.json()
       if (!result.ok) throw new Error(result.error ?? 'Unbekannter Fehler')
-      status.textContent = warteliste ? wartelisteText(result) : 'Danke für deine Anmeldung! Du bekommst gleich eine Bestätigung per E-Mail.'
+      if (result.warteliste) {
+        // Waehrend des Ausfuellens voll geworden -> Formular umstellen.
+        wartelisteModus()
+        status.textContent = wartelisteText(result)
+      } else {
+        status.textContent = 'Danke für deine Anmeldung! Du bekommst gleich eine Bestätigung per E-Mail.'
+      }
       form.reset()
     } catch (error) {
       status.textContent = warteliste
@@ -147,15 +179,14 @@ if (form instanceof HTMLFormElement && status) {
 }
 
 // Rueckmeldung nach dem Eintrag auf die Warteliste (Code.gs wartelisteEintragen_).
-function wartelisteText(r: { platz?: number; anzahl?: number; schon?: boolean; angemeldet?: boolean }) {
-  if (r.angemeldet) return 'Du bist für diesen Abend schon angemeldet, dein Platz ist sicher.'
+function wartelisteText(r: { platz?: number; anzahl?: number; schon?: boolean }) {
   const anzahl = Number(r.anzahl) || 0
   const personen = anzahl === 1 ? '1 Person' : `${anzahl} Personen`
   const platz = Number(r.platz) || anzahl
   return (
     (r.schon ? 'Du stehst schon auf der Warteliste: ' : 'Danke, du stehst jetzt auf der Warteliste: ') +
     `Platz ${platz}, insgesamt ${anzahl === 1 ? 'steht' : 'stehen'} gerade ${personen} darauf. ` +
-    'Sagt jemand ab, melden wir uns per E-Mail bei dir.'
+    'Sagt jemand ab, rückst du automatisch nach und bekommst sofort eine E-Mail.'
   )
 }
 

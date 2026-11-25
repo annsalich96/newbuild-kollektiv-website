@@ -1,4 +1,5 @@
 import './style.css'
+import { ladePlatzStatus } from './platz-status'
 import eventsData from './content/events.json'
 import { isPastEvent } from './event-date'
 import teamData from './content/team.json'
@@ -58,7 +59,7 @@ type EventItem = {
   introLabel: string
   title: string
   isNext: boolean
-  ausgebucht?: boolean
+  maxTeilnehmer?: number
   date: string
   time: string
   location: string
@@ -105,10 +106,14 @@ if (nextEvent) {
   setText('next-event-location', nextEvent.location)
   if (nextEventCta instanceof HTMLAnchorElement) {
     nextEventCta.href = eventHref(nextEvent.slug)
-    // Ausgebucht (CMS-Haken): Button fuehrt zur Warteliste auf der Eventseite.
-    if (nextEvent.ausgebucht) {
-      nextEventCta.href += '#event-form-section'
-      nextEventCta.textContent = 'Ausgebucht: Warteliste'
+    // Teilnehmerlimit erreicht: Button fuehrt zur Warteliste auf der Eventseite.
+    if (nextEvent.maxTeilnehmer) {
+      const cta = nextEventCta
+      void ladePlatzStatus(nextEvent.slug).then((s) => {
+        if (!s?.ausgebucht) return
+        cta.href = `${eventHref(nextEvent.slug)}#event-form-section`
+        cta.textContent = 'Ausgebucht: Warteliste'
+      })
     }
   }
 } else {
@@ -284,7 +289,9 @@ renderSponsorMarquee(undefined, sponsorsData.statement)
 initStickyNav()
 initMobileNavToggle()
 
-document.querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee').forEach(initCarousel)
+document
+  .querySelectorAll<HTMLElement>('.team-marquee, .gallery-marquee')
+  .forEach((m) => initCarousel(m, { autoplay: true }))
 
 // Session-Galerie: Pfeile blaettern um einen Kasten (Ann 2026-11-19).
 // Desktop: am Ende geht es wieder zum Anfang und umgekehrt.

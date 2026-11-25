@@ -197,14 +197,29 @@ function doPost(e) {
       data.eventSpeaker ||
       ''
 
-    // Event ausgebucht (CMS-Haken "ausgebucht"): Eintrag auf die Warteliste
-    // statt Anmeldung. Walk-ins vom Check-in werden weiter normal angemeldet.
-    if (data.warteliste && !data.checkin) return jsonResponse(wartelisteEintragen_(data))
-
-    const sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
-    const row = appendRegistration(sheet, data)
-    schreibeZusatzfelder_(sheet, data, row)
-    if (data.checkin) markiereAnwesend_(sheet, data, row)
+    // Teilnehmerlimit (CMS "maxTeilnehmer"): Pruefen + Eintragen unter einem
+    // Lock, damit der letzte Platz nicht doppelt vergeben wird. Voll -> Warteliste.
+    // Walk-ins vom Check-in werden immer normal angemeldet.
+    const lock = LockService.getScriptLock()
+    lock.waitLock(25000)
+    let sheet, row, warte = null
+    try {
+      sheet = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
+      if (!data.checkin) warte = wartelisteFallsVoll_(data, sheet)
+      if (!warte) {
+        row = appendRegistration(sheet, data)
+        schreibeZusatzfelder_(sheet, data, row)
+        if (data.checkin) markiereAnwesend_(sheet, data, row)
+      }
+      SpreadsheetApp.flush()
+    } finally {
+      lock.releaseLock()
+    }
+    platzStatusVergessen_(data.eventSlug)
+    if (warte) {
+      if (warte.neu) wartelisteBenachrichtigen_(data, warte)
+      return jsonResponse({ ok: true, warteliste: true, platz: warte.platz, anzahl: warte.anzahl, schon: !warte.neu })
+    }
 
     // Ab hier ist die Anmeldung gespeichert. Alles Weitere darf sie nicht mehr
     // als "fehlgeschlagen" melden — sonst probieren die Leute es nochmal und
@@ -256,6 +271,13 @@ function doGet(e) {
   if (p.action === 'warda') return wardaVerarbeiten_(p)
   if (p.action === 'mailvorschau') return mailVorschauSeite_(p)
   if (p.action === 'mailtest') return mailTestSenden_(p)
+  if (p.action === 'platzstatus') {
+    try {
+      return jsonResponse(platzStatus_(String(p.slug || '')))
+    } catch (err) {
+      return jsonResponse({ ok: false, error: String(err) })
+    }
+  }
   return HtmlService.createHtmlOutput(
     '<p style="font-family:Arial,Helvetica,sans-serif">NewBuild Kollektiv</p>',
   ).setTitle('NewBuild Kollektiv')
@@ -712,14 +734,18 @@ function sendAdminNotificationEmail(data, betreffPrefix, zusatz) {
   }
 }
 
-// ── Warteliste (seit 25.11.2026: Session 04 mit 65 Anmeldungen ausgebucht) ──
-// Steht ein Event im CMS auf "ausgebucht", schickt die Eventseite Eintraege mit
-// warteliste:true. Sie landen in einem eigenen Tab "Warteliste" der
-// Anmeldetabelle – NICHT im ersten Tab, damit Erinnerungen, Check-in-Liste,
-// Fotos usw. die Wartenden nicht mitzaehlen. Reihenfolge = Zeilenreihenfolge.
-// Nachruecken (von Hand): Person im ersten Tab eintragen (oder sie meldet sich
-// selbst an, sobald der Haken im CMS raus ist) und hier Status auf
-// "nachgerückt" setzen. Nur Zeilen mit Status "wartet" zaehlen als wartend.
+// ── Teilnehmerlimit + Warteliste (seit 25.11.2026) ──────────────────────────
+// Im CMS pro Event "Maximale Teilnehmerzahl" (maxTeilnehmer). Ist sie
+// erreicht – oder warten schon Leute –, landen neue Anmeldungen automatisch
+// auf der Warteliste: eigener Tab "Warteliste" in der Anmeldetabelle (NICHT
+// Tab 1, damit Erinnerungen, Check-in, Fotos usw. die Wartenden nicht
+// erfassen). Reihenfolge = Zeilenreihenfolge, nur Status "wartet" zaehlt.
+// Wird ein Platz frei (Abmeldung, Limit im CMS erhoeht, Zeile in Tab 1 von
+// Hand auf "abgemeldet"), rueckt die erste wartende Person automatisch nach:
+// Zeile in Tab 1 + Mail "Ein Platz ist frei geworden" mit Kalenderdatei.
+// Sofort bei einer Abmeldung ueber den Link, sonst beim 15-Minuten-Trigger.
+// Nachruecken endet NACHRUECKEN_BIS_STUNDEN vor Beginn.
+// Walk-ins vom Check-in (?checkin=1) werden immer normal angemeldet.
 const WARTELISTE_TAB = 'Warteliste'
 const WARTELISTE_HEADERS = [
   'Anrede',
@@ -733,104 +759,270 @@ const WARTELISTE_HEADERS = [
   'Eingetragen am',
   'Status',
   'Bestätigung',
+  'Nachgerückt am',
 ]
 const NEWSLETTER_SEITE_URL = 'https://newbuild-kollektiv.com/newsletter/'
+const NACHRUECKEN_BIS_STUNDEN = 2
+const STORNO_RE = /abgemeldet|storniert|abgesagt/i
 
-function wartelisteTab_(ss) {
-  const vorhanden = ss.getSheetByName(WARTELISTE_TAB)
-  if (vorhanden) return vorhanden
-  const sh = ss.insertSheet(WARTELISTE_TAB)
+function wartelisteTab_(ss, anlegen) {
+  let sh = ss.getSheetByName(WARTELISTE_TAB)
+  if (sh || anlegen === false) return sh
+  sh = ss.insertSheet(WARTELISTE_TAB)
   sh.appendRow(WARTELISTE_HEADERS)
   sh.setFrozenRows(1)
   return sh
 }
 
-function wartelisteEintragen_(data) {
-  const email = String(data.email || '').trim().toLowerCase()
-  const lock = LockService.getScriptLock()
-  lock.waitLock(20000)
-  let sheet, zeile, platz, anzahl
-  let neu = true
+// Max. Teilnehmerzahl eines Events aus dem CMS (events.json, 2 min gecacht).
+// 0 = kein Limit.
+function maxTeilnehmer_(slug) {
+  if (!slug) return 0
+  const cache = CacheService.getScriptCache()
+  const key = 'max_' + slug
+  const c = cache.get(key)
+  if (c !== null) return Number(c) || 0
+  let max = 0
   try {
-    const anmeldung = getOrCreateEventSheet(data.eventSlug, data.eventNumber, data.eventTitle)
+    const ev = ladeCmsEvents_().filter(function (e) { return e.slug === slug })[0]
+    max = Math.max(0, Math.floor(Number(ev && ev.maxTeilnehmer) || 0))
+  } catch (err) {
+    Logger.log('maxTeilnehmer — events.json nicht lesbar: ' + err)
+    return 0
+  }
+  cache.put(key, String(max), 120)
+  return max
+}
 
-    // Schon regulaer angemeldet? Dann nichts auf die Warteliste schreiben.
-    const aw = anmeldung.getDataRange().getValues()
-    const aE = aw[0].indexOf('E-Mail')
-    const aS = aw[0].indexOf('Status')
-    for (let r = 1; r < aw.length; r++) {
-      if (String(aw[r][aE] || '').trim().toLowerCase() !== email) continue
-      if (aS >= 0 && /abgemeldet|storniert|abgesagt/i.test(String(aw[r][aS] || ''))) continue
-      return { ok: true, angemeldet: true }
-    }
-
-    sheet = wartelisteTab_(anmeldung.getParent())
-    const werte = sheet.getDataRange().getValues()
-    const iE = werte[0].indexOf('E-Mail')
-    const iS = werte[0].indexOf('Status')
-    const wartend = []
-    for (let r = 1; r < werte.length; r++) {
-      const st = String(werte[r][iS] || '').trim()
+// Zaehlt aktive Anmeldungen (eindeutige E-Mails, nicht abgemeldet) in Tab 1
+// und wartende Personen im Tab "Warteliste".
+function platzZahlen_(anmeldung) {
+  const aw = anmeldung.getDataRange().getValues()
+  const aE = aw[0].indexOf('E-Mail')
+  const aS = aw[0].indexOf('Status')
+  const aktiv = {}
+  for (let r = 1; r < aw.length; r++) {
+    const em = String(aw[r][aE] || '').trim().toLowerCase()
+    if (!em) continue
+    if (aS >= 0 && STORNO_RE.test(String(aw[r][aS] || ''))) continue
+    aktiv[em] = true
+  }
+  const wl = wartelisteTab_(anmeldung.getParent(), false)
+  const wartend = []
+  if (wl) {
+    const ww = wl.getDataRange().getValues()
+    const wE = ww[0].indexOf('E-Mail')
+    const wS = ww[0].indexOf('Status')
+    for (let r = 1; r < ww.length; r++) {
+      const st = String(ww[r][wS] || '').trim()
       if (st && !/wartet/i.test(st)) continue
-      wartend.push(r + 1)
-      if (String(werte[r][iE] || '').trim().toLowerCase() === email) {
-        zeile = r + 1
-        neu = false
+      const em = String(ww[r][wE] || '').trim().toLowerCase()
+      if (!em) continue
+      wartend.push({ row: r + 1, email: em, werte: ww[r], kopf: ww[0] })
+    }
+  }
+  return { aktiv: aktiv, angemeldet: Object.keys(aktiv).length, wartend: wartend }
+}
+
+// Oeffentlicher Platzstatus fuer die Website (doGet ?action=platzstatus&slug=).
+// Nur Zahlen, keine Namen. 60 s gecacht, bei jeder Aenderung geloescht.
+function platzStatus_(slug) {
+  const cache = CacheService.getScriptCache()
+  const key = 'platz_' + slug
+  const c = cache.get(key)
+  if (c) return JSON.parse(c)
+  const max = maxTeilnehmer_(slug)
+  let res = { ok: true, max: max, frei: null, warteliste: 0, ausgebucht: false }
+  const sheet = max ? findeEventSheetPerSlug_(slug) : null
+  if (max) {
+    const z = sheet ? platzZahlen_(sheet) : { angemeldet: 0, wartend: [] }
+    res.frei = Math.max(0, max - z.angemeldet)
+    res.warteliste = z.wartend.length
+    res.ausgebucht = res.frei === 0 || z.wartend.length > 0
+  }
+  cache.put(key, JSON.stringify(res), 60)
+  return res
+}
+
+function platzStatusVergessen_(slug) {
+  if (slug) CacheService.getScriptCache().remove('platz_' + slug)
+}
+
+// Prueft bei einer neuen Anmeldung, ob sie auf die Warteliste muss, und
+// schreibt sie dann dorthin. Laeuft unter dem Skript-Lock (kein Ueberbuchen,
+// wenn zwei gleichzeitig den letzten Platz wollen). null = normal anmelden.
+function wartelisteFallsVoll_(data, anmeldung) {
+  const max = maxTeilnehmer_(data.eventSlug)
+  if (!max) return null
+  const email = String(data.email || '').trim().toLowerCase()
+  const z = platzZahlen_(anmeldung)
+  if (z.aktiv[email]) return null // schon angemeldet -> Zeile aktualisieren
+  if (z.angemeldet < max && !z.wartend.length) return null
+
+  let eintrag = z.wartend.filter(function (w) { return w.email === email })[0]
+  const neu = !eintrag
+  let sheet = wartelisteTab_(anmeldung.getParent())
+  if (neu) {
+    sheet.appendRow([
+      data.anrede || '',
+      data.firstName,
+      data.lastName,
+      data.email,
+      data.company || '',
+      data.companyAddress || '',
+      data.phone || '',
+      data.newsletter ? 'Ja' : 'Nein',
+      Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
+      'wartet',
+      '',
+      '',
+    ])
+    eintrag = { row: sheet.getLastRow(), email: email }
+    z.wartend.push(eintrag)
+  }
+  return {
+    sheet: sheet,
+    zeile: eintrag.row,
+    neu: neu,
+    platz: z.wartend.indexOf(eintrag) + 1,
+    anzahl: z.wartend.length,
+  }
+}
+
+function wartelisteBenachrichtigen_(data, w) {
+  const spBest = WARTELISTE_HEADERS.indexOf('Bestätigung') + 1
+  try {
+    const m = wartelisteMail_({
+      anrede: anrede_(data.anrede, data.firstName),
+      slug: data.eventSlug,
+      email: data.email,
+      titel: data.eventTitle,
+      referent: data.eventSpeaker,
+      datum: data.eventDate,
+      zeit: data.eventTime,
+      ort: data.eventLocation,
+      start: data.eventDate ? parseEventDatum_(data.eventDate, data.eventTime) : null,
+      platz: w.platz,
+      anzahl: w.anzahl,
+    })
+    sendeTeilnehmerMail_(data.email, m.subject, m.htmlBody)
+    w.sheet.getRange(w.zeile, spBest).setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+  } catch (err) {
+    w.sheet.getRange(w.zeile, spBest).setValue('offen')
+    Logger.log('Warteliste — Bestaetigung fehlgeschlagen (' + data.email + '): ' + err)
+  }
+  try {
+    sendAdminNotificationEmail(data, 'Warteliste: ', 'Platz ' + w.platz + ' von ' + w.anzahl + ' auf der Warteliste')
+  } catch (err) {
+    Logger.log('Warteliste — Admin-Benachrichtigung fehlgeschlagen: ' + err)
+  }
+}
+
+// ── Nachruecken ─────────────────────────────────────────────────────────────
+// anmeldung = Tab 1 der Event-Tabelle, cms = Event aus events.json.
+function nachruecken_(anmeldung, cms) {
+  const max = Math.floor(Number(cms && cms.maxTeilnehmer) || 0)
+  if (!max) return 0
+  if (!wartelisteTab_(anmeldung.getParent(), false)) return 0
+  const start = parseEventDatum_(String(cms.date || ''), String(cms.time || ''))
+  if (!start || start.getTime() - Date.now() < NACHRUECKEN_BIS_STUNDEN * 3600000) return 0
+
+  const lock = LockService.getScriptLock()
+  if (!lock.tryLock(20000)) return 0
+  const neu = []
+  try {
+    const z = platzZahlen_(anmeldung)
+    let frei = max - z.angemeldet
+    const wl = wartelisteTab_(anmeldung.getParent())
+    const spStatus = WARTELISTE_HEADERS.indexOf('Status') + 1
+    const spAm = WARTELISTE_HEADERS.indexOf('Nachgerückt am') + 1
+    for (let i = 0; i < z.wartend.length && frei > 0; i++) {
+      const w = z.wartend[i]
+      const k = function (n) { return w.werte[w.kopf.indexOf(n)] }
+      const data = {
+        anrede: k('Anrede'),
+        firstName: k('Vorname'),
+        lastName: k('Nachname'),
+        email: String(k('E-Mail')).trim(),
+        company: k('Unternehmen'),
+        companyAddress: k('Unternehmensadresse'),
+        phone: k('Telefonnummer'),
+        newsletter: String(k('Newsletter')) === 'Ja',
+        eventSlug: cms.slug,
+        eventNumber: cms.number || '',
+        eventTitle: String(cms.title || ''),
+        eventDate: String(cms.date || ''),
+        eventTime: String(cms.time || ''),
+        eventLocation: String(cms.location || ''),
+        eventSpeaker: referentText_(cms.speakerName, cms.speakerRole, cms.speakerCompany),
       }
+      if (z.aktiv[w.email]) {
+        // Schon (wieder) angemeldet -> nur von der Warteliste nehmen.
+        wl.getRange(w.row, spStatus).setValue('angemeldet')
+        continue
+      }
+      const row = appendRegistration(anmeldung, data)
+      schreibeZusatzfelder_(anmeldung, data, row)
+      wl.getRange(w.row, spStatus).setValue('nachgerückt')
+      wl.getRange(w.row, spAm).setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+      z.aktiv[w.email] = true
+      frei--
+      neu.push({ data: data, row: row })
     }
-    if (neu) {
-      const jetzt = new Date()
-      sheet.appendRow([
-        data.anrede || '',
-        data.firstName,
-        data.lastName,
-        data.email,
-        data.company || '',
-        data.companyAddress || '',
-        data.phone || '',
-        data.newsletter ? 'Ja' : 'Nein',
-        Utilities.formatDate(jetzt, 'Europe/Berlin', 'dd.MM.yyyy HH:mm'),
-        'wartet',
-        '',
-      ])
-      zeile = sheet.getLastRow()
-      wartend.push(zeile)
-    }
-    platz = wartend.indexOf(zeile) + 1
-    anzahl = wartend.length
+    SpreadsheetApp.flush()
   } finally {
     lock.releaseLock()
   }
+  if (!neu.length) return 0
+  platzStatusVergessen_(cms.slug)
 
-  if (neu) {
-    const spBest = WARTELISTE_HEADERS.indexOf('Bestätigung') + 1
+  const sid = anmeldung.getParent().getId()
+  const spBest = ensureColumn_(anmeldung, 'Bestätigung')
+  neu.forEach(function (n) {
+    const d = n.data
     try {
-      const m = wartelisteMail_({
-        anrede: anrede_(data.anrede, data.firstName),
-        slug: data.eventSlug,
-        email: data.email,
-        titel: data.eventTitle,
-        referent: data.eventSpeaker,
-        datum: data.eventDate,
-        zeit: data.eventTime,
-        ort: data.eventLocation,
-        start: data.eventDate ? parseEventDatum_(data.eventDate, data.eventTime) : null,
-        platz: platz,
-        anzahl: anzahl,
+      const m = nachrueckMail_({
+        anrede: anrede_(d.anrede, d.firstName),
+        slug: d.eventSlug,
+        sid: sid,
+        email: d.email,
+        titel: d.eventTitle,
+        referent: d.eventSpeaker,
+        datum: d.eventDate,
+        zeit: d.eventTime,
+        ort: d.eventLocation,
+        start: parseEventDatum_(d.eventDate, d.eventTime),
       })
-      sendeTeilnehmerMail_(data.email, m.subject, m.htmlBody)
-      sheet.getRange(zeile, spBest).setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
+      sendeTeilnehmerMail_(d.email, m.subject, m.htmlBody, m.attachments)
+      anmeldung.getRange(n.row, spBest).setValue(Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm'))
     } catch (err) {
-      sheet.getRange(zeile, spBest).setValue('offen')
-      Logger.log('Warteliste — Bestaetigung fehlgeschlagen (' + data.email + '): ' + err)
+      // "offen" -> sendeErinnerungen holt eine normale Bestaetigung nach.
+      anmeldung.getRange(n.row, spBest).setValue('offen')
+      Logger.log('Nachruecken — Mail an ' + d.email + ' fehlgeschlagen: ' + err)
     }
+    try { upsertHistoryEntry(d) } catch (err) { Logger.log('Nachruecken — History: ' + err) }
     try {
-      sendAdminNotificationEmail(data, 'Warteliste: ', 'Platz ' + platz + ' von ' + anzahl + ' auf der Warteliste')
+      sendAdminNotificationEmail(d, 'Nachgerückt: ', 'Von der Warteliste nachgerückt (Platz frei geworden)')
     } catch (err) {
-      Logger.log('Warteliste — Admin-Benachrichtigung fehlgeschlagen: ' + err)
+      Logger.log('Nachruecken — Admin-Benachrichtigung: ' + err)
     }
+  })
+  return neu.length
+}
+
+// Nach einer Abmeldung sofort nachruecken (Fehler bremsen die Abmeldung nicht).
+function nachrueckenNachAbmeldung_(sheet, slug) {
+  try {
+    const werte = sheet.getDataRange().getValues()
+    const cms = findeCmsEvent_(ladeCmsEvents_(), werte, werte[0].indexOf('Slug'), sheet.getParent().getName()) ||
+      ladeCmsEvents_().filter(function (e) { return e.slug === slug })[0]
+    if (cms) {
+      platzStatusVergessen_(cms.slug)
+      nachruecken_(sheet, cms)
+    }
+  } catch (err) {
+    Logger.log('Nachruecken nach Abmeldung — Fehler: ' + err)
   }
-  return { ok: true, warteliste: true, platz: platz, anzahl: anzahl, schon: !neu }
 }
 
 function personenText_(n) {
@@ -838,9 +1030,10 @@ function personenText_(n) {
   return n === 1 ? '1 Person' : n + ' Personen'
 }
 
-// Bestaetigung des Wartelisten-Eintrags. Text aus dem Mail-Texte-Doc
-// (Abschnitt "Warteliste"), sonst dieser Standard. Platzhalter: {Platz},
-// {Anzahl}, {Personen} ("1 Person" / "12 Personen"), {Newsletter-Link: Text}.
+// ── Mails ───────────────────────────────────────────────────────────────────
+// Texte aus dem Mail-Texte-Doc (Abschnitte "Warteliste" / "Nachgerückt"),
+// sonst diese Standards. Platzhalter: {Platz}, {Anzahl}, {Personen}
+// ("1 Person" / "12 Personen"), {Newsletter-Link: Text}, {Abmelde-Link: Text}.
 function wartelisteMail_(e) {
   return ausDoc_('warteliste', e, wartelisteMailStandard_)
 }
@@ -862,12 +1055,40 @@ function wartelisteMailStandard_(e) {
         eckdatenBlock_(e) +
         '<p>Du stehst auf <strong>Platz ' + platz + '</strong> der Warteliste, insgesamt ' +
         (anzahl === 1 ? 'steht' : 'stehen') + ' gerade ' + personenText_(anzahl) + ' darauf.</p>' +
-        '<p>Sobald jemand absagt, melde ich mich der Reihe nach bei dir. Dein Platz ist erst sicher, ' +
-        'wenn du von mir eine Zusage bekommst.</p>' +
+        '<p>Sobald jemand absagt, rückst du automatisch nach und bekommst sofort eine Mail von mir. ' +
+        'Bis dahin ist dein Platz noch nicht sicher.</p>' +
         '<p>Falls du über unsere nächsten Events informiert werden möchtest, ' +
         '<a href="' + NEWSLETTER_SEITE_URL + '" style="color:#3d5a80">melde dich für unseren Newsletter an</a>.</p>' +
         '<p>Bis bald,</p>',
     ),
+  }
+}
+
+function nachrueckMail_(e) {
+  return ausDoc_('nachgerueckt', e, nachrueckMailStandard_)
+}
+
+function nachrueckMailStandard_(e) {
+  const ics = e.start
+    ? icsDatei_(e.titel, e.start, e.ende || parseEventEnde_(e.start, e.zeit), e.ort, e.slug)
+    : null
+  return {
+    subject: 'Du bist dabei: ' + kurzTitel_(e.titel),
+    htmlBody: wrapMail_(
+      '<p>' + escapeHtml_(e.anrede) + ',</p>' +
+        '<p>gute Nachrichten: Bei unserem Event ist gerade ein Platz frei geworden, und du bist von der ' +
+        'Warteliste nachgerückt. Du bist jetzt verbindlich angemeldet:</p>' +
+        eckdatenBlock_(e) +
+        (ics
+          ? '<p>Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht ' +
+            'der Termin direkt in deinem Kalender.</p>'
+          : '') +
+        '<p>Falls du inzwischen doch keine Zeit mehr hast, melde dich bitte kurz ab, ' +
+        'dann bekommt die nächste Person auf der Warteliste deinen Platz.</p>' +
+        '<p>Ich freue mich auf dich,</p>' +
+        (e.email ? abmeldeSatz_(e) : ''),
+    ),
+    attachments: ics ? [ics] : undefined,
   }
 }
 
@@ -1189,6 +1410,7 @@ function abmeldenVerarbeiten_(p) {
   if (iStatus >= 0) sheet.getRange(zeile, iStatus + 1).setValue('abgemeldet')
   sheet.getRange(zeile, ensureColumn_(sheet, 'Newsletter')).setValue(p.newsletter ? 'Ja' : 'Nein')
   SpreadsheetApp.flush()
+  nachrueckenNachAbmeldung_(sheet, p.slug)
 
   return abmeldeSeite_(
     '<h1>Du bist abgemeldet</h1>' +
@@ -2189,6 +2411,12 @@ function sendeErinnerungen() {
     try {
       const ss = SpreadsheetApp.open(file)
       verarbeiteEventTabelle_(ss.getSheets()[0], ss.getName(), jetzt, stunde, cmsEvents)
+      if (ss.getSheetByName(WARTELISTE_TAB)) {
+        const tab1 = ss.getSheets()[0]
+        const w = tab1.getDataRange().getValues()
+        const cms = findeCmsEvent_(cmsEvents, w, w[0].indexOf('Slug'), ss.getName())
+        if (cms) nachruecken_(tab1, cms)
+      }
     } catch (err) {
       Logger.log('Erinnerung — Fehler bei "' + file.getName() + '": ' + err)
     }
@@ -4970,7 +5198,8 @@ const MAILDOC_VORLAUF_TAGE = 2
 function mailArten_() {
   return [
     ['bestaetigung', 'Bestätigung', 'sofort bei der Anmeldung', bestaetigungMail_],
-    ['warteliste', 'Warteliste', 'sofort beim Eintrag auf die Warteliste (nur wenn das Event im CMS auf „Ausgebucht“ steht)', wartelisteVorschau_],
+    ['warteliste', 'Warteliste', 'sofort, wenn sich jemand anmeldet und die maximale Teilnehmerzahl (CMS) erreicht ist', wartelisteVorschau_],
+    ['nachgerueckt', 'Nachgerückt', 'sofort, wenn ein Platz frei wird und die erste Person von der Warteliste nachrückt', nachrueckMail_],
     ['woche', '1 Woche vorher', '7 Tage vor dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', mailEineWoche_],
     ['tag', '1 Tag vorher', 'am Tag vor dem Event, ab ' + ERINNERUNG_SENDESTUNDE + ' Uhr', mailEinTag_],
     ['drei', '3 Stunden vorher', 'ca. 3 Stunden vor Beginn', mailDreiStunden_],
@@ -4984,6 +5213,7 @@ function mailArten_() {
 
 function abschnittKey_(ueberschrift) {
   const t = String(ueberschrift || '').toLowerCase()
+  if (t.indexOf('nachgerückt') >= 0 || t.indexOf('nachgerueckt') >= 0) return 'nachgerueckt'
   if (t.indexOf('warteliste') >= 0) return 'warteliste'
   if (t.indexOf('foto') >= 0) return 'fotos'
   if (t.indexOf('bestätigung') >= 0 || t.indexOf('bestaetigung') >= 0) return 'bestaetigung'
@@ -5187,9 +5417,19 @@ function mailDocVorlage_(slug) {
     ['p', 'vielen Dank für dein Interesse! Der Abend ist leider schon ausgebucht, deshalb haben wir dich auf die Warteliste gesetzt:'],
     ['p', '[EVENTKARTE]'],
     ['p', 'Du stehst auf **Platz {Platz}** der Warteliste, insgesamt sind gerade {Personen} darauf.'],
-    ['p', 'Sobald jemand absagt, melde ich mich der Reihe nach bei dir. Dein Platz ist erst sicher, wenn du von mir eine Zusage bekommst.'],
+    ['p', 'Sobald jemand absagt, rückst du automatisch nach und bekommst sofort eine Mail von mir. Bis dahin ist dein Platz noch nicht sicher.'],
     ['p', 'Falls du über unsere nächsten Events informiert werden möchtest, {Newsletter-Link: melde dich für unseren Newsletter an}.'],
     ['p', 'Bis bald,'],
+
+    ['h', 'Nachgerückt'],
+    ['p', 'Betreff: Du bist dabei: {Kurztitel}'],
+    ['p', '{Anrede},'],
+    ['p', 'gute Nachrichten: Bei unserem Event ist gerade ein Platz frei geworden, und du bist von der Warteliste nachgerückt. Du bist jetzt verbindlich angemeldet:'],
+    ['p', '[EVENTKARTE]'],
+    ['p', 'Im Anhang findest du eine Kalenderdatei (.ics) – einfach öffnen, dann steht der Termin direkt in deinem Kalender.'],
+    ['p', 'Falls du inzwischen doch keine Zeit mehr hast, melde dich bitte kurz ab, dann bekommt die nächste Person auf der Warteliste deinen Platz.'],
+    ['p', 'Ich freue mich auf dich,'],
+    ['k', 'Du kannst doch nicht? {Abmelde-Link: Hier abmelden.}'],
 
     ['h', '1 Woche vorher'],
     ['p', 'Betreff: In einer Woche: NBK Treffen – {Kurztitel}'],

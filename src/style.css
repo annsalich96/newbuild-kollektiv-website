@@ -661,8 +661,19 @@ ul {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Speaker-Galerie einheitlich schwarz-weiss (Ann, 2026-11-09). */
+  /* Speaker-Galerie einheitlich schwarz-weiss (Ann, 2026-11-09), mit der
+     Maus darueber farbig - Foto verlinkt auf die Website (Ann 2026-11-25). */
   filter: grayscale(1);
+  transition: filter 0.4s ease;
+}
+
+@media (hover: hover) {
+  a.team-row__photo:hover img,
+  a:hover > .event-hosts__photo,
+  a:focus-visible > .event-hosts__photo,
+  a.team-row__photo:focus-visible img {
+    filter: grayscale(0);
+  }
 }
 
 /* Schwarzer Verlauf unten im Bild, damit Name/Firma auf hellen Fotos immer
@@ -1218,6 +1229,12 @@ ul {
 .team-marquee .marquee__inner.is-ready,
 .gallery-marquee .marquee__inner.is-ready {
   opacity: 1;
+}
+
+/* Auto-Lauf (carousel.ts): stufenlos gleiten statt Einrasten. */
+.team-marquee .marquee__inner.is-autoplay,
+.gallery-marquee .marquee__inner.is-autoplay {
+  scroll-snap-type: none;
 }
 
 .team-marquee .marquee__inner::-webkit-scrollbar,
@@ -2029,6 +2046,7 @@ ul {
   aspect-ratio: 3 / 4;
   object-fit: cover;
   filter: grayscale(1);
+  transition: filter 0.4s ease;
 }
 
 .event-hosts__name {
