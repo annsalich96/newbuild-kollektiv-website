@@ -112,12 +112,13 @@ if (nextEvent) {
   setText('next-event-location', nextEvent.location)
   if (nextEventCta instanceof HTMLAnchorElement) {
     nextEventCta.href = eventHref(nextEvent.slug)
-    // Teilnehmerlimit erreicht: Button fuehrt zur Warteliste auf der Eventseite.
+    // Teilnehmerlimit erreicht: nur der Text wechselt. Link fuehrt immer an
+    // den Seitenanfang der Eventseite, nicht direkt zum Formular (Ann
+    // 2026-11-25).
     if (nextEvent.maxTeilnehmer) {
       const cta = nextEventCta
       const zeige = (ausgebucht: boolean | undefined) => {
         if (!ausgebucht) return
-        cta.href = `${eventHref(nextEvent.slug)}#event-form-section`
         cta.textContent = 'Ausgebucht: Warteliste'
       }
       zeige(letzterPlatzStatus(nextEvent.slug)?.ausgebucht)
