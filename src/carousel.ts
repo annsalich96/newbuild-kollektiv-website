@@ -16,10 +16,13 @@
 //
 // Auto-Lauf (Option autoplay, Ann 2026-11-25: Speaker und Fotogalerie der
 // Startseite drehen sich langsam wie das Sponsoren-Laufband): gleitet
-// stufenlos weiter (scroll-snap solange aus, Klasse is-autoplay), pausiert
-// bei Maus ueber der Galerie (Klick auf Speaker/Foto bleibt moeglich), bei
-// Pfeil-Klick/Ziehen/Wischen fuer AUTOPLAY_PAUSE_MS und ausserhalb des
-// Bildschirms. Kein Auto-Lauf bei "Bewegung reduzieren".
+// stufenlos weiter (scroll-snap solange aus, Klasse is-autoplay). Laeuft
+// auch unter der Maus weiter (Ann 2026-11-25: nicht anhalten, Foto wird
+// farbig, Klick fuehrt zur Website). Ein einfacher Mausklick stoppt NICHT -
+// sonst rastet die Galerie zwischen Druecken und Loslassen ein und der Klick
+// landet neben dem Link. Pause nur bei Pfeil-Klick/Ziehen/Wischen/Mausrad fuer
+// AUTOPLAY_PAUSE_MS und ausserhalb des Bildschirms. Kein Auto-Lauf bei
+// "Bewegung reduzieren".
 const AUTOPLAY_PX_PRO_S_1920 = 40
 const AUTOPLAY_PAUSE_MS = 5000
 
@@ -133,10 +136,14 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
     if (!isDragging) {
       if (Math.abs(dx) < DRAG_THRESHOLD) return
       isDragging = true
+      // Ab hier ziehen - Startwerte neu, weil der Auto-Lauf seit dem
+      // Druecken weitergelaufen sein kann (sonst ruckt es zurueck).
+      dragStartX = event.clientX
+      dragStartScrollLeft = inner.scrollLeft
       inner.setPointerCapture(event.pointerId)
       inner.classList.add('is-dragging')
     }
-    inner.scrollLeft = dragStartScrollLeft - dx
+    inner.scrollLeft = dragStartScrollLeft - (event.clientX - dragStartX)
   })
 
   const endDrag = () => {
@@ -166,22 +173,22 @@ export function initCarousel(marquee: HTMLElement, options: { autoplay?: boolean
 
   function startAutoplay() {
     if (!inner || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let hover = false
     let sichtbar = true
     let pauseBis = 0
     let pos = inner.scrollLeft
     let last = 0
 
-    const aktiv = () => !hover && sichtbar && Date.now() >= pauseBis && !document.hidden && isScrollable()
+    const aktiv = () => sichtbar && Date.now() >= pauseBis && !document.hidden && isScrollable()
     // Nutzer greift ein: Einrasten wieder an, kurz Pause, danach weiter.
     const eingriff = () => {
       pauseBis = Date.now() + AUTOPLAY_PAUSE_MS
       inner.classList.remove('is-autoplay')
     }
 
-    marquee.addEventListener('mouseenter', () => { hover = true })
-    marquee.addEventListener('mouseleave', () => { hover = false })
-    inner.addEventListener('pointerdown', eingriff)
+    // Maus-Ziehen erst, wenn wirklich gezogen wird (is-dragging, s. oben).
+    inner.addEventListener('pointermove', () => {
+      if (inner.classList.contains('is-dragging')) eingriff()
+    })
     inner.addEventListener('wheel', eingriff, { passive: true })
     inner.addEventListener('touchstart', eingriff, { passive: true })
     prev?.addEventListener('click', eingriff)
