@@ -40,6 +40,8 @@
   .foot{margin-top:40px;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;
     color:rgba(17,17,17,.45)}
   .err{color:#9d4a26}
+  .sec{margin:40px 0 0;font-weight:500;font-size:1.05rem}
+  .row2{display:grid;grid-template-columns:2fr 3fr;gap:0 22px}
 </style>
 </head>
 <body>
@@ -308,6 +310,70 @@
     });
   }
 
+  // Rechnungsdaten von Sponsoren (Link mit Token aus NBK intern). Spricht direkt mit
+  // Supabase (Projekt nbk-office); Eingaben landen als „Neue Angaben“ in der
+  // Sponsoren-Seite und werden dort von Hand übernommen.
+  function sponsorForm() {
+    var SB = 'https://lmaddtekaigjitqicdzw.supabase.co/rest/v1/rpc/';
+    var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtYWRkdGVrYWlnaml0cWljZHp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MTgwMzksImV4cCI6MjExMTE5NDAzOX0.yKnTUKXI_wPAAvQLBdY79xFK9b84QfrxV4_3gczk3zM';
+    var token = q.get('t') || '';
+    var rpc = function (fn, body) {
+      return fetch(SB + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.message || 'Fehler'); return j; }); });
+    };
+    var T = {
+      de: { title: 'Rechnungsdaten', sub: 'Damit wir die Rechnung für Ihr Sponsoring korrekt ausstellen können, tragen Sie bitte Ihre Rechnungsdaten ein. Bereits bekannte Angaben sind vorausgefüllt.',
+        addr: 'Rechnungsadresse', company: 'Firma (vollständiger Name)', street: 'Straße und Hausnummer', zip: 'PLZ', city: 'Ort', country: 'Land',
+        vat: 'USt-IdNr.', vatHint: 'Bei Unternehmen mit Sitz in der EU außerhalb Deutschlands erforderlich (Reverse Charge).',
+        invmail: 'E-Mail für Rechnungen', po: 'Bestellnummer / Referenz (optional)', person: 'Ansprechperson', first: 'Vorname', last: 'Nachname', role: 'Position',
+        email: 'E-Mail', phone: 'Telefon', notes: 'Anmerkungen (optional)', btn: 'Absenden', sending: 'Wird gesendet …',
+        done: '<h1>Vielen Dank!</h1><p>Ihre Angaben sind bei uns angekommen. Wir melden uns, falls noch etwas fehlt.</p>',
+        invalid: '<h1>Link ungültig</h1><p>Dieser Link ist nicht (mehr) gültig. Bitte wenden Sie sich an <a href="mailto:request@newbuild-kollektiv.com">request@newbuild-kollektiv.com</a>.</p>',
+        err: 'Konnte nicht gesendet werden. Bitte versuchen Sie es nochmal oder schreiben Sie an request@newbuild-kollektiv.com.', ds: 'Datenschutz' },
+      en: { title: 'Billing details', sub: 'So that we can issue the invoice for your sponsorship correctly, please enter your billing details. Details we already have are pre-filled.',
+        addr: 'Billing address', company: 'Company (full legal name)', street: 'Street and number', zip: 'Postal code', city: 'City', country: 'Country',
+        vat: 'VAT ID', vatHint: 'Required for companies based in the EU outside Germany (reverse charge).',
+        invmail: 'Email for invoices', po: 'Purchase order / reference (optional)', person: 'Contact person', first: 'First name', last: 'Last name', role: 'Position',
+        email: 'Email', phone: 'Phone', notes: 'Notes (optional)', btn: 'Submit', sending: 'Sending …',
+        done: '<h1>Thank you!</h1><p>We have received your details. We will get in touch if anything is missing.</p>',
+        invalid: '<h1>Invalid link</h1><p>This link is not (or no longer) valid. Please contact <a href="mailto:request@newbuild-kollektiv.com">request@newbuild-kollektiv.com</a>.</p>',
+        err: 'Could not be sent. Please try again or write to request@newbuild-kollektiv.com.', ds: 'Privacy policy' }
+    };
+    card.innerHTML = '<p>Wird geladen … / Loading …</p>' + foot;
+    rpc('sponsor_form_get', { p_token: token }).then(function (d) {
+      var L = T[(q.get('lang') || (d && d.language) || 'de') === 'en' ? 'en' : 'de'];
+      if (!d) { card.innerHTML = L.invalid + foot; return; }
+      document.documentElement.lang = L === T.en ? 'en' : 'de';
+      var c = d.contact || {};
+      var f = function (n, l, v, type, req) { return '<label>' + esc(l) + (req ? ' *' : '') + '</label><input type="' + (type || 'text') + '" name="' + n + '" value="' + esc(v) + '"' + (req ? ' required' : '') + '>'; };
+      var ev = (d.events || []).map(function (e) { return esc(e.title) + (e.package ? ' · ' + esc(e.package) : ''); }).join('<br>');
+      card.innerHTML = '<h1>' + L.title + '</h1><p class="ev">' + esc(d.company || '') + (ev ? '<br>' + ev : '') + '</p><p>' + L.sub + '</p>' +
+        '<form id="f">' +
+        '<p class="sec">' + L.addr + '</p>' +
+        f('company', L.company, d.company, 'text', true) + f('street', L.street, d.street, 'text', true) +
+        '<div class="row2"><div>' + f('postal_code', L.zip, d.postal_code, 'text', true) + '</div><div>' + f('city', L.city, d.city, 'text', true) + '</div></div>' +
+        f('country', L.country, d.country, 'text', true) +
+        f('vat_id', L.vat, d.vat_id) + '<p class="hint" style="margin-top:6px">' + L.vatHint + '</p>' +
+        f('invoice_email', L.invmail, d.invoice_email, 'email', true) + f('po_reference', L.po, d.po_reference) +
+        '<p class="sec">' + L.person + '</p>' +
+        '<div class="row2"><div>' + f('first_name', L.first, c.first_name, 'text', true) + '</div><div>' + f('last_name', L.last, c.last_name, 'text', true) + '</div></div>' +
+        f('role', L.role, c.role) + f('email', L.email, c.email, 'email', true) + f('phone', L.phone, c.phone, 'tel') +
+        '<label>' + L.notes + '</label><textarea name="notes"></textarea>' +
+        '<button type="submit">' + L.btn + '</button><p class="err" id="err" hidden></p></form>' +
+        '<p class="hint"><a href="' + DS + '">' + L.ds + '</a></p>' + foot;
+      var form = document.getElementById('f'), err = document.getElementById('err');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault(); err.hidden = true;
+        var btn = form.querySelector('button'); btn.disabled = true; btn.textContent = L.sending;
+        var data = {};
+        Array.prototype.forEach.call(form.elements, function (el) { if (el.name) data[el.name] = el.value || ''; });
+        rpc('sponsor_form_submit', { p_token: token, p_data: data })
+          .then(function () { card.innerHTML = L.done + foot; window.scrollTo(0, 0); })
+          .catch(function () { btn.disabled = false; btn.textContent = L.btn; err.hidden = false; err.textContent = L.err; });
+      });
+    }).catch(function () { card.innerHTML = T.de.invalid + foot; });
+  }
+
   if (doo === 'medien') {
     medienAntwort();
   } else if (doo === 'fotoinfo') {
@@ -316,6 +382,8 @@
     mailAktion(doo);
   } else if (doo === 'nlbestaetigen' || doo === 'nlfreigabe') {
     newsletterAktion();
+  } else if (doo === 'sponsor') {
+    sponsorForm();
   } else if (doo === 'warda') {
     autoSubmit('warda');
   } else if (CFG[doo]) {
