@@ -314,12 +314,6 @@
       "title": "Vom Problem zum Tool: Wie Architekturbüros mit KI ihre eigene Software entwickeln",
       "isNext": true,
       "maxTeilnehmer": 60,
-      "sponsors": [
-        {
-          "name": "Sponsored by DEKOMA",
-          "url": "https://dekoma.eu/en/"
-        }
-      ],
       "color": "#2f5fd0",
       "date": "Mi., 02.12.2026",
       "time": "18:30–22:00",
@@ -330,6 +324,7 @@
       "speakerBio": "Ann-Kathrin Salich ist Architektin und Inhaberin des Architekturbüros An(n) Architecture Solution. Das Büro geht neue Wege, in seinen Projekten ebenso wie in der eigenen Arbeitsweise. Mit KI entwickelt sie eigene Werkzeuge für den Büroalltag ihres Teams.",
       "speakerImage": "/team-ann-kathrin-salich-farbe.jpg",
       "speakerUrl": "https://annarchitecturesolution.com",
+      "description": "Wie würde unsere Bürosoftware aussehen, wenn wir sie von unserer eigenen Arbeitsweise aus denken würden? Für Bauzeitenpläne, Zeiterfassung, Aufgabenverteilung und Controlling gibt es immer mehr Software, jede mit ihrer eigenen Logik, in die sich das Team einarbeiten muss. Daten, die zusammengehören, liegen in verschiedenen Programmen und müssen an mehreren Stellen gepflegt werden. Das kostet Zeit und Mühe. Beim Entwerfen gehen Architekt:innen ganz selbstverständlich von den Anforderungen des konkreten Projekts aus und entwickeln daraus individuelle Lösungen. Was passiert, wenn wir mit demselben Ansatz an unsere eigenen Büroprozesse herangehen?\n\nAnn-Kathrin Salich, Architektin und Gründerin von An(n) Architecture Solution, hat genau das ausprobiert und mit KI eigene Tools entwickelt: einen Bauzeitenplaner, den sie noch auf der Baustelle per Sprachmemo anpasst, eine Zeiterfassung per Sprache und ein System für Angebote, Rechnungen und weitere Büroprozesse, in dem sie selbst bestimmt, wie Daten verknüpft werden und was Team und Auftraggeber sehen. An konkreten Beispielen zeigt sie, wie aus einem Bedarf im Büroalltag mit KI ein nutzbares Werkzeug wird. Wer einen Ablauf im eigenen Büro vereinfachen möchte, nimmt mit, wie daraus ein erstes eigenes Tool entstehen kann.\n\nDen Abend moderiert Prof. Jan R. Krause, der an der Hochschule Bochum Architektur Media Management lehrt und sich in Lehre, Forschung und Weiterbildung mit KI und Architekturvermittlung beschäftigt. Mit Ann-Kathrin Salich und dem Publikum diskutiert er, wo sich der Einstieg für Architekturbüros lohnt.",
       "speakers": [
         {
           "name": "Ann-Kathrin Salich",
@@ -348,7 +343,12 @@
           "url": "https://www.ofat.berlin"
         }
       ],
-      "description": "Wie würde unsere Bürosoftware aussehen, wenn wir sie von unserer eigenen Arbeitsweise aus denken würden? Für Bauzeitenpläne, Zeiterfassung, Aufgabenverteilung und Controlling gibt es immer mehr Software, jede mit ihrer eigenen Logik, in die sich das Team einarbeiten muss. Daten, die zusammengehören, liegen in verschiedenen Programmen und müssen an mehreren Stellen gepflegt werden. Das kostet Zeit und Mühe. Beim Entwerfen gehen Architekt:innen ganz selbstverständlich von den Anforderungen des konkreten Projekts aus und entwickeln daraus individuelle Lösungen. Was passiert, wenn wir mit demselben Ansatz an unsere eigenen Büroprozesse herangehen?\n\nAnn-Kathrin Salich, Architektin und Gründerin von An(n) Architecture Solution, hat genau das ausprobiert und mit KI eigene Tools entwickelt: einen Bauzeitenplaner, den sie noch auf der Baustelle per Sprachmemo anpasst, eine Zeiterfassung per Sprache und ein System für Angebote, Rechnungen und weitere Büroprozesse, in dem sie selbst bestimmt, wie Daten verknüpft werden und was Team und Auftraggeber sehen. An konkreten Beispielen zeigt sie, wie aus einem Bedarf im Büroalltag mit KI ein nutzbares Werkzeug wird. Wer einen Ablauf im eigenen Büro vereinfachen möchte, nimmt mit, wie daraus ein erstes eigenes Tool entstehen kann.\n\nDen Abend moderiert Prof. Jan R. Krause, der an der Hochschule Bochum Architektur Media Management lehrt und sich in Lehre, Forschung und Weiterbildung mit KI und Architekturvermittlung beschäftigt. Mit Ann-Kathrin Salich und dem Publikum diskutiert er, wo sich der Einstieg für Architekturbüros lohnt."
+      "sponsors": [
+        {
+          "name": "Sponsored by DEKOMA",
+          "url": "https://dekoma.eu/en/"
+        }
+      ]
     }
   ]
 }
