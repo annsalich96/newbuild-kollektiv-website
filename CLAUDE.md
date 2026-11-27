@@ -25,7 +25,11 @@ Content-Pflege läuft über [Pages CMS](https://app.pagescms.org) — Login per 
 - **Kleinigkeiten** (Texte, Bilder, neue Events/Team-Mitglieder/Sponsoren) → Ann macht das selbst über Pages CMS, kein Code nötig.
 - **Größere Layout-/Struktur-Änderungen** (neue Sektionen, Design-Anpassungen, neue Felder) → über Claude Code / direkt im Code.
 
-**Steuerdatei:** `.pages.yml` (Repo-Root) definiert, welche Felder Pages CMS pro Content-Typ anzeigt (Events, Team, Sponsoring, Mission/About, Impressum, Datenschutz, Widerrufsrecht, Footer).
+> [!important] Events seit 27.11.2026 nicht mehr im CMS
+> Events (`src/content/events.json`) pflegt Ann ausschließlich in **NBK intern** (intern.newbuild-kollektiv.com → Events, Repo `annsalich96/newbuild-intern`). Dort gibt es alle Felder inkl. Speaker, Programm, Partner, Sponsoren, Fotos und Galerie. „Auf Website veröffentlichen“ schreibt über die Supabase-Funktion `website` das komplette Event plus neu hochgeladene Fotos in **einem** Commit hierher (Fotos: `public/galerie/<slug>/<slug>-NN-<hash>.jpg`, `public/speaker-<name>-<hash>.jpg`, `public/team-<name>-<hash>.jpg`). Der Events-Eintrag wurde aus `.pages.yml` entfernt; die Pflichtfelder prüft `scripts/check-cms-schema.mjs` fest (`checkEvents`).
+> Bittet Ann Claude in VS Code, ein Event zu ändern, darf events.json direkt geändert und gepusht werden: NBK intern übernimmt den Stand beim nächsten Öffnen der Events-Seite (außer bei Events mit noch nicht veröffentlichten Änderungen in NBK intern, dann vorher fragen). Neue Event-Felder immer auch in NBK intern (`app/events.html`, Funktion `website`, ORDER/LISTS) nachziehen.
+
+**Steuerdatei:** `.pages.yml` (Repo-Root) definiert, welche Felder Pages CMS pro Content-Typ anzeigt (Team, Sponsoring, Mission/About, Impressum, Datenschutz, Widerrufsrecht, Footer).
 
 > [!warning] .pages.yml wird NICHT automatisch aus dem Code generiert
 > Wenn im Code ein Feld in `src/content/*.json` (bzw. dem zugehörigen TS-Typ) hinzugefügt, umbenannt oder entfernt wird, muss `.pages.yml` **manuell** nachgezogen werden — sonst zeigt Pages CMS das Feld gar nicht an oder das CMS schreibt in ein Feld, das der Code nicht mehr kennt. Es gibt keinen Auto-Sync zwischen JSON-Struktur/TS-Typen und `.pages.yml`.

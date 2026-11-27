@@ -54,6 +54,36 @@ function checkField(field, value, path, errors) {
   }
 }
 
+// Events werden seit 27.11.2026 nicht mehr in Pages CMS gepflegt, sondern in NBK intern
+// (intern.newbuild-kollektiv.com), das src/content/events.json direkt ins Repo schreibt.
+// Die Pflichtfelder pruefen wir deshalb hier fest, nicht mehr ueber .pages.yml.
+const EVENT_REQUIRED = ['slug', 'introLabel', 'title', 'date', 'time', 'location', 'description']
+const EVENT_LIST_REQUIRED = {
+  facts: ['label', 'value'], program: ['title'], hosts: ['name'],
+  partners: ['category', 'name'], speakers: ['name'], sponsors: ['name'],
+}
+function checkEvents(errors) {
+  const path = 'src/content/events.json'
+  let data
+  try {
+    data = readJson(path)
+  } catch (e) {
+    errors.push(`${path}: Datei fehlt oder ist kein gueltiges JSON (${e.message})`)
+    return
+  }
+  const leer = (v) => v === undefined || v === null || v === ''
+  ;(data.events || []).forEach((ev, i) => {
+    const at = `${path} -> events[${i}].`
+    for (const f of EVENT_REQUIRED) if (leer(ev[f])) errors.push(`${at}${f}: Pflichtfeld fehlt oder ist leer`)
+    if (ev.slug && !/^[a-z0-9-]+$/.test(ev.slug)) errors.push(`${at}slug: nur Kleinbuchstaben, Zahlen, Bindestriche`)
+    for (const [list, fields] of Object.entries(EVENT_LIST_REQUIRED)) {
+      if (ev[list] === undefined) continue
+      if (!Array.isArray(ev[list])) { errors.push(`${at}${list}: sollte eine Liste sein`); continue }
+      ev[list].forEach((it, j) => { for (const f of fields) if (leer(it?.[f])) errors.push(`${at}${list}[${j}].${f}: Pflichtfeld fehlt oder ist leer`) })
+    }
+  })
+}
+
 function main() {
   const config = parseYaml(readFileSync(join(root, '.pages.yml'), 'utf-8'))
   const errors = []
@@ -71,6 +101,8 @@ function main() {
       checkField(field, data[field.name], `${entry.path} -> `, errors)
     }
   }
+
+  checkEvents(errors)
 
   if (errors.length > 0) {
     console.error('CMS-Schema-Check fehlgeschlagen:\n')
